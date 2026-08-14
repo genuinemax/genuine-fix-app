@@ -4,7 +4,7 @@ import Login from './Login';
 import React, { useState, useEffect } from 'react';
 import { 
   Wrench, Package, FileText, LayoutDashboard, DollarSign, 
-  Trash2, Printer, ShieldCheck, User, CreditCard, Search, Eye, ChevronRight, Download, Upload, ShoppingBag, MessageSquare, Plus, AlertTriangle, ArrowUpRight, ArrowDownRight, X, CheckCircle2, Image as ImageIcon, Pencil
+  Trash2, Printer, ShieldCheck, User, CreditCard, Search, Eye, ChevronRight, Download, Upload, ShoppingBag, MessageSquare, Plus, AlertTriangle, ArrowUpRight, ArrowDownRight, X, CheckCircle2, Image as ImageIcon, Pencil, Smartphone, Laptop
 } from 'lucide-react';
 
 export default function App() {
@@ -62,6 +62,26 @@ export default function App() {
     ];
   });
 
+  // NEW: Devices Inventory & Buy/Sell (2nd Hand & New Phones/Laptops)
+  const [devicesStock, setDevicesStock] = useState(() => {
+    const saved = localStorage.getItem('gf_devices_stock');
+    return saved ? JSON.parse(saved) : [
+      {
+        id: 'DEV-1001',
+        deviceCategory: 'Second-Hand Phone',
+        brandModel: 'iPhone 12 Pro (128GB)',
+        imeiOrSerial: '356984102345678',
+        condition: 'Good (Battery 88%)',
+        partyName: 'Bikash Thapa',
+        partyPhone: '9846012345',
+        buyPrice: 45000,
+        sellPrice: 52000,
+        status: 'In Stock',
+        date: '2026-06-12'
+      }
+    ];
+  });
+
   const [expenses, setExpenses] = useState(() => {
     const saved = localStorage.getItem('gf_expenses');
     return saved ? JSON.parse(saved) : [
@@ -84,11 +104,24 @@ export default function App() {
     warrantyDays: '7'
   });
 
+  // NEW: Device Buy/Sell Form State
+  const [newDevice, setNewDevice] = useState({
+    deviceCategory: 'Second-Hand Phone',
+    brandModel: '',
+    imeiOrSerial: '',
+    condition: 'Good / Fresh',
+    partyName: '',
+    partyPhone: '',
+    buyPrice: '',
+    sellPrice: '',
+    warrantyDays: '30'
+  });
+
   const [selectedCategory, setSelectedCategory] = useState(categories[0] || 'Mobile Parts');
   const [newPart, setNewPart] = useState({ name: '', stock: '', costPrice: '', price: '', minStock: '5' });
   const [newExpense, setNewExpense] = useState({ description: '', amount: '' });
   const [selectedInvoice, setSelectedInvoice] = useState(null);
-  const [editingInvoice, setEditingInvoice] = useState(null); // Edit state added
+  const [editingInvoice, setEditingInvoice] = useState(null);
   const [inventoryFilter, setInventoryFilter] = useState('All');
   const [inventorySearch, setInventorySearch] = useState('');
   const [invoiceSearch, setInvoiceSearch] = useState('');
@@ -106,6 +139,7 @@ export default function App() {
   useEffect(() => { localStorage.setItem('gf_categories', JSON.stringify(categories)); }, [categories]);
   useEffect(() => { localStorage.setItem('gf_repairs', JSON.stringify(repairs)); }, [repairs]);
   useEffect(() => { localStorage.setItem('gf_inventory', JSON.stringify(inventory)); }, [inventory]);
+  useEffect(() => { localStorage.setItem('gf_devices_stock', JSON.stringify(devicesStock)); }, [devicesStock]);
   useEffect(() => { localStorage.setItem('gf_expenses', JSON.stringify(expenses)); }, [expenses]);
 
   // ==========================================
@@ -133,13 +167,13 @@ export default function App() {
   const totalDue = repairs.reduce((acc, curr) => acc + Number(curr.dueAmount || 0), 0);
   const totalExp = expenses.reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
   const totalStockValue = inventory.reduce((acc, curr) => acc + (Number(curr.stock || 0) * Number(curr.costPrice || 0)), 0);
-  const lowStockCount = inventory.filter(i => Number(i.stock) <= Number(i.minStock || 5)).length;
 
   const exportData = () => {
     const backupData = {
       categories,
       repairs,
       inventory,
+      devicesStock,
       expenses,
       exportDate: getCurrentDateTime()
     };
@@ -162,6 +196,7 @@ export default function App() {
           setCategories(parsed.categories);
           setRepairs(parsed.repairs);
           setInventory(parsed.inventory);
+          if (parsed.devicesStock) setDevicesStock(parsed.devicesStock);
           setExpenses(parsed.expenses);
           alert('तपाईको पसलको डाटा सफलतापूर्वक Restore भयो!');
         } else {
@@ -172,37 +207,6 @@ export default function App() {
       }
     };
     reader.readAsText(file);
-  };
-
-  const handleAddCategory = (e) => {
-    e.preventDefault();
-    if (newCatInput.trim() && !categories.includes(newCatInput.trim())) {
-      setCategories([...categories, newCatInput.trim()]);
-      setSelectedCategory(newCatInput.trim());
-      setNewCatInput('');
-    }
-  };
-
-  const handleDeleteCategory = (catToDelete) => {
-    if (categories.length <= 1) {
-      alert("At least one category must remain!");
-      return;
-    }
-    setCategories(categories.filter(c => c !== catToDelete));
-    if (selectedCategory === catToDelete) {
-      setSelectedCategory(categories.filter(c => c !== catToDelete)[0]);
-    }
-  };
-
-  const handleImageUpload = (e, field) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setNewRepair(prev => ({ ...prev, [field]: reader.result }));
-      };
-      reader.readAsDataURL(file);
-    }
   };
 
   const handleAddRepair = (e) => {
@@ -236,6 +240,71 @@ export default function App() {
     setSelectedInvoice(repairItem);
   };
 
+  // NEW: Add Device (Buy/Trade-in or New Phone/Laptop Stock)
+  const handleAddDevice = (e) => {
+    e.preventDefault();
+    const sellPriceVal = Number(newDevice.sellPrice || 0);
+    const buyPriceVal = Number(newDevice.buyPrice || 0);
+
+    const deviceItem = {
+      id: `DEV-${Math.floor(1000 + Math.random() * 9000)}`,
+      deviceCategory: newDevice.deviceCategory,
+      brandModel: newDevice.brandModel || 'Unknown Device',
+      imeiOrSerial: newDevice.imeiOrSerial || 'N/A',
+      condition: newDevice.condition,
+      partyName: newDevice.partyName || 'Walk-in Party',
+      partyPhone: newDevice.partyPhone || 'N/A',
+      buyPrice: buyPriceVal,
+      sellPrice: sellPriceVal,
+      status: 'In Stock',
+      date: new Date().toISOString().split('T')[0]
+    };
+
+    setDevicesStock([deviceItem, ...devicesStock]);
+
+    // Also optionally create a sales/purchase record invoice if needed
+    const deviceInvoice = {
+      id: `DVB-${Math.floor(1000 + Math.random() * 9000)}`,
+      customerName: newDevice.partyName || 'Walk-in Customer',
+      phone: newDevice.partyPhone || 'N/A',
+      citizenshipNo: '',
+      customerPhoto: '',
+      citizenshipPhoto: '',
+      deviceType: newDevice.deviceCategory,
+      model: `${newDevice.brandModel} (IMEI/S: ${newDevice.imeiOrSerial})`,
+      totalCost: sellPriceVal,
+      paidAmount: sellPriceVal,
+      dueAmount: 0,
+      issue: `${newDevice.deviceCategory} Purchase/Stock Entry`,
+      warrantyDays: newDevice.warrantyDays,
+      status: 'Delivered',
+      dateTime: getCurrentDateTime(),
+      billType: 'Device Sale',
+      items: [
+        {
+          name: `${newDevice.deviceCategory} - ${newDevice.brandModel} [IMEI: ${newDevice.imeiOrSerial}]`,
+          price: sellPriceVal,
+          qty: 1,
+          remarks: `Condition: ${newDevice.condition}`
+        }
+      ]
+    };
+
+    setRepairs([deviceInvoice, ...repairs]);
+    setNewDevice({
+      deviceCategory: 'Second-Hand Phone',
+      brandModel: '',
+      imeiOrSerial: '',
+      condition: 'Good / Fresh',
+      partyName: '',
+      partyPhone: '',
+      buyPrice: '',
+      sellPrice: '',
+      warrantyDays: '30'
+    });
+    setSelectedInvoice(deviceInvoice);
+  };
+
   const handleAddPosItem = () => {
     setPosBill({
       ...posBill,
@@ -253,7 +322,6 @@ export default function App() {
         updatedItems[index].price = found.price;
       }
     }
-
     setPosBill({ ...posBill, items: updatedItems });
   };
 
@@ -267,7 +335,6 @@ export default function App() {
     const totalCost = posBill.items.reduce((sum, item) => sum + (Number(item.price || 0) * Number(item.qty || 1)), 0);
     const paidAmount = Number(posBill.paidAmount || totalCost);
     const dueAmount = totalCost - paidAmount;
-
     const itemDescriptions = posBill.items.map(i => `${i.name} (x${i.qty})`).join(', ');
 
     const updatedInventory = inventory.map(inv => {
@@ -353,7 +420,6 @@ export default function App() {
     }));
   };
 
-  // Edit Invoice Handler
   const handleUpdateInvoice = (e) => {
     e.preventDefault();
     const total = Number(editingInvoice.totalCost || 0);
@@ -377,28 +443,24 @@ export default function App() {
     canvas.height = 1100;
     const ctx = canvas.getContext('2d');
 
-    // 1. Crisp White Clean Background
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // 2. Header Top Banner (Dark Pro Theme)
     ctx.fillStyle = '#0F172A';
     ctx.fillRect(0, 0, canvas.width, 160);
 
-    // Brand Title
     ctx.fillStyle = '#FFFFFF';
     ctx.font = 'bold 28px sans-serif';
     ctx.fillText('GENUINE FIX', 50, 55);
 
     ctx.fillStyle = '#38BDF8';
     ctx.font = 'bold 13px sans-serif';
-    ctx.fillText('PROFESSIONAL LAPTOP & MOBILE REPAIR CENTER', 50, 80);
+    ctx.fillText('PROFESSIONAL LAPTOP & MOBILE REPAIR & TRADING CENTER', 50, 80);
 
     ctx.fillStyle = '#94A3B8';
     ctx.font = '12px sans-serif';
     ctx.fillText('Taalchowk, Lekhnath, Pokhara  |  Phone: 9765676982', 50, 105);
 
-    // Invoice Meta Right Aligned
     ctx.fillStyle = '#38BDF8';
     ctx.font = 'bold 16px monospace';
     ctx.fillText(`INVOICE #${inv.id}`, 560, 55);
@@ -412,7 +474,6 @@ export default function App() {
     ctx.font = 'bold 13px sans-serif';
     ctx.fillText(`Status: ${isPaid ? 'PAID IN FULL' : 'DUE PENDING'}`, 560, 110);
 
-    // 3. Customer Details Section Box
     ctx.fillStyle = '#F8FAFC';
     ctx.strokeStyle = '#E2E8F0';
     ctx.lineWidth = 1.5;
@@ -433,10 +494,9 @@ export default function App() {
     ctx.font = '13px sans-serif';
     ctx.fillText(`Phone: ${inv.phone}`, 70, 262);
 
-    ctx.fillText(`Service Type: ${inv.deviceType || 'Repair & Parts'}`, 420, 210);
-    ctx.fillText(`Warranty Coverage: ${inv.warrantyDays || '30'} Days`, 420, 238);
+    ctx.fillText(`Type: ${inv.deviceType || 'Repair & Sales'}`, 420, 210);
+    ctx.fillText(`Warranty: ${inv.warrantyDays || '30'} Days`, 420, 238);
 
-    // 4. Itemized Table Header
     ctx.fillStyle = '#1E293B';
     ctx.fillRect(50, 310, 700, 40);
 
@@ -448,7 +508,6 @@ export default function App() {
     ctx.fillText('PRICE (NPR)', 560, 335);
     ctx.fillText('TOTAL', 660, 335);
 
-    // 5. Itemized Table Rows Loop
     const itemsList = inv.items && inv.items.length > 0 ? inv.items : [
       { name: inv.model || inv.issue, price: inv.totalCost, qty: 1 }
     ];
@@ -472,7 +531,6 @@ export default function App() {
       startY += 36;
     });
 
-    // 6. Totals Section
     const totalsY = Math.max(startY + 30, 520);
     
     ctx.fillStyle = '#F8FAFC';
@@ -506,7 +564,6 @@ export default function App() {
     ctx.font = 'bold 16px monospace';
     ctx.fillText(`NPR ${inv.dueAmount}`, 615, totalsY + 110);
 
-    // 7. Warranty Terms & Signature
     const footerY = totalsY + 160;
     
     ctx.fillStyle = '#FEF9C3';
@@ -518,14 +575,13 @@ export default function App() {
 
     ctx.fillStyle = '#854D0E';
     ctx.font = 'bold 11px sans-serif';
-    ctx.fillText('WARRANTY TERMS & CONDITIONS:', 70, footerY + 22);
+    ctx.fillText('WARRANTY & TRADING TERMS:', 70, footerY + 22);
 
     ctx.fillStyle = '#713F12';
     ctx.font = '11px sans-serif';
-    ctx.fillText('Warranty covers only repaired/replaced parts. Physical or water damage voids all warranty.', 70, footerY + 42);
-    ctx.fillText('Thank you for choosing Genuine Fix! Your trusted repair partner.', 70, footerY + 56);
+    ctx.fillText('Warranty covers devices/parts as specified. Physical or water damage voids all warranty.', 70, footerY + 42);
+    ctx.fillText('Thank you for choosing Genuine Fix! Your trusted tech partner.', 70, footerY + 56);
 
-    // Signature Line
     ctx.fillStyle = '#0F172A';
     ctx.font = '12px sans-serif';
     ctx.fillText('Authorized Signature', 600, footerY + 130);
@@ -535,7 +591,6 @@ export default function App() {
     ctx.lineTo(730, footerY + 105);
     ctx.stroke();
 
-    // Trigger Download
     const dataUrl = canvas.toDataURL('image/png');
     const link = document.createElement('a');
     link.href = dataUrl;
@@ -544,14 +599,14 @@ export default function App() {
   };
 
   const sendToWhatsApp = (inv) => {
-    const text = `*GENUINE FIX - LAPTOP & MOBILE REPAIR*
+    const text = `*GENUINE FIX - LAPTOP & MOBILE CENTER*
 📍 Taalchowk, Pokhara | 📞 9765676982
 ----------------------------------------
 👤 *Customer:* ${inv.customerName}
 📞 *Phone:* ${inv.phone}
 📅 *Date & Time:* ${inv.dateTime}
 ----------------------------------------
-🛠️ *Service/Model:* ${inv.model}
+🛠️ *Service/Device:* ${inv.model}
 📝 *Details:* ${inv.issue}
 🛡️ *Warranty:* ${inv.warrantyDays || '30'} Days
 ----------------------------------------
@@ -569,27 +624,19 @@ _Thank you for choosing Genuine Fix!_`;
     window.open(url, '_blank');
   };
 
-  const updateStatus = (id, status) => {
-    setRepairs(repairs.map(r => r.id === id ? { ...r, status } : r));
-  };
-
   const deleteRepair = (id) => setRepairs(repairs.filter(r => r.id !== id));
   const deletePart = (id) => setInventory(inventory.filter(i => i.id !== id));
+  const deleteDevice = (id) => setDevicesStock(devicesStock.filter(d => d.id !== id));
   const deleteExpense = (id) => setExpenses(expenses.filter(e => e.id !== id));
-
-  const filteredInventory = inventory.filter(i => {
-    const matchesCat = inventoryFilter === 'All' || i.category === inventoryFilter;
-    const matchesSearch = i.name.toLowerCase().includes(inventorySearch.toLowerCase());
-    return matchesCat && matchesSearch;
-  });
 
   const filteredInvoices = repairs.filter(r => {
     const matchesSearch = r.customerName.toLowerCase().includes(invoiceSearch.toLowerCase()) || 
       r.id.toLowerCase().includes(invoiceSearch.toLowerCase()) ||
       r.phone.includes(invoiceSearch);
     
-    if (invoiceFilterTab === 'Repair') return matchesSearch && r.billType !== 'Accessories';
+    if (invoiceFilterTab === 'Repair') return matchesSearch && r.billType !== 'Accessories' && r.billType !== 'Device Sale';
     if (invoiceFilterTab === 'Accessories') return matchesSearch && r.billType === 'Accessories';
+    if (invoiceFilterTab === 'Devices') return matchesSearch && r.billType === 'Device Sale';
     if (invoiceFilterTab === 'Due') return matchesSearch && Number(r.dueAmount) > 0;
     if (invoiceFilterTab === 'Paid') return matchesSearch && Number(r.dueAmount) === 0;
     return matchesSearch;
@@ -606,7 +653,7 @@ _Thank you for choosing Genuine Fix!_`;
             </div>
             <div>
               <h1 className="font-extrabold text-lg text-white leading-tight tracking-tight">Genuine Fix</h1>
-              <p className="text-[10px] text-blue-400 font-bold uppercase tracking-widest">Laptop & Mobile Repair Center</p>
+              <p className="text-[10px] text-blue-400 font-bold uppercase tracking-widest">Repair & Phone/Laptop Trading</p>
             </div>
           </div>
           
@@ -614,11 +661,12 @@ _Thank you for choosing Genuine Fix!_`;
             {[
               { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
               { id: 'repairs', icon: ShieldCheck, label: 'Job Sheets' },
+              { id: 'devices', icon: Smartphone, label: 'Device Buy/Sell' },
               { id: 'pos', icon: ShoppingBag, label: 'Accessories Bill' },
               { id: 'invoices', icon: FileText, label: 'Invoices' },
-              { id: 'inventory', icon: Package, label: 'Stock' },
+              { id: 'inventory', icon: Package, label: 'Parts Stock' },
               { id: 'expenses', icon: DollarSign, label: 'Expenses' },
-              { id: 'backup', icon: Download, label: 'Backup / Restore' },
+              { id: 'backup', icon: Download, label: 'Backup' },
             ].map(item => (
               <button 
                 key={item.id}
@@ -712,22 +760,6 @@ _Thank you for choosing Genuine Fix!_`;
               <input type="text" placeholder="Phone Number (e.g. 98xxxxxxxx)" value={newRepair.phone} onChange={e => setNewRepair({...newRepair, phone: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none focus:border-blue-600" />
               <input type="text" placeholder="Citizenship No. (Optional)" value={newRepair.citizenshipNo} onChange={e => setNewRepair({...newRepair, citizenshipNo: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none focus:border-blue-600" />
 
-              <div className="bg-slate-950 border border-slate-800 p-3 rounded-2xl flex items-center justify-between">
-                <label className="text-xs text-slate-400 flex items-center gap-2 cursor-pointer">
-                  <User size={15}/> Customer Photo:
-                  <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'customerPhoto')} className="hidden" />
-                </label>
-                {newRepair.customerPhoto ? <span className="text-xs text-emerald-400 font-bold">Uploaded ✓</span> : <span className="text-xs text-slate-600">Optional</span>}
-              </div>
-
-              <div className="bg-slate-950 border border-slate-800 p-3 rounded-2xl flex items-center justify-between">
-                <label className="text-xs text-slate-400 flex items-center gap-2 cursor-pointer">
-                  <CreditCard size={15}/> Citizenship Photo:
-                  <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'citizenshipPhoto')} className="hidden" />
-                </label>
-                {newRepair.citizenshipPhoto ? <span className="text-xs text-emerald-400 font-bold">Uploaded ✓</span> : <span className="text-xs text-slate-600">Optional</span>}
-              </div>
-
               <select value={newRepair.deviceType} onChange={e => setNewRepair({...newRepair, deviceType: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none">
                 <option value="Laptop Repair">Laptop Repair</option>
                 <option value="Mobile Repair">Mobile Repair</option>
@@ -737,13 +769,84 @@ _Thank you for choosing Genuine Fix!_`;
               </select>
 
               <input type="text" placeholder="Device Model (Optional)" value={newRepair.model} onChange={e => setNewRepair({...newRepair, model: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" />
-              <input type="number" placeholder="Total Cost (NPR) (Optional)" value={newRepair.totalCost} onChange={e => setNewRepair({...newRepair, totalCost: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" />
-              <input type="number" placeholder="Paid Amount (NPR) (Optional)" value={newRepair.paidAmount} onChange={e => setNewRepair({...newRepair, paidAmount: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" />
+              <input type="number" placeholder="Total Cost (NPR)" value={newRepair.totalCost} onChange={e => setNewRepair({...newRepair, totalCost: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" />
+              <input type="number" placeholder="Paid Amount (NPR)" value={newRepair.paidAmount} onChange={e => setNewRepair({...newRepair, paidAmount: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" />
               <input type="text" placeholder="Warranty Days (e.g. 30 Days)" value={newRepair.warrantyDays} onChange={e => setNewRepair({...newRepair, warrantyDays: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" />
               <input type="text" placeholder="Issue / Details (Optional)" value={newRepair.issue} onChange={e => setNewRepair({...newRepair, issue: e.target.value})} className="md:col-span-2 p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" />
               
               <button type="submit" className="md:col-span-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-blue-600/35">Save Job Sheet & Open Professional Invoice</button>
             </form>
+          </div>
+        )}
+
+        {/* NEW TAB: PHONE & LAPTOP TRADING (BUY / SELL 2ND HAND & NEW) */}
+        {activeTab === 'devices' && (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <div>
+              <h2 className="text-xl font-bold text-white">📱 Second-Hand & New Phone / Laptop Trading</h2>
+              <p className="text-xs text-slate-400 mt-0.5">Record 2nd-hand phone/laptop buybacks, trade-ins, or new device sales with IMEI & customer details.</p>
+            </div>
+
+            <form onSubmit={handleAddDevice} className="bg-[#0F1420] border border-slate-800 p-6 rounded-3xl grid grid-cols-1 md:grid-cols-3 gap-4 shadow-xl">
+              <select value={newDevice.deviceCategory} onChange={e => setNewDevice({...newDevice, deviceCategory: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none">
+                <option value="Second-Hand Phone">Second-Hand Phone</option>
+                <option value="Second-Hand Laptop">Second-Hand Laptop</option>
+                <option value="New Phone">New Phone (Brand New)</option>
+                <option value="New Laptop">New Laptop (Brand New)</option>
+              </select>
+
+              <input type="text" placeholder="Brand & Model (e.g. iPhone 13 / Dell Inspiron)" value={newDevice.brandModel} onChange={e => setNewDevice({...newDevice, brandModel: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" required />
+              <input type="text" placeholder="IMEI Number or Serial No." value={newDevice.imeiOrSerial} onChange={e => setNewDevice({...newDevice, imeiOrSerial: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" required />
+              
+              <input type="text" placeholder="Condition / Specs (e.g. Battery 90%, Scratchless)" value={newDevice.condition} onChange={e => setNewDevice({...newDevice, condition: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" />
+              <input type="text" placeholder="Customer / Party Name" value={newDevice.partyName} onChange={e => setNewDevice({...newDevice, partyName: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" />
+              <input type="text" placeholder="Customer Phone Number" value={newDevice.partyPhone} onChange={e => setNewDevice({...newDevice, partyPhone: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" />
+
+              <input type="number" placeholder="Buy Price / Cost Price (NPR)" value={newDevice.buyPrice} onChange={e => setNewDevice({...newDevice, buyPrice: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" />
+              <input type="number" placeholder="Selling Price (NPR)" value={newDevice.sellPrice} onChange={e => setNewDevice({...newDevice, sellPrice: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" required />
+              <input type="text" placeholder="Warranty (e.g. 3 Months / 6 Months)" value={newDevice.warrantyDays} onChange={e => setNewDevice({...newDevice, warrantyDays: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" />
+
+              <button type="submit" className="md:col-span-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-emerald-600/30">Save Device & Generate Bill</button>
+            </form>
+
+            <div className="bg-[#0F1420] border border-slate-800 rounded-3xl overflow-hidden shadow-xl">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-slate-950/60 text-slate-400 text-xs uppercase border-b border-slate-800">
+                  <tr>
+                    <th className="p-4">Device & Category</th>
+                    <th className="p-4">IMEI / S.N. & Condition</th>
+                    <th className="p-4">Party / Seller</th>
+                    <th className="p-4">Buy / Sell Price</th>
+                    <th className="p-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/50">
+                  {devicesStock.map(dev => (
+                    <tr key={dev.id}>
+                      <td className="p-4">
+                        <p className="font-bold text-white">{dev.brandModel}</p>
+                        <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 text-[11px] font-bold">{dev.deviceCategory}</span>
+                      </td>
+                      <td className="p-4">
+                        <p className="font-mono text-xs text-slate-300">{dev.imeiOrSerial}</p>
+                        <p className="text-xs text-slate-400">{dev.condition}</p>
+                      </td>
+                      <td className="p-4">
+                        <p className="font-bold text-white">{dev.partyName}</p>
+                        <p className="text-xs text-slate-400">{dev.partyPhone}</p>
+                      </td>
+                      <td className="p-4">
+                        <p className="text-xs text-rose-400">Buy: NPR {dev.buyPrice}</p>
+                        <p className="text-sm font-bold text-emerald-400">Sell: NPR {dev.sellPrice}</p>
+                      </td>
+                      <td className="p-4 text-right space-x-2">
+                        <button onClick={() => deleteDevice(dev.id)} className="p-2 bg-rose-500/10 text-rose-400 rounded-xl hover:bg-rose-500/20"><Trash2 size={14}/></button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
 
@@ -777,7 +880,7 @@ _Thank you for choosing Genuine Fix!_`;
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                <input type="number" placeholder="Paid Amount (Leave empty if fully paid)" value={posBill.paidAmount} onChange={e => setPosBill({...posBill, paidAmount: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" />
+                <input type="number" placeholder="Paid Amount" value={posBill.paidAmount} onChange={e => setPosBill({...posBill, paidAmount: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" />
                 <input type="text" placeholder="Warranty Days (e.g. 7 Days)" value={posBill.warrantyDays} onChange={e => setPosBill({...posBill, warrantyDays: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" />
               </div>
 
@@ -794,7 +897,7 @@ _Thank you for choosing Genuine Fix!_`;
               <div className="flex items-center gap-3">
                 <input type="text" placeholder="Search by name, ID, phone..." value={invoiceSearch} onChange={e => setInvoiceSearch(e.target.value)} className="p-2.5 bg-[#0F1420] border border-slate-800 rounded-xl text-sm text-white w-64 focus:outline-none" />
                 <div className="flex bg-[#0F1420] p-1 rounded-xl border border-slate-800">
-                  {['All', 'Repair', 'Accessories', 'Due', 'Paid'].map(tab => (
+                  {['All', 'Repair', 'Devices', 'Accessories', 'Due', 'Paid'].map(tab => (
                     <button key={tab} onClick={() => setInvoiceFilterTab(tab)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${invoiceFilterTab === tab ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}>{tab}</button>
                   ))}
                 </div>
@@ -852,21 +955,21 @@ _Thank you for choosing Genuine Fix!_`;
           </div>
         )}
 
-        {/* INVENTORY / STOCK TAB */}
+        {/* INVENTORY / PARTS STOCK TAB */}
         {activeTab === 'inventory' && (
           <div className="space-y-6 animate-in fade-in duration-300">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-white">Inventory & Stock Management</h2>
+              <h2 className="text-xl font-bold text-white">Parts & Accessories Inventory</h2>
             </div>
 
             <form onSubmit={handleAddPart} className="bg-[#0F1420] border border-slate-800 p-6 rounded-3xl grid grid-cols-1 md:grid-cols-4 gap-4 shadow-xl">
               <select value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none">
                 {categories.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
-              <input type="text" placeholder="Part Name" value={newPart.name} onChange={e => setNewPart({...newPart, name: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" />
-              <input type="number" placeholder="Stock Quantity" value={newPart.stock} onChange={e => setNewPart({...newPart, stock: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" />
+              <input type="text" placeholder="Part Name" value={newPart.name} onChange={e => setNewPart({...newPart, name: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" required />
+              <input type="number" placeholder="Stock Quantity" value={newPart.stock} onChange={e => setNewPart({...newPart, stock: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" required />
               <input type="number" placeholder="Cost Price (NPR)" value={newPart.costPrice} onChange={e => setNewPart({...newPart, costPrice: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" />
-              <input type="number" placeholder="Selling Price (NPR)" value={newPart.price} onChange={e => setNewPart({...newPart, price: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" />
+              <input type="number" placeholder="Selling Price (NPR)" value={newPart.price} onChange={e => setNewPart({...newPart, price: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" required />
               <button type="submit" className="md:col-span-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-blue-600/30">Add New Part to Stock</button>
             </form>
 
@@ -906,8 +1009,8 @@ _Thank you for choosing Genuine Fix!_`;
           <div className="space-y-6 animate-in fade-in duration-300">
             <h2 className="text-xl font-bold text-white">Shop Expenses Tracker</h2>
             <form onSubmit={handleAddExpense} className="bg-[#0F1420] border border-slate-800 p-6 rounded-3xl grid grid-cols-1 md:grid-cols-3 gap-4 shadow-xl">
-              <input type="text" placeholder="Expense Description (e.g. Rent, Tea, Electricity)" value={newExpense.description} onChange={e => setNewExpense({...newExpense, description: e.target.value})} className="md:col-span-2 p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" />
-              <input type="number" placeholder="Amount (NPR)" value={newExpense.amount} onChange={e => setNewExpense({...newExpense, amount: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" />
+              <input type="text" placeholder="Expense Description (e.g. Rent, Electricity)" value={newExpense.description} onChange={e => setNewExpense({...newExpense, description: e.target.value})} className="md:col-span-2 p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" required />
+              <input type="number" placeholder="Amount (NPR)" value={newExpense.amount} onChange={e => setNewExpense({...newExpense, amount: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" required />
               <button type="submit" className="md:col-span-3 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-rose-600/30">Add Expense Record</button>
             </form>
 
@@ -945,7 +1048,7 @@ _Thank you for choosing Genuine Fix!_`;
             <div className="bg-[#0F1420] border border-slate-800 p-8 rounded-3xl space-y-6 shadow-xl text-center">
               <div>
                 <h3 className="font-bold text-white text-lg">Download Backup File</h3>
-                <p className="text-xs text-slate-400 mt-1">Export all your repairs, inventory, expenses, and categories into a secure JSON file.</p>
+                <p className="text-xs text-slate-400 mt-1">Export all your repairs, device trading, inventory, expenses into a secure JSON file.</p>
                 <button onClick={exportData} className="mt-4 px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl transition shadow-lg shadow-blue-600/30 inline-flex items-center gap-2">
                   <Download size={18}/> Export Backup Now
                 </button>
@@ -1002,12 +1105,12 @@ _Thank you for choosing Genuine Fix!_`;
         </div>
       )}
 
-      {/* EDIT INVOICE / REPAIR MODAL */}
+      {/* EDIT INVOICE MODAL */}
       {editingInvoice && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-[#0F1420] border border-slate-800 rounded-3xl max-w-xl w-full p-6 space-y-6 shadow-2xl animate-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-              <h3 className="text-lg font-bold text-white">Edit Invoice / Job Sheet #{editingInvoice.id}</h3>
+              <h3 className="text-lg font-bold text-white">Edit Invoice / Record #{editingInvoice.id}</h3>
               <button onClick={() => setEditingInvoice(null)} className="p-2 bg-slate-800 text-slate-400 hover:text-white rounded-xl"><X size={18}/></button>
             </div>
 
@@ -1037,15 +1140,6 @@ _Thank you for choosing Genuine Fix!_`;
               <div>
                 <label className="text-xs text-slate-400 block mb-1">Warranty Days</label>
                 <input type="text" value={editingInvoice.warrantyDays} onChange={e => setEditingInvoice({...editingInvoice, warrantyDays: e.target.value})} className="w-full p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none focus:border-blue-600" />
-              </div>
-              <div>
-                <label className="text-xs text-slate-400 block mb-1">Status</label>
-                <select value={editingInvoice.status} onChange={e => setEditingInvoice({...editingInvoice, status: e.target.value})} className="w-full p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none">
-                  <option value="Pending">Pending</option>
-                  <option value="In Progress">In Progress</option>
-                  <option value="Completed">Completed</option>
-                  <option value="Delivered">Delivered</option>
-                </select>
               </div>
 
               <div className="flex justify-end gap-3 pt-4">
