@@ -1210,7 +1210,7 @@ _Thank you for choosing Genuine Fix!_`;
               <div className="bg-[#0F172A] text-white p-6 flex flex-wrap justify-between items-start gap-4">
                 <div>
                   <h2 className="text-2xl font-black tracking-tight">GENUINE FIX</h2>
-                  <p className="text-xs font-bold text-[#38BDF8] tracking-wide mt-0.5">PROFESSIONAL LAPTOP & MOBILE REPAIR & TRADING CENTER</p>
+                  <p className="text-xs font-bold text-[#38BDF8] tracking-wide mt-0.5">LAPTOP & SMARTPHONE REPAIR</p>
                   <p className="text-xs text-[#94A3B8] mt-1">Taalchowk, Lekhnath, Pokhara | Phone: 9765676982</p>
                 </div>
                 <div className="text-right">
