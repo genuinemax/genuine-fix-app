@@ -477,7 +477,7 @@ export default function App() {
     setEditingInvoice(null);
   };
 
-  const downloadInvoiceImage = (inv) => {
+  const generateInvoiceCanvas = (inv) => {
     const canvas = document.createElement('canvas');
     canvas.width = 800;
     canvas.height = 1100;
@@ -631,11 +631,31 @@ export default function App() {
     ctx.lineTo(730, footerY + 105);
     ctx.stroke();
 
+    return canvas;
+  };
+
+  const downloadInvoiceImage = (inv) => {
+    const canvas = generateInvoiceCanvas(inv);
     const dataUrl = canvas.toDataURL('image/png');
     const link = document.createElement('a');
     link.href = dataUrl;
     link.download = `Invoice_${inv.id}_${inv.customerName.replace(/\s+/g, '_')}.png`;
     link.click();
+  };
+
+  const printInvoice = (inv) => {
+    const canvas = generateInvoiceCanvas(inv);
+    const dataUrl = canvas.toDataURL('image/png');
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <html>
+        <head><title>Print Invoice #${inv.id}</title></head>
+        <body style="margin:0; display:flex; justify-content:center; align-items:center; height:100vh; background:#fff;">
+          <img src="${dataUrl}" style="max-width:100%; height:auto;" onload="window.print();window.close();" />
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
   };
 
   const sendToWhatsApp = (inv) => {
@@ -1129,7 +1149,7 @@ _Thank you for choosing Genuine Fix!_`;
             <div className={`${t.cardBg} border ${t.border} p-8 rounded-3xl space-y-6 shadow-xl`}>
               <div>
                 <h3 className={`font-bold ${t.textMain} text-lg mb-1`}>🎨 GUI Theme Varieties (आँखालाई आरामदायी बनाउने सेटिङ)</h3>
-                <p className={`text-xs ${t.textMuted} mb-6`}>कलो थिममा धेरै उज्यालो वा कन्ट्रास्ट भएर आँखा दुखेको वा चराएको छ भने यहाँबाट नरम (Soft Dim) वा लाइट (Light) थिम छान्नुहोस्[cite: 9]。</p>
+                <p className={`text-xs ${t.textMuted} mb-6`}>कलो थिममा धेरै उज्यालो वा कन्ट्रास्ट भएर आँखा दुखेको वा चराएको छ भने यहाँबाट नरम (Soft Dim) वा लाइट (Light) थिम छान्नुहोस्。</p>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <button 
@@ -1169,7 +1189,7 @@ _Thank you for choosing Genuine Fix!_`;
 
       </main>
 
-      {/* INVOICE PREVIEW MODAL - FIXED CLOSE & VIEWPORT */}
+      {/* INVOICE PREVIEW MODAL - EXACT PRO IMAGE MATCH + PRINT & DOWNLOAD */}
       {selectedInvoice && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-start justify-center p-4 overflow-y-auto py-10">
           <div className="bg-white text-gray-900 rounded-3xl max-w-2xl w-full p-6 space-y-6 shadow-2xl relative my-auto">
@@ -1183,119 +1203,124 @@ _Thank you for choosing Genuine Fix!_`;
               <button onClick={() => setSelectedInvoice(null)} className="p-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition shadow"><X size={18}/></button>
             </div>
 
-            {/* Professional Invoice Sheet Body */}
-            <div className="bg-slate-50 border border-slate-200 p-6 rounded-2xl space-y-6">
+            {/* Professional Invoice Sheet Body - Exact Pro Image Style */}
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
               
-              {/* Company & Invoice Info Header */}
-              <div className="flex justify-between items-start border-b border-slate-200 pb-4">
+              {/* Dark Header Banner */}
+              <div className="bg-[#0F172A] text-white p-6 flex flex-wrap justify-between items-start gap-4">
                 <div>
-                  <h2 className="text-xl font-black text-blue-600">Genuine Fix</h2>
-                  <p className="text-xs font-medium text-slate-600">Laptop & Mobile Repair Center</p>
-                  <p className="text-xs text-slate-500">Taalchowk, Pokhara | Ph: 9765676982</p>
+                  <h2 className="text-2xl font-black tracking-tight">GENUINE FIX</h2>
+                  <p className="text-xs font-bold text-[#38BDF8] tracking-wide mt-0.5">PROFESSIONAL LAPTOP & MOBILE REPAIR & TRADING CENTER</p>
+                  <p className="text-xs text-[#94A3B8] mt-1">Taalchowk, Lekhnath, Pokhara | Phone: 9765676982</p>
                 </div>
                 <div className="text-right">
-                  <h3 className="text-base font-extrabold uppercase tracking-widest text-slate-800">INVOICE</h3>
-                  <p className="text-xs font-bold text-blue-600 font-mono">#{selectedInvoice.id}</p>
-                  <p className="text-xs text-slate-500">{selectedInvoice.dateTime}</p>
+                  <h3 className="text-base font-extrabold font-mono text-[#38BDF8]">INVOICE #{selectedInvoice.id}</h3>
+                  <p className="text-xs text-[#E2E8F0] mt-1">Date: {selectedInvoice.dateTime}</p>
+                  <p className={`text-xs font-bold mt-1 ${Number(selectedInvoice.dueAmount) <= 0 ? 'text-[#34D399]' : 'text-[#F87171]'}`}>
+                    Status: {Number(selectedInvoice.dueAmount) <= 0 ? 'PAID IN FULL' : 'DUE PENDING'}
+                  </p>
                 </div>
               </div>
 
-              {/* Customer Info (Bill To) */}
-              <div className="grid grid-cols-2 gap-4 bg-white p-4 rounded-xl border border-slate-200 text-xs">
-                <div>
-                  <p className="text-slate-400 font-bold uppercase mb-1">Bill To:</p>
-                  <p className="text-sm font-bold text-slate-900">{selectedInvoice.customerName}</p>
-                  <p className="text-slate-600">Phone: {selectedInvoice.phone}</p>
-                  {selectedInvoice.citizenshipNo && <p className="text-slate-600">Citizenship No: {selectedInvoice.citizenshipNo}</p>}
+              <div className="p-6 space-y-6">
+                {/* Bill To & Details Card */}
+                <div className="grid grid-cols-2 gap-4 bg-white p-4 rounded-xl border border-slate-200 text-xs">
+                  <div>
+                    <p className="text-slate-400 font-bold uppercase mb-1">BILL TO:</p>
+                    <p className="text-sm font-bold text-slate-900">{selectedInvoice.customerName}</p>
+                    <p className="text-slate-600">Phone: {selectedInvoice.phone}</p>
+                    {selectedInvoice.citizenshipNo && <p className="text-slate-600">Citizenship No: {selectedInvoice.citizenshipNo}</p>}
+                  </div>
+                  <div className="text-right">
+                    <p className="text-slate-400 font-bold uppercase mb-1">Service Details:</p>
+                    <p className="font-semibold text-slate-800">{selectedInvoice.model || selectedInvoice.deviceType}</p>
+                    <p className="text-blue-600 font-bold mt-1">Warranty: {selectedInvoice.warrantyDays || '30'} Days</p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-slate-400 font-bold uppercase mb-1">Service Details:</p>
-                  <p className="font-semibold text-slate-800">{selectedInvoice.model || selectedInvoice.deviceType}</p>
-                  <p className="text-blue-600 font-bold">Warranty: {selectedInvoice.warrantyDays || '30'} Days</p>
-                </div>
-              </div>
 
-              {/* Items Table */}
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs text-left border-collapse">
-                  <thead>
-                    <tr className="bg-slate-200 text-slate-700 uppercase font-bold">
-                      <th className="p-2.5 rounded-l-lg">Description / Items</th>
-                      <th className="p-2.5 text-center">Qty</th>
-                      <th className="p-2.5 text-right rounded-r-lg">Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200">
-                    {selectedInvoice.items && selectedInvoice.items.length > 0 ? (
-                      selectedInvoice.items.map((item, idx) => (
-                        <tr key={idx}>
-                          <td className="p-2.5 font-medium text-slate-900">{item.name}</td>
-                          <td className="p-2.5 text-center text-slate-700">{item.qty || 1}</td>
-                          <td className="p-2.5 text-right font-bold text-slate-900">NPR {(item.price || 0) * (item.qty || 1)}</td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td className="p-2.5 font-medium text-slate-900">{selectedInvoice.model || selectedInvoice.issue}</td>
-                        <td className="p-2.5 text-center text-slate-700">1</td>
-                        <td className="p-2.5 text-right font-bold text-slate-900">NPR {selectedInvoice.totalCost}</td>
+                {/* Items Table */}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs text-left border-collapse">
+                    <thead>
+                      <tr className="bg-[#1E293B] text-white uppercase font-bold">
+                        <th className="p-3 rounded-l-lg w-12">S.N.</th>
+                        <th className="p-3">Item / Description</th>
+                        <th className="p-3 text-center w-16">QTY</th>
+                        <th className="p-3 text-right">Price (NPR)</th>
+                        <th className="p-3 text-right rounded-r-lg">Total</th>
                       </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200">
+                      {selectedInvoice.items && selectedInvoice.items.length > 0 ? (
+                        selectedInvoice.items.map((item, idx) => (
+                          <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-[#F8FAFC]'}>
+                            <td className="p-3 font-medium text-slate-600">{idx + 1}</td>
+                            <td className="p-3 font-medium text-slate-900">{item.name}</td>
+                            <td className="p-3 text-center text-slate-700">{item.qty || 1}</td>
+                            <td className="p-3 text-right text-slate-800">{item.price || 0}</td>
+                            <td className="p-3 text-right font-bold text-slate-900">{(item.price || 0) * (item.qty || 1)}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr className="bg-white">
+                          <td className="p-3 font-medium text-slate-600">1</td>
+                          <td className="p-3 font-medium text-slate-900">{selectedInvoice.model || selectedInvoice.issue}</td>
+                          <td className="p-3 text-center text-slate-700">1</td>
+                          <td className="p-3 text-right text-slate-800">{selectedInvoice.totalCost}</td>
+                          <td className="p-3 text-right font-bold text-slate-900">{selectedInvoice.totalCost}</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
 
-              {/* Totals Section */}
-              <div className="flex justify-end pt-2">
-                <div className="w-56 space-y-1.5 text-xs bg-white p-3 rounded-xl border border-slate-200">
-                  <div className="flex justify-between text-slate-600">
-                    <span>Subtotal:</span>
-                    <span className="font-bold text-slate-900">NPR {selectedInvoice.totalCost}</span>
-                  </div>
-                  <div className="flex justify-between text-slate-600">
-                    <span>Amount Paid:</span>
-                    <span className="font-bold text-emerald-600">NPR {selectedInvoice.paidAmount}</span>
-                  </div>
-                  <div className="border-t border-slate-200 pt-1.5 flex justify-between text-sm font-bold">
-                    <span className="text-slate-800">Balance Due:</span>
-                    <span className={Number(selectedInvoice.dueAmount) > 0 ? 'text-rose-600' : 'text-emerald-600'}>
-                      NPR {selectedInvoice.dueAmount}
-                    </span>
+                {/* Totals Section */}
+                <div className="flex justify-end pt-2">
+                  <div className="w-64 space-y-2 text-xs bg-[#F8FAFC] p-4 rounded-xl border border-slate-200">
+                    <div className="flex justify-between text-slate-600">
+                      <span>Subtotal:</span>
+                      <span className="font-bold text-slate-900">NPR {selectedInvoice.totalCost}</span>
+                    </div>
+                    <div className="flex justify-between text-slate-600">
+                      <span>Amount Paid:</span>
+                      <span className="font-bold text-emerald-600">NPR {selectedInvoice.paidAmount}</span>
+                    </div>
+                    <div className="border-t border-slate-300 pt-2 flex justify-between text-sm font-bold">
+                      <span className="text-slate-800">BALANCE DUE:</span>
+                      <span className={Number(selectedInvoice.dueAmount) > 0 ? 'text-rose-600 font-mono text-base' : 'text-emerald-600 font-mono text-base'}>
+                        NPR {selectedInvoice.dueAmount}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Customer Photos if available */}
-              {(selectedInvoice.customerPhoto || selectedInvoice.citizenshipPhoto) && (
-                <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-200">
-                  {selectedInvoice.customerPhoto && (
-                    <div>
-                      <p className="text-[10px] text-slate-500 mb-1 font-semibold">Customer Photo:</p>
-                      <img src={selectedInvoice.customerPhoto} alt="Customer" className="w-full h-20 object-cover rounded-lg border border-slate-300" />
-                    </div>
-                  )}
-                  {selectedInvoice.citizenshipPhoto && (
-                    <div>
-                      <p className="text-[10px] text-slate-500 mb-1 font-semibold">Citizenship Photo:</p>
-                      <img src={selectedInvoice.citizenshipPhoto} alt="Citizenship" className="w-full h-20 object-cover rounded-lg border border-slate-300" />
-                    </div>
-                  )}
+                {/* Warranty & Terms box */}
+                <div className="bg-[#FEF9C3] border border-[#FEF08A] p-4 rounded-xl text-xs space-y-1">
+                  <p className="font-bold text-[#854D0E] uppercase text-[11px]">Warranty & Trading Terms:</p>
+                  <p className="text-[#713F12]">Warranty covers devices/parts as specified. Physical or water damage voids all warranty.</p>
+                  <p className="text-[#713F12] font-medium">Thank you for choosing Genuine Fix! Your trusted tech partner.</p>
                 </div>
-              )}
 
-              {/* Terms / Footer */}
-              <div className="text-center text-[11px] text-slate-500 border-t border-slate-200 pt-3">
-                <p>Thank you for choosing Genuine Fix! Physical or water damage voids all warranty.</p>
+                {/* Signature line */}
+                <div className="flex justify-end pt-6">
+                  <div className="text-center w-48">
+                    <div className="border-b border-slate-400 mb-1"></div>
+                    <p className="text-xs font-bold text-slate-800">Authorized Signature</p>
+                  </div>
+                </div>
+
               </div>
-
             </div>
 
-            {/* Action Buttons */}
+            {/* Action Buttons (Download, Print, WhatsApp) */}
             <div className="flex flex-wrap items-center gap-3 pt-2">
-              <button onClick={() => downloadInvoiceImage(selectedInvoice)} className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl transition flex items-center justify-center gap-2 text-sm shadow-lg shadow-blue-600/35">
-                <Download size={16}/> Download Pro Image Bill
+              <button onClick={() => downloadInvoiceImage(selectedInvoice)} className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl transition flex items-center justify-center gap-2 text-xs shadow-lg shadow-blue-600/35">
+                <Download size={16}/> Download Pro Image
               </button>
-              <button onClick={() => sendToWhatsApp(selectedInvoice)} className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl transition flex items-center justify-center gap-2 text-sm shadow-lg shadow-emerald-600/35">
+              <button onClick={() => printInvoice(selectedInvoice)} className="flex-1 py-3 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-2xl transition flex items-center justify-center gap-2 text-xs shadow-lg shadow-amber-600/35">
+                <Printer size={16}/> Print Bill
+              </button>
+              <button onClick={() => sendToWhatsApp(selectedInvoice)} className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl transition flex items-center justify-center gap-2 text-xs shadow-lg shadow-emerald-600/35">
                 <MessageSquare size={16}/> Send WhatsApp
               </button>
             </div>
