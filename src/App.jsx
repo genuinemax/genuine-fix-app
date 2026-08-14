@@ -293,45 +293,30 @@ export default function App() {
     };
     setRepairs([repairItem, ...repairs]);
     setNewRepair({ customerName: '', phone: '', citizenshipNo: '', customerPhoto: '', citizenshipPhoto: '', deviceType: 'Mobile (Unlock)', model: '', totalCost: '', paidAmount: '', issue: '', warrantyDays: '30' });
-    setSelectedInvoice(repairItem);
-  };
-
-  const handleAddRepair = (e) => {
-    e.preventDefault();
-    const total = Number(newRepair.totalCost || 0);
-    const paid = Number(newRepair.paidAmount || 0);
-    const repairItem = {
-      ...newRepair,
-      id: `GF-${Math.floor(1000 + Math.random() * 9000)}`,
-      customerName: newRepair.customerName || 'Walk-in Customer',
-      phone: newRepair.phone || 'N/A',
-      model: newRepair.model || 'General Device',
-      totalCost: total,
-      paidAmount: paid,
-      dueAmount: total - paid,
-      issue: newRepair.issue || 'General Repair / Unlocking',
-      status: 'Pending',
-      dateTime: getCurrentDateTime(),
-      billType: 'Repair',
-      items: [
-        {
-          name: newRepair.model ? `${newRepair.deviceType} - ${newRepair.model}` : newRepair.deviceType,
-          price: total,
-          qty: 1,
-          remarks: newRepair.issue || 'Repair & Maintenance'
-        }
-      ]
-    };
-    setRepairs([repairItem, ...repairs]);
-    setNewRepair({ 
-      customerName: '', phone: '', citizenshipNo: '', 
-      customerPhoto: '', citizenshipPhoto: '', 
-      deviceType: 'Mobile (Unlock)', model: '', 
-      totalCost: '', paidAmount: '', issue: '', warrantyDays: '30' 
-    });
-    
+    // केवल Job save हुने, Invoice पपअप नखुल्ने
     alert('Job Sheet सफलतापूर्वक Save भयो!');
   };
+
+  const handleAddDevice = (e) => {
+    e.preventDefault();
+    const sellPriceVal = Number(newDevice.sellPrice || 0);
+    const buyPriceVal = Number(newDevice.buyPrice || 0);
+
+    const deviceItem = {
+      id: `DEV-${Math.floor(1000 + Math.random() * 9000)}`,
+      deviceCategory: newDevice.deviceCategory,
+      brandModel: newDevice.brandModel || 'Unknown Device',
+      imeiOrSerial: newDevice.imeiOrSerial || 'N/A',
+      condition: newDevice.condition,
+      partyName: newDevice.partyName || 'Walk-in Party',
+      partyPhone: newDevice.partyPhone || 'N/A',
+      buyPrice: buyPriceVal,
+      sellPrice: sellPriceVal,
+      status: 'In Stock',
+      date: new Date().toISOString().split('T')[0]
+    };
+
+    setDevicesStock([deviceItem, ...devicesStock]);
 
     const deviceInvoice = {
       id: `DVB-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -372,7 +357,7 @@ export default function App() {
       sellPrice: '',
       warrantyDays: '30'
     });
-    setSelectedInvoice(deviceInvoice);
+    alert('Device सफलतापूर्वक Save भयो!');
   };
 
   const handleAddPosItem = () => {
@@ -443,7 +428,7 @@ export default function App() {
 
     setRepairs([newBill, ...repairs]);
     setPosBill({ customerName: '', phone: '', items: [{ name: '', price: '', qty: 1 }], paidAmount: '', warrantyDays: '7' });
-    setSelectedInvoice(newBill);
+    alert('Accessories Bill सफलतापूर्वक Save भयो!');
   };
 
   const handleAddPart = (e) => {
@@ -855,7 +840,7 @@ _Thank you for choosing Genuine Fix!_`;
                 </div>
               </div>
               
-              <button type="submit" className="md:col-span-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-blue-600/35">Save Job Sheet & Open Professional Invoice</button>
+              <button type="submit" className="md:col-span-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-blue-600/35">Save Job Sheet</button>
             </form>
           </div>
         )}
@@ -1156,7 +1141,7 @@ _Thank you for choosing Genuine Fix!_`;
             <div className={`${t.cardBg} border ${t.border} p-8 rounded-3xl space-y-6 shadow-xl`}>
               <div>
                 <h3 className={`font-bold ${t.textMain} text-lg mb-1`}>🎨 GUI Theme Varieties (आँखालाई आरामदायी बनाउने सेटिङ)</h3>
-                <p className={`text-xs ${t.textMuted} mb-6`}>कलो थिममा धेरै उज्यालो वा कन्ट्रास्ट भएर आँखा दुखेको वा चराएको छ भने यहाँबाट नरम (Soft Dim) वा लाइट (Light) थिम छान्नुहोस्[cite: 9]।</p>
+                <p className={`text-xs ${t.textMuted} mb-6`}>कलो थिममा धेरै उज्यालो वा कन्ट्रास्ट भएर आँखा दुखेको वा चराएको छ भने यहाँबाट नरम (Soft Dim) वा लाइट (Light) थिम छान्नुहोस्[cite: 9]。</p>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <button 
