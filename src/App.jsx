@@ -163,6 +163,16 @@ export default function App() {
     return `${date} ${time}`;
   };
 
+  const handleImageUpload = (e, field) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setNewRepair(prev => ({ ...prev, [field]: reader.result }));
+    };
+    reader.readAsDataURL(file);
+  };
+
   const totalRevenue = repairs.reduce((acc, curr) => acc + Number(curr.totalCost || 0), 0);
   const totalDue = repairs.reduce((acc, curr) => acc + Number(curr.dueAmount || 0), 0);
   const totalExp = expenses.reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
@@ -240,7 +250,6 @@ export default function App() {
     setSelectedInvoice(repairItem);
   };
 
-  // NEW: Add Device (Buy/Trade-in or New Phone/Laptop Stock)
   const handleAddDevice = (e) => {
     e.preventDefault();
     const sellPriceVal = Number(newDevice.sellPrice || 0);
@@ -262,7 +271,6 @@ export default function App() {
 
     setDevicesStock([deviceItem, ...devicesStock]);
 
-    // Also optionally create a sales/purchase record invoice if needed
     const deviceInvoice = {
       id: `DVB-${Math.floor(1000 + Math.random() * 9000)}`,
       customerName: newDevice.partyName || 'Walk-in Customer',
@@ -434,9 +442,6 @@ export default function App() {
     setEditingInvoice(null);
   };
 
-  // ==========================================
-  // PROFESSIONAL & MODERN INVOICE CANVAS GENERATOR
-  // ==========================================
   const downloadInvoiceImage = (inv) => {
     const canvas = document.createElement('canvas');
     canvas.width = 800;
@@ -751,7 +756,7 @@ _Thank you for choosing Genuine Fix!_`;
           </div>
         )}
 
-        {/* REPAIRS / JOB SHEETS TAB */}
+        {/* REPAIRS / JOB SHEETS TAB WITH PHOTO UPLOADS */}
         {activeTab === 'repairs' && (
           <div className="space-y-6 animate-in fade-in duration-300">
             <h2 className="text-xl font-bold text-white">Create Repair / Unlocking Job Sheet</h2>
@@ -773,6 +778,20 @@ _Thank you for choosing Genuine Fix!_`;
               <input type="number" placeholder="Paid Amount (NPR)" value={newRepair.paidAmount} onChange={e => setNewRepair({...newRepair, paidAmount: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" />
               <input type="text" placeholder="Warranty Days (e.g. 30 Days)" value={newRepair.warrantyDays} onChange={e => setNewRepair({...newRepair, warrantyDays: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" />
               <input type="text" placeholder="Issue / Details (Optional)" value={newRepair.issue} onChange={e => setNewRepair({...newRepair, issue: e.target.value})} className="md:col-span-2 p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" />
+
+              {/* PHOTO UPLOAD SECTION ADDED HERE */}
+              <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-950 p-4 rounded-2xl border border-slate-800">
+                <div>
+                  <label className="text-xs font-bold text-slate-400 block mb-1">Customer Photo (Optional)</label>
+                  <input type="file" accept="image/*" onChange={e => handleImageUpload(e, 'customerPhoto')} className="text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer" />
+                  {newRepair.customerPhoto && <span className="text-xs text-emerald-400 mt-1 block font-semibold">✓ Customer Photo Attached</span>}
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-400 block mb-1">Citizenship Photo (Optional)</label>
+                  <input type="file" accept="image/*" onChange={e => handleImageUpload(e, 'citizenshipPhoto')} className="text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer" />
+                  {newRepair.citizenshipPhoto && <span className="text-xs text-emerald-400 mt-1 block font-semibold">✓ Citizenship Photo Attached</span>}
+                </div>
+              </div>
               
               <button type="submit" className="md:col-span-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-blue-600/35">Save Job Sheet & Open Professional Invoice</button>
             </form>
@@ -1070,7 +1089,7 @@ _Thank you for choosing Genuine Fix!_`;
 
       </main>
 
-      {/* INVOICE PREVIEW MODAL */}
+      {/* INVOICE PREVIEW MODAL WITH PHOTO DISPLAY */}
       {selectedInvoice && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-[#0F1420] border border-slate-800 rounded-3xl max-w-xl w-full p-6 space-y-6 shadow-2xl animate-in zoom-in-95 duration-200">
@@ -1085,8 +1104,30 @@ _Thank you for choosing Genuine Fix!_`;
             <div className="space-y-3 bg-slate-950 p-4 rounded-2xl border border-slate-800 text-sm">
               <div className="flex justify-between"><span className="text-slate-400">Customer Name:</span><span className="font-bold text-white">{selectedInvoice.customerName}</span></div>
               <div className="flex justify-between"><span className="text-slate-400">Phone:</span><span className="font-bold text-white">{selectedInvoice.phone}</span></div>
+              {selectedInvoice.citizenshipNo && (
+                <div className="flex justify-between"><span className="text-slate-400">Citizenship No:</span><span className="font-bold text-white">{selectedInvoice.citizenshipNo}</span></div>
+              )}
               <div className="flex justify-between"><span className="text-slate-400">Service / Items:</span><span className="font-bold text-white">{selectedInvoice.model}</span></div>
               <div className="flex justify-between"><span className="text-slate-400">Warranty:</span><span className="text-blue-400 font-bold">{selectedInvoice.warrantyDays || '30'} Days</span></div>
+              
+              {/* DISPLAY PHOTOS IN PREVIEW IF AVAILABLE */}
+              {(selectedInvoice.customerPhoto || selectedInvoice.citizenshipPhoto) && (
+                <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-800">
+                  {selectedInvoice.customerPhoto && (
+                    <div>
+                      <p className="text-xs text-slate-400 mb-1">Customer Photo:</p>
+                      <img src={selectedInvoice.customerPhoto} alt="Customer" className="w-full h-24 object-cover rounded-xl border border-slate-800" />
+                    </div>
+                  )}
+                  {selectedInvoice.citizenshipPhoto && (
+                    <div>
+                      <p className="text-xs text-slate-400 mb-1">Citizenship Photo:</p>
+                      <img src={selectedInvoice.citizenshipPhoto} alt="Citizenship" className="w-full h-24 object-cover rounded-xl border border-slate-800" />
+                    </div>
+                  )}
+                </div>
+              )}
+
               <hr className="border-slate-800 my-2" />
               <div className="flex justify-between"><span className="text-slate-400">Total Cost:</span><span className="font-bold text-white">NPR {selectedInvoice.totalCost}</span></div>
               <div className="flex justify-between"><span className="text-slate-400">Paid Amount:</span><span className="font-bold text-emerald-400">NPR {selectedInvoice.paidAmount}</span></div>
