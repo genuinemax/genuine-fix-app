@@ -4,7 +4,7 @@ import Login from './Login';
 import React, { useState, useEffect } from 'react';
 import { 
   Wrench, Package, FileText, LayoutDashboard, DollarSign, 
-  Trash2, Printer, ShieldCheck, User, CreditCard, Search, Eye, ChevronRight, Download, Upload, ShoppingBag, MessageSquare, Plus, AlertTriangle, ArrowUpRight, ArrowDownRight, X, CheckCircle2, Image as ImageIcon, Pencil, Smartphone, Laptop
+  Trash2, Printer, ShieldCheck, User, CreditCard, Search, Eye, ChevronRight, Download, Upload, ShoppingBag, MessageSquare, Plus, AlertTriangle, ArrowUpRight, ArrowDownRight, X, CheckCircle2, Image as ImageIcon, Pencil, Smartphone, Laptop, Settings, Sun, Moon, Monitor
 } from 'lucide-react';
 
 export default function App() {
@@ -14,6 +14,53 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('invoices');
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // NEW: Theme / GUI Variety State (Default to 'dim' for eye comfort)
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem('gf_theme') || 'dim';
+  });
+
+  // Theme configuration dictionary
+  const themes = {
+    dim: {
+      appBg: 'bg-[#181B22] text-slate-200',
+      navBg: 'bg-[#212631]/90 border-slate-700',
+      cardBg: 'bg-[#212631] border-slate-700',
+      cardSecondary: 'bg-[#1b1f28] border-slate-700',
+      inputBg: 'bg-[#14171f] border-slate-700 text-slate-100 placeholder:text-slate-500',
+      tableHeader: 'bg-[#14171f]/80 text-slate-300 border-slate-700',
+      tableDivide: 'divide-slate-700/50',
+      border: 'border-slate-700',
+      textMuted: 'text-slate-400',
+      textMain: 'text-slate-100'
+    },
+    dark: {
+      appBg: 'bg-[#0B0F17] text-slate-200',
+      navBg: 'bg-[#0F1420]/85 border-slate-800',
+      cardBg: 'bg-[#0F1420] border-slate-800',
+      cardSecondary: 'bg-slate-900/80 border-slate-800',
+      inputBg: 'bg-slate-950 border-slate-800 text-white placeholder:text-slate-600',
+      tableHeader: 'bg-slate-950/60 text-slate-400 border-slate-800',
+      tableDivide: 'divide-slate-800/50',
+      border: 'border-slate-800',
+      textMuted: 'text-slate-400',
+      textMain: 'text-white'
+    },
+    light: {
+      appBg: 'bg-slate-100 text-slate-800',
+      navBg: 'bg-white/90 border-slate-200 shadow-sm',
+      cardBg: 'bg-white border-slate-200 shadow-sm',
+      cardSecondary: 'bg-slate-50 border-slate-200',
+      inputBg: 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400',
+      tableHeader: 'bg-slate-50 text-slate-600 border-slate-200',
+      tableDivide: 'divide-slate-200',
+      border: 'border-slate-200',
+      textMuted: 'text-slate-500',
+      textMain: 'text-slate-900'
+    }
+  };
+
+  const t = themes[theme] || themes.dim;
 
   // Dynamic Categories State with LocalStorage
   const [categories, setCategories] = useState(() => {
@@ -62,7 +109,6 @@ export default function App() {
     ];
   });
 
-  // NEW: Devices Inventory & Buy/Sell (2nd Hand & New Phones/Laptops)
   const [devicesStock, setDevicesStock] = useState(() => {
     const saved = localStorage.getItem('gf_devices_stock');
     return saved ? JSON.parse(saved) : [
@@ -104,7 +150,6 @@ export default function App() {
     warrantyDays: '7'
   });
 
-  // NEW: Device Buy/Sell Form State
   const [newDevice, setNewDevice] = useState({
     deviceCategory: 'Second-Hand Phone',
     brandModel: '',
@@ -136,6 +181,7 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
+  useEffect(() => { localStorage.setItem('gf_theme', theme); }, [theme]);
   useEffect(() => { localStorage.setItem('gf_categories', JSON.stringify(categories)); }, [categories]);
   useEffect(() => { localStorage.setItem('gf_repairs', JSON.stringify(repairs)); }, [repairs]);
   useEffect(() => { localStorage.setItem('gf_inventory', JSON.stringify(inventory)); }, [inventory]);
@@ -648,21 +694,21 @@ _Thank you for choosing Genuine Fix!_`;
   });
 
   return (
-    <div className="min-h-screen bg-[#0B0F17] text-slate-200 font-sans">
+    <div className={`min-h-screen ${t.appBg} font-sans transition-colors duration-200`}>
       {/* Top Navigation Bar */}
-      <nav className="border-b border-slate-800 bg-[#0F1420]/85 backdrop-blur-xl sticky top-0 z-30 shadow-lg">
+      <nav className={`border-b ${t.border} ${t.navBg} backdrop-blur-xl sticky top-0 z-30 shadow-lg`}>
         <div className="max-w-7xl mx-auto px-6 py-4 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl overflow-hidden border border-slate-700 shadow-md bg-slate-900 flex items-center justify-center">
               <img src="/logo.jpg" alt="Genuine Fix Logo" className="w-full h-full object-cover" />
             </div>
             <div>
-              <h1 className="font-extrabold text-lg text-white leading-tight tracking-tight">Genuine Fix</h1>
+              <h1 className={`font-extrabold text-lg ${t.textMain} leading-tight tracking-tight`}>Genuine Fix</h1>
               <p className="text-[10px] text-blue-400 font-bold uppercase tracking-widest">Laptop & Smartphone Repair</p>
             </div>
           </div>
           
-          <div className="flex flex-wrap items-center gap-1.5 bg-slate-900/80 p-1.5 rounded-2xl border border-slate-800">
+          <div className={`flex flex-wrap items-center gap-1.5 ${t.cardSecondary} p-1.5 rounded-2xl border ${t.border}`}>
             {[
               { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
               { id: 'repairs', icon: ShieldCheck, label: 'Job Sheets' },
@@ -672,6 +718,7 @@ _Thank you for choosing Genuine Fix!_`;
               { id: 'inventory', icon: Package, label: 'Parts Stock' },
               { id: 'expenses', icon: DollarSign, label: 'Expenses' },
               { id: 'backup', icon: Download, label: 'Backup' },
+              { id: 'settings', icon: Settings, label: 'Settings' },
             ].map(item => (
               <button 
                 key={item.id}
@@ -679,7 +726,7 @@ _Thank you for choosing Genuine Fix!_`;
                 className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
                   activeTab === item.id 
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' 
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                    : `${t.textMuted} hover:text-white hover:bg-blue-600/10`
                 }`}
               >
                 <item.icon size={15} />
@@ -697,30 +744,30 @@ _Thank you for choosing Genuine Fix!_`;
         {activeTab === 'dashboard' && (
           <div className="space-y-8 animate-in fade-in duration-300">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-gradient-to-br from-blue-500/10 to-transparent border border-slate-800 p-6 rounded-3xl shadow-xl">
+              <div className={`bg-gradient-to-br from-blue-500/10 to-transparent border ${t.border} p-6 rounded-3xl shadow-xl`}>
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Total Revenue</p>
                 <h3 className="text-3xl font-black text-blue-400">NPR {totalRevenue}</h3>
               </div>
-              <div className="bg-gradient-to-br from-emerald-500/10 to-transparent border border-slate-800 p-6 rounded-3xl shadow-xl">
+              <div className={`bg-gradient-to-br from-emerald-500/10 to-transparent border ${t.border} p-6 rounded-3xl shadow-xl`}>
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Total Balance Due</p>
                 <h3 className="text-3xl font-black text-emerald-400">NPR {totalDue}</h3>
               </div>
-              <div className="bg-gradient-to-br from-rose-500/10 to-transparent border border-slate-800 p-6 rounded-3xl shadow-xl">
+              <div className={`bg-gradient-to-br from-rose-500/10 to-transparent border ${t.border} p-6 rounded-3xl shadow-xl`}>
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Shop Expenses</p>
                 <h3 className="text-3xl font-black text-rose-400">NPR {totalExp}</h3>
               </div>
             </div>
 
-            <div className="bg-[#0F1420] border border-slate-800 rounded-3xl p-6 shadow-xl">
+            <div className={`${t.cardBg} border ${t.border} rounded-3xl p-6 shadow-xl`}>
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-bold text-white">Recent Bills & Job Sheets</h2>
+                <h2 className={`text-lg font-bold ${t.textMain}`}>Recent Bills & Job Sheets</h2>
                 <button onClick={() => setActiveTab('invoices')} className="text-blue-400 text-xs font-bold flex items-center gap-1 hover:text-blue-300">
                   View All <ChevronRight size={15}/>
                 </button>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="text-slate-400 font-bold uppercase text-xs border-b border-slate-800">
+                  <thead className={`${t.tableHeader} font-bold uppercase text-xs border-b`}>
                     <tr>
                       <th className="pb-4 text-left">Bill ID</th>
                       <th className="pb-4 text-left">Customer</th>
@@ -730,15 +777,15 @@ _Thank you for choosing Genuine Fix!_`;
                       <th className="pb-4 text-right">Action</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-800/50">
+                  <tbody className={`divide-y ${t.tableDivide}`}>
                     {repairs.slice(0, 5).map(r => (
                       <tr key={r.id}>
                         <td className="py-4 font-mono font-bold text-blue-400">{r.id}</td>
-                        <td className="py-4 text-white font-medium">{r.customerName}</td>
-                        <td className="py-4 text-slate-300">{r.model}</td>
+                        <td className={`py-4 ${t.textMain} font-medium`}>{r.customerName}</td>
+                        <td className={`py-4 ${t.textMuted}`}>{r.model}</td>
                         <td className="py-4 font-bold text-rose-400">NPR {r.dueAmount}</td>
                         <td className="py-4">
-                          <span className="px-3 py-1 rounded-full bg-slate-800 text-slate-300 text-xs font-bold border border-slate-700">
+                          <span className={`px-3 py-1 rounded-full ${t.cardSecondary} ${t.textMuted} text-xs font-bold border ${t.border}`}>
                             {r.status}
                           </span>
                         </td>
@@ -759,13 +806,13 @@ _Thank you for choosing Genuine Fix!_`;
         {/* REPAIRS / JOB SHEETS TAB WITH PHOTO UPLOADS */}
         {activeTab === 'repairs' && (
           <div className="space-y-6 animate-in fade-in duration-300">
-            <h2 className="text-xl font-bold text-white">Create Repair / Unlocking Job Sheet</h2>
-            <form onSubmit={handleAddRepair} className="bg-[#0F1420] border border-slate-800 p-6 rounded-3xl grid grid-cols-1 md:grid-cols-3 gap-4 shadow-xl">
-              <input type="text" placeholder="Customer Full Name (Optional)" value={newRepair.customerName} onChange={e => setNewRepair({...newRepair, customerName: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none focus:border-blue-600" />
-              <input type="text" placeholder="Phone Number (e.g. 98xxxxxxxx)" value={newRepair.phone} onChange={e => setNewRepair({...newRepair, phone: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none focus:border-blue-600" />
-              <input type="text" placeholder="Citizenship No. (Optional)" value={newRepair.citizenshipNo} onChange={e => setNewRepair({...newRepair, citizenshipNo: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none focus:border-blue-600" />
+            <h2 className={`text-xl font-bold ${t.textMain}`}>Create Repair / Unlocking Job Sheet</h2>
+            <form onSubmit={handleAddRepair} className={`${t.cardBg} border ${t.border} p-6 rounded-3xl grid grid-cols-1 md:grid-cols-3 gap-4 shadow-xl`}>
+              <input type="text" placeholder="Customer Full Name (Optional)" value={newRepair.customerName} onChange={e => setNewRepair({...newRepair, customerName: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`} />
+              <input type="text" placeholder="Phone Number (e.g. 98xxxxxxxx)" value={newRepair.phone} onChange={e => setNewRepair({...newRepair, phone: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`} />
+              <input type="text" placeholder="Citizenship No. (Optional)" value={newRepair.citizenshipNo} onChange={e => setNewRepair({...newRepair, citizenshipNo: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`} />
 
-              <select value={newRepair.deviceType} onChange={e => setNewRepair({...newRepair, deviceType: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none">
+              <select value={newRepair.deviceType} onChange={e => setNewRepair({...newRepair, deviceType: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}>
                 <option value="Laptop Repair">Laptop Repair</option>
                 <option value="Mobile Repair">Mobile Repair</option>
                 <option value="Mobile (Unlock)">Mobile (Unlock)</option>
@@ -773,14 +820,13 @@ _Thank you for choosing Genuine Fix!_`;
                 <option value="Tablet Repair">Tablet Repair</option>
               </select>
 
-              <input type="text" placeholder="Device Model (Optional)" value={newRepair.model} onChange={e => setNewRepair({...newRepair, model: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" />
-              <input type="number" placeholder="Total Cost (NPR)" value={newRepair.totalCost} onChange={e => setNewRepair({...newRepair, totalCost: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" />
-              <input type="number" placeholder="Paid Amount (NPR)" value={newRepair.paidAmount} onChange={e => setNewRepair({...newRepair, paidAmount: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" />
-              <input type="text" placeholder="Warranty Days (e.g. 30 Days)" value={newRepair.warrantyDays} onChange={e => setNewRepair({...newRepair, warrantyDays: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" />
-              <input type="text" placeholder="Issue / Details (Optional)" value={newRepair.issue} onChange={e => setNewRepair({...newRepair, issue: e.target.value})} className="md:col-span-2 p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" />
+              <input type="text" placeholder="Device Model (Optional)" value={newRepair.model} onChange={e => setNewRepair({...newRepair, model: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+              <input type="number" placeholder="Total Cost (NPR)" value={newRepair.totalCost} onChange={e => setNewRepair({...newRepair, totalCost: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+              <input type="number" placeholder="Paid Amount (NPR)" value={newRepair.paidAmount} onChange={e => setNewRepair({...newRepair, paidAmount: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+              <input type="text" placeholder="Warranty Days (e.g. 30 Days)" value={newRepair.warrantyDays} onChange={e => setNewRepair({...newRepair, warrantyDays: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+              <input type="text" placeholder="Issue / Details (Optional)" value={newRepair.issue} onChange={e => setNewRepair({...newRepair, issue: e.target.value})} className={`md:col-span-2 p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
 
-              {/* PHOTO UPLOAD SECTION ADDED HERE */}
-              <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-950 p-4 rounded-2xl border border-slate-800">
+              <div className={`md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-4 ${t.cardSecondary} p-4 rounded-2xl border ${t.border}`}>
                 <div>
                   <label className="text-xs font-bold text-slate-400 block mb-1">Customer Photo (Optional)</label>
                   <input type="file" accept="image/*" onChange={e => handleImageUpload(e, 'customerPhoto')} className="text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer" />
@@ -798,39 +844,39 @@ _Thank you for choosing Genuine Fix!_`;
           </div>
         )}
 
-        {/* NEW TAB: PHONE & LAPTOP TRADING (BUY / SELL 2ND HAND & NEW) */}
+        {/* DEVICES TAB */}
         {activeTab === 'devices' && (
           <div className="space-y-6 animate-in fade-in duration-300">
             <div>
-              <h2 className="text-xl font-bold text-white">📱 Second-Hand & New Phone / Laptop Trading</h2>
-              <p className="text-xs text-slate-400 mt-0.5">Record 2nd-hand phone/laptop buybacks, trade-ins, or new device sales with IMEI & customer details.</p>
+              <h2 className={`text-xl font-bold ${t.textMain}`}>📱 Second-Hand & New Phone / Laptop Trading</h2>
+              <p className={`text-xs ${t.textMuted} mt-0.5`}>Record 2nd-hand phone/laptop buybacks, trade-ins, or new device sales with IMEI & customer details.</p>
             </div>
 
-            <form onSubmit={handleAddDevice} className="bg-[#0F1420] border border-slate-800 p-6 rounded-3xl grid grid-cols-1 md:grid-cols-3 gap-4 shadow-xl">
-              <select value={newDevice.deviceCategory} onChange={e => setNewDevice({...newDevice, deviceCategory: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none">
+            <form onSubmit={handleAddDevice} className={`${t.cardBg} border ${t.border} p-6 rounded-3xl grid grid-cols-1 md:grid-cols-3 gap-4 shadow-xl`}>
+              <select value={newDevice.deviceCategory} onChange={e => setNewDevice({...newDevice, deviceCategory: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}>
                 <option value="Second-Hand Phone">Second-Hand Phone</option>
                 <option value="Second-Hand Laptop">Second-Hand Laptop</option>
                 <option value="New Phone">New Phone (Brand New)</option>
                 <option value="New Laptop">New Laptop (Brand New)</option>
               </select>
 
-              <input type="text" placeholder="Brand & Model (e.g. iPhone 13 / Dell Inspiron)" value={newDevice.brandModel} onChange={e => setNewDevice({...newDevice, brandModel: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" required />
-              <input type="text" placeholder="IMEI Number or Serial No." value={newDevice.imeiOrSerial} onChange={e => setNewDevice({...newDevice, imeiOrSerial: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" required />
+              <input type="text" placeholder="Brand & Model (e.g. iPhone 13 / Dell Inspiron)" value={newDevice.brandModel} onChange={e => setNewDevice({...newDevice, brandModel: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
+              <input type="text" placeholder="IMEI Number or Serial No." value={newDevice.imeiOrSerial} onChange={e => setNewDevice({...newDevice, imeiOrSerial: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
               
-              <input type="text" placeholder="Condition / Specs (e.g. Battery 90%, Scratchless)" value={newDevice.condition} onChange={e => setNewDevice({...newDevice, condition: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" />
-              <input type="text" placeholder="Customer / Party Name" value={newDevice.partyName} onChange={e => setNewDevice({...newDevice, partyName: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" />
-              <input type="text" placeholder="Customer Phone Number" value={newDevice.partyPhone} onChange={e => setNewDevice({...newDevice, partyPhone: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" />
+              <input type="text" placeholder="Condition / Specs (e.g. Battery 90%, Scratchless)" value={newDevice.condition} onChange={e => setNewDevice({...newDevice, condition: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+              <input type="text" placeholder="Customer / Party Name" value={newDevice.partyName} onChange={e => setNewDevice({...newDevice, partyName: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+              <input type="text" placeholder="Customer Phone Number" value={newDevice.partyPhone} onChange={e => setNewDevice({...newDevice, partyPhone: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
 
-              <input type="number" placeholder="Buy Price / Cost Price (NPR)" value={newDevice.buyPrice} onChange={e => setNewDevice({...newDevice, buyPrice: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" />
-              <input type="number" placeholder="Selling Price (NPR)" value={newDevice.sellPrice} onChange={e => setNewDevice({...newDevice, sellPrice: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" required />
-              <input type="text" placeholder="Warranty (e.g. 3 Months / 6 Months)" value={newDevice.warrantyDays} onChange={e => setNewDevice({...newDevice, warrantyDays: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" />
+              <input type="number" placeholder="Buy Price / Cost Price (NPR)" value={newDevice.buyPrice} onChange={e => setNewDevice({...newDevice, buyPrice: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+              <input type="number" placeholder="Selling Price (NPR)" value={newDevice.sellPrice} onChange={e => setNewDevice({...newDevice, sellPrice: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
+              <input type="text" placeholder="Warranty (e.g. 3 Months / 6 Months)" value={newDevice.warrantyDays} onChange={e => setNewDevice({...newDevice, warrantyDays: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
 
               <button type="submit" className="md:col-span-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-emerald-600/30">Save Device & Generate Bill</button>
             </form>
 
-            <div className="bg-[#0F1420] border border-slate-800 rounded-3xl overflow-hidden shadow-xl">
+            <div className={`${t.cardBg} border ${t.border} rounded-3xl overflow-hidden shadow-xl`}>
               <table className="w-full text-left text-sm">
-                <thead className="bg-slate-950/60 text-slate-400 text-xs uppercase border-b border-slate-800">
+                <thead className={`${t.tableHeader} text-xs uppercase border-b`}>
                   <tr>
                     <th className="p-4">Device & Category</th>
                     <th className="p-4">IMEI / S.N. & Condition</th>
@@ -839,20 +885,20 @@ _Thank you for choosing Genuine Fix!_`;
                     <th className="p-4 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/50">
+                <tbody className={`divide-y ${t.tableDivide}`}>
                   {devicesStock.map(dev => (
                     <tr key={dev.id}>
                       <td className="p-4">
-                        <p className="font-bold text-white">{dev.brandModel}</p>
+                        <p className={`font-bold ${t.textMain}`}>{dev.brandModel}</p>
                         <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 text-[11px] font-bold">{dev.deviceCategory}</span>
                       </td>
                       <td className="p-4">
-                        <p className="font-mono text-xs text-slate-300">{dev.imeiOrSerial}</p>
-                        <p className="text-xs text-slate-400">{dev.condition}</p>
+                        <p className="font-mono text-xs text-blue-400">{dev.imeiOrSerial}</p>
+                        <p className={`text-xs ${t.textMuted}`}>{dev.condition}</p>
                       </td>
                       <td className="p-4">
-                        <p className="font-bold text-white">{dev.partyName}</p>
-                        <p className="text-xs text-slate-400">{dev.partyPhone}</p>
+                        <p className={`font-bold ${t.textMain}`}>{dev.partyName}</p>
+                        <p className={`text-xs ${t.textMuted}`}>{dev.partyPhone}</p>
                       </td>
                       <td className="p-4">
                         <p className="text-xs text-rose-400">Buy: NPR {dev.buyPrice}</p>
@@ -873,34 +919,34 @@ _Thank you for choosing Genuine Fix!_`;
         {activeTab === 'pos' && (
           <div className="space-y-6 animate-in fade-in duration-300">
             <div>
-              <h2 className="text-xl font-bold text-white">Accessories & Parts Direct Billing (POS)</h2>
-              <p className="text-xs text-slate-400 mt-0.5">Pick from stock or type custom item names and prices freely. Stock will deduct automatically.</p>
+              <h2 className={`text-xl font-bold ${t.textMain}`}>Accessories & Parts Direct Billing (POS)</h2>
+              <p className={`text-xs ${t.textMuted} mt-0.5`}>Pick from stock or type custom item names and prices freely. Stock will deduct automatically.</p>
             </div>
 
-            <form onSubmit={handleSavePosBill} className="bg-[#0F1420] border border-slate-800 p-6 rounded-3xl space-y-4 shadow-xl">
+            <form onSubmit={handleSavePosBill} className={`${t.cardBg} border ${t.border} p-6 rounded-3xl space-y-4 shadow-xl`}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input type="text" placeholder="Customer Name (Optional)" value={posBill.customerName} onChange={e => setPosBill({...posBill, customerName: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" />
-                <input type="text" placeholder="Phone Number (Optional)" value={posBill.phone} onChange={e => setPosBill({...posBill, phone: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" />
+                <input type="text" placeholder="Customer Name (Optional)" value={posBill.customerName} onChange={e => setPosBill({...posBill, customerName: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                <input type="text" placeholder="Phone Number (Optional)" value={posBill.phone} onChange={e => setPosBill({...posBill, phone: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
               </div>
 
               <div className="space-y-3">
                 <label className="text-xs font-bold uppercase text-slate-400">Items List</label>
                 {posBill.items.map((item, idx) => (
-                  <div key={idx} className="flex flex-wrap items-center gap-3 bg-slate-950 p-3 rounded-2xl border border-slate-800">
-                    <input type="text" placeholder="Item Name" value={item.name} onChange={e => handlePosItemChange(idx, 'name', e.target.value)} className="flex-1 min-w-[200px] p-2.5 bg-slate-900 border border-slate-800 rounded-xl text-sm text-white focus:outline-none" />
-                    <input type="number" placeholder="Price" value={item.price} onChange={e => handlePosItemChange(idx, 'price', e.target.value)} className="w-28 p-2.5 bg-slate-900 border border-slate-800 rounded-xl text-sm text-white focus:outline-none" />
-                    <input type="number" placeholder="Qty" value={item.qty} onChange={e => handlePosItemChange(idx, 'qty', e.target.value)} className="w-20 p-2.5 bg-slate-900 border border-slate-800 rounded-xl text-sm text-white focus:outline-none" />
+                  <div key={idx} className={`flex flex-wrap items-center gap-3 ${t.cardSecondary} p-3 rounded-2xl border ${t.border}`}>
+                    <input type="text" placeholder="Item Name" value={item.name} onChange={e => handlePosItemChange(idx, 'name', e.target.value)} className={`flex-1 min-w-[200px] p-2.5 ${t.inputBg} border rounded-xl text-sm focus:outline-none`} />
+                    <input type="number" placeholder="Price" value={item.price} onChange={e => handlePosItemChange(idx, 'price', e.target.value)} className={`w-28 p-2.5 ${t.inputBg} border rounded-xl text-sm focus:outline-none`} />
+                    <input type="number" placeholder="Qty" value={item.qty} onChange={e => handlePosItemChange(idx, 'qty', e.target.value)} className={`w-20 p-2.5 ${t.inputBg} border rounded-xl text-sm focus:outline-none`} />
                     {posBill.items.length > 1 && (
                       <button type="button" onClick={() => handleRemovePosItem(idx)} className="p-2.5 bg-rose-500/10 text-rose-400 rounded-xl hover:bg-rose-500/20"><Trash2 size={16}/></button>
                     )}
                   </div>
                 ))}
-                <button type="button" onClick={handleAddPosItem} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold">+ Add Another Item</button>
+                <button type="button" onClick={handleAddPosItem} className={`px-4 py-2 ${t.cardSecondary} hover:opacity-80 ${t.textMain} rounded-xl text-xs font-bold border ${t.border}`}>+ Add Another Item</button>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                <input type="number" placeholder="Paid Amount" value={posBill.paidAmount} onChange={e => setPosBill({...posBill, paidAmount: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" />
-                <input type="text" placeholder="Warranty Days (e.g. 7 Days)" value={posBill.warrantyDays} onChange={e => setPosBill({...posBill, warrantyDays: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" />
+                <input type="number" placeholder="Paid Amount" value={posBill.paidAmount} onChange={e => setPosBill({...posBill, paidAmount: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                <input type="text" placeholder="Warranty Days (e.g. 7 Days)" value={posBill.warrantyDays} onChange={e => setPosBill({...posBill, warrantyDays: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
               </div>
 
               <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-emerald-600/30">Complete Sale & Print Bill</button>
@@ -912,20 +958,20 @@ _Thank you for choosing Genuine Fix!_`;
         {activeTab === 'invoices' && (
           <div className="space-y-6 animate-in fade-in duration-300">
             <div className="flex flex-wrap items-center justify-between gap-4">
-              <h2 className="text-xl font-bold text-white">Invoices & Records</h2>
+              <h2 className={`text-xl font-bold ${t.textMain}`}>Invoices & Records</h2>
               <div className="flex items-center gap-3">
-                <input type="text" placeholder="Search by name, ID, phone..." value={invoiceSearch} onChange={e => setInvoiceSearch(e.target.value)} className="p-2.5 bg-[#0F1420] border border-slate-800 rounded-xl text-sm text-white w-64 focus:outline-none" />
-                <div className="flex bg-[#0F1420] p-1 rounded-xl border border-slate-800">
+                <input type="text" placeholder="Search by name, ID, phone..." value={invoiceSearch} onChange={e => setInvoiceSearch(e.target.value)} className={`p-2.5 ${t.cardBg} border ${t.border} rounded-xl text-sm ${t.textMain} w-64 focus:outline-none`} />
+                <div className={`flex ${t.cardBg} p-1 rounded-xl border ${t.border}`}>
                   {['All', 'Repair', 'Devices', 'Accessories', 'Due', 'Paid'].map(tab => (
-                    <button key={tab} onClick={() => setInvoiceFilterTab(tab)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${invoiceFilterTab === tab ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}>{tab}</button>
+                    <button key={tab} onClick={() => setInvoiceFilterTab(tab)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${invoiceFilterTab === tab ? 'bg-blue-600 text-white' : `${t.textMuted} hover:text-white`}`}>{tab}</button>
                   ))}
                 </div>
               </div>
             </div>
 
-            <div className="bg-[#0F1420] border border-slate-800 rounded-3xl overflow-hidden shadow-xl">
+            <div className={`${t.cardBg} border ${t.border} rounded-3xl overflow-hidden shadow-xl`}>
               <table className="w-full text-left text-sm">
-                <thead className="bg-slate-950/60 text-slate-400 text-xs uppercase border-b border-slate-800">
+                <thead className={`${t.tableHeader} text-xs uppercase border-b`}>
                   <tr>
                     <th className="p-4">Invoice ID & Date</th>
                     <th className="p-4">Customer</th>
@@ -934,20 +980,20 @@ _Thank you for choosing Genuine Fix!_`;
                     <th className="p-4 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/50">
+                <tbody className={`divide-y ${t.tableDivide}`}>
                   {filteredInvoices.map(inv => (
                     <tr key={inv.id}>
                       <td className="p-4 font-mono">
                         <p className="font-bold text-blue-400">{inv.id}</p>
-                        <p className="text-[11px] text-slate-500">{inv.dateTime}</p>
+                        <p className={`text-[11px] ${t.textMuted}`}>{inv.dateTime}</p>
                       </td>
                       <td className="p-4">
-                        <p className="font-bold text-white">{inv.customerName}</p>
-                        <p className="text-xs text-slate-400">{inv.phone}</p>
+                        <p className={`font-bold ${t.textMain}`}>{inv.customerName}</p>
+                        <p className={`text-xs ${t.textMuted}`}>{inv.phone}</p>
                       </td>
-                      <td className="p-4 text-slate-300">{inv.model}</td>
+                      <td className={`p-4 ${t.textMuted}`}>{inv.model}</td>
                       <td className="p-4">
-                        <p className="font-bold text-white">NPR {inv.totalCost}</p>
+                        <p className={`font-bold ${t.textMain}`}>NPR {inv.totalCost}</p>
                         {Number(inv.dueAmount) > 0 ? (
                           <span className="text-xs font-bold text-rose-400">Due: NPR {inv.dueAmount}</span>
                         ) : (
@@ -978,23 +1024,23 @@ _Thank you for choosing Genuine Fix!_`;
         {activeTab === 'inventory' && (
           <div className="space-y-6 animate-in fade-in duration-300">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-white">Parts & Accessories Inventory</h2>
+              <h2 className={`text-xl font-bold ${t.textMain}`}>Parts & Accessories Inventory</h2>
             </div>
 
-            <form onSubmit={handleAddPart} className="bg-[#0F1420] border border-slate-800 p-6 rounded-3xl grid grid-cols-1 md:grid-cols-4 gap-4 shadow-xl">
-              <select value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none">
+            <form onSubmit={handleAddPart} className={`${t.cardBg} border ${t.border} p-6 rounded-3xl grid grid-cols-1 md:grid-cols-4 gap-4 shadow-xl`}>
+              <select value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}>
                 {categories.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
-              <input type="text" placeholder="Part Name" value={newPart.name} onChange={e => setNewPart({...newPart, name: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" required />
-              <input type="number" placeholder="Stock Quantity" value={newPart.stock} onChange={e => setNewPart({...newPart, stock: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" required />
-              <input type="number" placeholder="Cost Price (NPR)" value={newPart.costPrice} onChange={e => setNewPart({...newPart, costPrice: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" />
-              <input type="number" placeholder="Selling Price (NPR)" value={newPart.price} onChange={e => setNewPart({...newPart, price: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" required />
+              <input type="text" placeholder="Part Name" value={newPart.name} onChange={e => setNewPart({...newPart, name: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
+              <input type="number" placeholder="Stock Quantity" value={newPart.stock} onChange={e => setNewPart({...newPart, stock: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
+              <input type="number" placeholder="Cost Price (NPR)" value={newPart.costPrice} onChange={e => setNewPart({...newPart, costPrice: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+              <input type="number" placeholder="Selling Price (NPR)" value={newPart.price} onChange={e => setNewPart({...newPart, price: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
               <button type="submit" className="md:col-span-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-blue-600/30">Add New Part to Stock</button>
             </form>
 
-            <div className="bg-[#0F1420] border border-slate-800 rounded-3xl overflow-hidden shadow-xl">
+            <div className={`${t.cardBg} border ${t.border} rounded-3xl overflow-hidden shadow-xl`}>
               <table className="w-full text-left text-sm">
-                <thead className="bg-slate-950/60 text-slate-400 text-xs uppercase border-b border-slate-800">
+                <thead className={`${t.tableHeader} text-xs uppercase border-b`}>
                   <tr>
                     <th className="p-4">Part Name</th>
                     <th className="p-4">Category</th>
@@ -1003,13 +1049,13 @@ _Thank you for choosing Genuine Fix!_`;
                     <th className="p-4 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/50">
+                <tbody className={`divide-y ${t.tableDivide}`}>
                   {inventory.map(item => (
                     <tr key={item.id}>
-                      <td className="p-4 font-bold text-white">{item.name}</td>
-                      <td className="p-4 text-slate-400">{item.category}</td>
+                      <td className={`p-4 font-bold ${t.textMain}`}>{item.name}</td>
+                      <td className={`p-4 ${t.textMuted}`}>{item.category}</td>
                       <td className="p-4 font-bold text-blue-400">{item.stock} units</td>
-                      <td className="p-4 text-slate-300">NPR {item.costPrice} / <span className="text-emerald-400 font-bold">NPR {item.price}</span></td>
+                      <td className={`p-4 ${t.textMuted}`}>NPR {item.costPrice} / <span className="text-emerald-400 font-bold">NPR {item.price}</span></td>
                       <td className="p-4 text-right space-x-2">
                         <button onClick={() => adjustStock(item.id, 1)} className="px-2.5 py-1 bg-emerald-500/10 text-emerald-400 rounded-lg text-xs font-bold">+</button>
                         <button onClick={() => adjustStock(item.id, -1)} className="px-2.5 py-1 bg-rose-500/10 text-rose-400 rounded-lg text-xs font-bold">-</button>
@@ -1026,16 +1072,16 @@ _Thank you for choosing Genuine Fix!_`;
         {/* EXPENSES TAB */}
         {activeTab === 'expenses' && (
           <div className="space-y-6 animate-in fade-in duration-300">
-            <h2 className="text-xl font-bold text-white">Shop Expenses Tracker</h2>
-            <form onSubmit={handleAddExpense} className="bg-[#0F1420] border border-slate-800 p-6 rounded-3xl grid grid-cols-1 md:grid-cols-3 gap-4 shadow-xl">
-              <input type="text" placeholder="Expense Description (e.g. Rent, Electricity)" value={newExpense.description} onChange={e => setNewExpense({...newExpense, description: e.target.value})} className="md:col-span-2 p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" required />
-              <input type="number" placeholder="Amount (NPR)" value={newExpense.amount} onChange={e => setNewExpense({...newExpense, amount: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" required />
+            <h2 className={`text-xl font-bold ${t.textMain}`}>Shop Expenses Tracker</h2>
+            <form onSubmit={handleAddExpense} className={`${t.cardBg} border ${t.border} p-6 rounded-3xl grid grid-cols-1 md:grid-cols-3 gap-4 shadow-xl`}>
+              <input type="text" placeholder="Expense Description (e.g. Rent, Electricity)" value={newExpense.description} onChange={e => setNewExpense({...newExpense, description: e.target.value})} className={`md:col-span-2 p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
+              <input type="number" placeholder="Amount (NPR)" value={newExpense.amount} onChange={e => setNewExpense({...newExpense, amount: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
               <button type="submit" className="md:col-span-3 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-rose-600/30">Add Expense Record</button>
             </form>
 
-            <div className="bg-[#0F1420] border border-slate-800 rounded-3xl overflow-hidden shadow-xl">
+            <div className={`${t.cardBg} border ${t.border} rounded-3xl overflow-hidden shadow-xl`}>
               <table className="w-full text-left text-sm">
-                <thead className="bg-slate-950/60 text-slate-400 text-xs uppercase border-b border-slate-800">
+                <thead className={`${t.tableHeader} text-xs uppercase border-b`}>
                   <tr>
                     <th className="p-4">Date</th>
                     <th className="p-4">Description</th>
@@ -1043,11 +1089,11 @@ _Thank you for choosing Genuine Fix!_`;
                     <th className="p-4 text-right">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/50">
+                <tbody className={`divide-y ${t.tableDivide}`}>
                   {expenses.map(exp => (
                     <tr key={exp.id}>
-                      <td className="p-4 text-slate-400">{exp.date}</td>
-                      <td className="p-4 font-bold text-white">{exp.description}</td>
+                      <td className={`p-4 ${t.textMuted}`}>{exp.date}</td>
+                      <td className={`p-4 font-bold ${t.textMain}`}>{exp.description}</td>
                       <td className="p-4 font-bold text-rose-400">NPR {exp.amount}</td>
                       <td className="p-4 text-right">
                         <button onClick={() => deleteExpense(exp.id)} className="p-2 bg-rose-500/10 text-rose-400 rounded-xl hover:bg-rose-500/20"><Trash2 size={15}/></button>
@@ -1063,21 +1109,21 @@ _Thank you for choosing Genuine Fix!_`;
         {/* BACKUP & RESTORE TAB */}
         {activeTab === 'backup' && (
           <div className="space-y-6 animate-in fade-in duration-300 max-w-2xl mx-auto">
-            <h2 className="text-xl font-bold text-white">Data Backup & Restore</h2>
-            <div className="bg-[#0F1420] border border-slate-800 p-8 rounded-3xl space-y-6 shadow-xl text-center">
+            <h2 className={`text-xl font-bold ${t.textMain}`}>Data Backup & Restore</h2>
+            <div className={`${t.cardBg} border ${t.border} p-8 rounded-3xl space-y-6 shadow-xl text-center`}>
               <div>
-                <h3 className="font-bold text-white text-lg">Download Backup File</h3>
-                <p className="text-xs text-slate-400 mt-1">Export all your repairs, device trading, inventory, expenses into a secure JSON file.</p>
+                <h3 className={`font-bold ${t.textMain} text-lg`}>Download Backup File</h3>
+                <p className={`text-xs ${t.textMuted} mt-1`}>Export all your repairs, device trading, inventory, expenses into a secure JSON file.</p>
                 <button onClick={exportData} className="mt-4 px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl transition shadow-lg shadow-blue-600/30 inline-flex items-center gap-2">
                   <Download size={18}/> Export Backup Now
                 </button>
               </div>
 
-              <hr className="border-slate-800" />
+              <hr className={t.border} />
 
               <div>
-                <h3 className="font-bold text-white text-lg">Restore from Backup</h3>
-                <p className="text-xs text-slate-400 mt-1">Upload your previously exported JSON backup file to restore shop data.</p>
+                <h3 className={`font-bold ${t.textMain} text-lg`}>Restore from Backup</h3>
+                <p className={`text-xs ${t.textMuted} mt-1`}>Upload your previously exported JSON backup file to restore shop data.</p>
                 <label className="mt-4 inline-block px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl transition shadow-lg shadow-emerald-600/30 cursor-pointer">
                   <Upload size={18} className="inline mr-2"/> Select & Restore Backup File
                   <input type="file" accept=".json" onChange={importData} className="hidden" />
@@ -1087,51 +1133,95 @@ _Thank you for choosing Genuine Fix!_`;
           </div>
         )}
 
+        {/* NEW SETTINGS & THEME VARIETIES TAB */}
+        {activeTab === 'settings' && (
+          <div className="space-y-6 animate-in fade-in duration-300 max-w-2xl mx-auto">
+            <h2 className={`text-xl font-bold ${t.textMain}`}>Settings & GUI Theme Preferences</h2>
+            <div className={`${t.cardBg} border ${t.border} p-8 rounded-3xl space-y-6 shadow-xl`}>
+              <div>
+                <h3 className={`font-bold ${t.textMain} text-lg mb-1`}>🎨 GUI Theme Varieties (आँखालाई आरामदायी बनाउने सेटिङ)</h3>
+                <p className={`text-xs ${t.textMuted} mb-6`}>कलो थिममा धेरै उज्यालो वा कन्ट्रास्ट भएर आँखा दुखेको वा चराएको छ भने यहाँबाट नरम (Soft Dim) वा लाइट (Light) थिम छान्नुहोस्[cite: 9]।</p>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <button 
+                    onClick={() => setTheme('dim')}
+                    className={`p-4 rounded-2xl border text-left transition ${theme === 'dim' ? 'border-blue-500 bg-blue-500/10 shadow-md' : `${t.border} ${t.cardSecondary}`}`}
+                  >
+                    <div className="flex items-center gap-2 font-bold text-slate-100 mb-1">
+                      <Monitor size={16} className="text-blue-400"/> Soft Dim
+                    </div>
+                    <div className="text-xs text-slate-400">आँखालाई एकदम आरामदायी (Recommended for Long Hours)</div>
+                  </button>
+
+                  <button 
+                    onClick={() => setTheme('dark')}
+                    className={`p-4 rounded-2xl border text-left transition ${theme === 'dark' ? 'border-blue-500 bg-blue-500/10 shadow-md' : `${t.border} ${t.cardSecondary}`}`}
+                  >
+                    <div className="flex items-center gap-2 font-bold text-white mb-1">
+                      <Moon size={16} className="text-purple-400"/> Pitch Black
+                    </div>
+                    <div className="text-xs text-slate-400">गाढा कालो (OLED Black Mode)</div>
+                  </button>
+
+                  <button 
+                    onClick={() => setTheme('light')}
+                    className={`p-4 rounded-2xl border text-left transition ${theme === 'light' ? 'border-blue-500 bg-blue-500/10 shadow-md' : `${t.border} bg-white text-slate-900`}`}
+                  >
+                    <div className="flex items-center gap-2 font-bold text-slate-900 mb-1">
+                      <Sun size={16} className="text-amber-500"/> Clean Light
+                    </div>
+                    <div className="text-xs text-slate-600">उज्यालो सेतो (Daylight View)</div>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
       </main>
 
-      {/* INVOICE PREVIEW MODAL WITH PHOTO DISPLAY */}
+      {/* INVOICE PREVIEW MODAL */}
       {selectedInvoice && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-[#0F1420] border border-slate-800 rounded-3xl max-w-xl w-full p-6 space-y-6 shadow-2xl animate-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+          <div className={`${t.cardBg} border ${t.border} rounded-3xl max-w-xl w-full p-6 space-y-6 shadow-2xl animate-in zoom-in-95 duration-200`}>
+            <div className={`flex items-center justify-between border-b ${t.border} pb-4`}>
               <div>
-                <h3 className="text-lg font-bold text-white">Professional Invoice #{selectedInvoice.id}</h3>
-                <p className="text-xs text-slate-400">{selectedInvoice.dateTime}</p>
+                <h3 className={`text-lg font-bold ${t.textMain}`}>Professional Invoice #{selectedInvoice.id}</h3>
+                <p className={`text-xs ${t.textMuted}`}>{selectedInvoice.dateTime}</p>
               </div>
-              <button onClick={() => setSelectedInvoice(null)} className="p-2 bg-slate-800 text-slate-400 hover:text-white rounded-xl"><X size={18}/></button>
+              <button onClick={() => setSelectedInvoice(null)} className={`p-2 ${t.cardSecondary} ${t.textMuted} hover:text-white rounded-xl`}><X size={18}/></button>
             </div>
 
-            <div className="space-y-3 bg-slate-950 p-4 rounded-2xl border border-slate-800 text-sm">
-              <div className="flex justify-between"><span className="text-slate-400">Customer Name:</span><span className="font-bold text-white">{selectedInvoice.customerName}</span></div>
-              <div className="flex justify-between"><span className="text-slate-400">Phone:</span><span className="font-bold text-white">{selectedInvoice.phone}</span></div>
+            <div className={`space-y-3 ${t.cardSecondary} p-4 rounded-2xl border ${t.border} text-sm`}>
+              <div className="flex justify-between"><span className={t.textMuted}>Customer Name:</span><span className={`font-bold ${t.textMain}`}>{selectedInvoice.customerName}</span></div>
+              <div className="flex justify-between"><span className={t.textMuted}>Phone:</span><span className={`font-bold ${t.textMain}`}>{selectedInvoice.phone}</span></div>
               {selectedInvoice.citizenshipNo && (
-                <div className="flex justify-between"><span className="text-slate-400">Citizenship No:</span><span className="font-bold text-white">{selectedInvoice.citizenshipNo}</span></div>
+                <div className="flex justify-between"><span className={t.textMuted}>Citizenship No:</span><span className={`font-bold ${t.textMain}`}>{selectedInvoice.citizenshipNo}</span></div>
               )}
-              <div className="flex justify-between"><span className="text-slate-400">Service / Items:</span><span className="font-bold text-white">{selectedInvoice.model}</span></div>
-              <div className="flex justify-between"><span className="text-slate-400">Warranty:</span><span className="text-blue-400 font-bold">{selectedInvoice.warrantyDays || '30'} Days</span></div>
+              <div className="flex justify-between"><span className={t.textMuted}>Service / Items:</span><span className={`font-bold ${t.textMain}`}>{selectedInvoice.model}</span></div>
+              <div className="flex justify-between"><span className={t.textMuted}>Warranty:</span><span className="text-blue-400 font-bold">{selectedInvoice.warrantyDays || '30'} Days</span></div>
               
-              {/* DISPLAY PHOTOS IN PREVIEW IF AVAILABLE */}
               {(selectedInvoice.customerPhoto || selectedInvoice.citizenshipPhoto) && (
-                <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-800">
+                <div className={`grid grid-cols-2 gap-4 pt-2 border-t ${t.border}`}>
                   {selectedInvoice.customerPhoto && (
                     <div>
-                      <p className="text-xs text-slate-400 mb-1">Customer Photo:</p>
-                      <img src={selectedInvoice.customerPhoto} alt="Customer" className="w-full h-24 object-cover rounded-xl border border-slate-800" />
+                      <p className={`text-xs ${t.textMuted} mb-1`}>Customer Photo:</p>
+                      <img src={selectedInvoice.customerPhoto} alt="Customer" className={`w-full h-24 object-cover rounded-xl border ${t.border}`} />
                     </div>
                   )}
                   {selectedInvoice.citizenshipPhoto && (
                     <div>
-                      <p className="text-xs text-slate-400 mb-1">Citizenship Photo:</p>
-                      <img src={selectedInvoice.citizenshipPhoto} alt="Citizenship" className="w-full h-24 object-cover rounded-xl border border-slate-800" />
+                      <p className={`text-xs ${t.textMuted} mb-1`}>Citizenship Photo:</p>
+                      <img src={selectedInvoice.citizenshipPhoto} alt="Citizenship" className={`w-full h-24 object-cover rounded-xl border ${t.border}`} />
                     </div>
                   )}
                 </div>
               )}
 
-              <hr className="border-slate-800 my-2" />
-              <div className="flex justify-between"><span className="text-slate-400">Total Cost:</span><span className="font-bold text-white">NPR {selectedInvoice.totalCost}</span></div>
-              <div className="flex justify-between"><span className="text-slate-400">Paid Amount:</span><span className="font-bold text-emerald-400">NPR {selectedInvoice.paidAmount}</span></div>
-              <div className="flex justify-between"><span className="text-slate-400">Balance Due:</span><span className="font-bold text-rose-400">NPR {selectedInvoice.dueAmount}</span></div>
+              <hr className={`${t.border} my-2`} />
+              <div className="flex justify-between"><span className={t.textMuted}>Total Cost:</span><span className={`font-bold ${t.textMain}`}>NPR {selectedInvoice.totalCost}</span></div>
+              <div className="flex justify-between"><span className={t.textMuted}>Paid Amount:</span><span className="font-bold text-emerald-400">NPR {selectedInvoice.paidAmount}</span></div>
+              <div className="flex justify-between"><span className={t.textMuted}>Balance Due:</span><span className="font-bold text-rose-400">NPR {selectedInvoice.dueAmount}</span></div>
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
@@ -1149,42 +1239,42 @@ _Thank you for choosing Genuine Fix!_`;
       {/* EDIT INVOICE MODAL */}
       {editingInvoice && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-[#0F1420] border border-slate-800 rounded-3xl max-w-xl w-full p-6 space-y-6 shadow-2xl animate-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-              <h3 className="text-lg font-bold text-white">Edit Invoice / Record #{editingInvoice.id}</h3>
-              <button onClick={() => setEditingInvoice(null)} className="p-2 bg-slate-800 text-slate-400 hover:text-white rounded-xl"><X size={18}/></button>
+          <div className={`${t.cardBg} border ${t.border} rounded-3xl max-w-xl w-full p-6 space-y-6 shadow-2xl animate-in zoom-in-95 duration-200`}>
+            <div className={`flex items-center justify-between border-b ${t.border} pb-4`}>
+              <h3 className={`text-lg font-bold ${t.textMain}`}>Edit Invoice / Record #{editingInvoice.id}</h3>
+              <button onClick={() => setEditingInvoice(null)} className={`p-2 ${t.cardSecondary} ${t.textMuted} hover:text-white rounded-xl`}><X size={18}/></button>
             </div>
 
             <form onSubmit={handleUpdateInvoice} className="space-y-4">
               <div>
-                <label className="text-xs text-slate-400 block mb-1">Customer Name</label>
-                <input type="text" value={editingInvoice.customerName} onChange={e => setEditingInvoice({...editingInvoice, customerName: e.target.value})} className="w-full p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none focus:border-blue-600" />
+                <label className={`text-xs ${t.textMuted} block mb-1`}>Customer Name</label>
+                <input type="text" value={editingInvoice.customerName} onChange={e => setEditingInvoice({...editingInvoice, customerName: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`} />
               </div>
               <div>
-                <label className="text-xs text-slate-400 block mb-1">Phone Number</label>
-                <input type="text" value={editingInvoice.phone} onChange={e => setEditingInvoice({...editingInvoice, phone: e.target.value})} className="w-full p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none focus:border-blue-600" />
+                <label className={`text-xs ${t.textMuted} block mb-1`}>Phone Number</label>
+                <input type="text" value={editingInvoice.phone} onChange={e => setEditingInvoice({...editingInvoice, phone: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`} />
               </div>
               <div>
-                <label className="text-xs text-slate-400 block mb-1">Model / Description</label>
-                <input type="text" value={editingInvoice.model} onChange={e => setEditingInvoice({...editingInvoice, model: e.target.value})} className="w-full p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none focus:border-blue-600" />
+                <label className={`text-xs ${t.textMuted} block mb-1`}>Model / Description</label>
+                <input type="text" value={editingInvoice.model} onChange={e => setEditingInvoice({...editingInvoice, model: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`} />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs text-slate-400 block mb-1">Total Cost (NPR)</label>
-                  <input type="number" value={editingInvoice.totalCost} onChange={e => setEditingInvoice({...editingInvoice, totalCost: e.target.value})} className="w-full p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none focus:border-blue-600" />
+                  <label className={`text-xs ${t.textMuted} block mb-1`}>Total Cost (NPR)</label>
+                  <input type="number" value={editingInvoice.totalCost} onChange={e => setEditingInvoice({...editingInvoice, totalCost: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`} />
                 </div>
                 <div>
-                  <label className="text-xs text-slate-400 block mb-1">Paid Amount (NPR)</label>
-                  <input type="number" value={editingInvoice.paidAmount} onChange={e => setEditingInvoice({...editingInvoice, paidAmount: e.target.value})} className="w-full p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none focus:border-blue-600" />
+                  <label className={`text-xs ${t.textMuted} block mb-1`}>Paid Amount (NPR)</label>
+                  <input type="number" value={editingInvoice.paidAmount} onChange={e => setEditingInvoice({...editingInvoice, paidAmount: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`} />
                 </div>
               </div>
               <div>
-                <label className="text-xs text-slate-400 block mb-1">Warranty Days</label>
-                <input type="text" value={editingInvoice.warrantyDays} onChange={e => setEditingInvoice({...editingInvoice, warrantyDays: e.target.value})} className="w-full p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none focus:border-blue-600" />
+                <label className={`text-xs ${t.textMuted} block mb-1`}>Warranty Days</label>
+                <input type="text" value={editingInvoice.warrantyDays} onChange={e => setEditingInvoice({...editingInvoice, warrantyDays: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`} />
               </div>
 
               <div className="flex justify-end gap-3 pt-4">
-                <button type="button" onClick={() => setEditingInvoice(null)} className="px-5 py-2.5 bg-slate-800 text-slate-300 font-bold rounded-xl text-sm">Cancel</button>
+                <button type="button" onClick={() => setEditingInvoice(null)} className={`px-5 py-2.5 ${t.cardSecondary} ${t.textMuted} font-bold rounded-xl text-sm`}>Cancel</button>
                 <button type="submit" className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-sm shadow-lg shadow-blue-600/30">Save Changes</button>
               </div>
             </form>
