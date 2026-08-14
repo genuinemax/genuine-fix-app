@@ -15,17 +15,20 @@ export default function Login({ onLoginSuccess }) {
     e.preventDefault();
     setError('');
     try {
+      let userCredential;
       if (isRegistering) {
         // नयाँ खाता बनाउने (Sign Up)
-        await createUserWithEmailAndPassword(auth, email, password);
+        userCredential = await createUserWithEmailAndPassword(auth, email, password);
         alert('खाता सफलतापूर्वक बन्यो र लगइन भयो!');
       } else {
         // लगइन गर्ने (Sign In)
-        await signInWithEmailAndPassword(auth, email, password);
+        userCredential = await signInWithEmailAndPassword(auth, email, password);
         alert('सफलतापूर्वक लगइन भयो!');
       }
+      
+      // यहाँ user डेटासहित अन-लगइन-सक्सेस कल गरिएको छ
       if (onLoginSuccess) {
-        onLoginSuccess();
+        onLoginSuccess(userCredential.user);
       }
     } catch (err) {
       setError(err.message);
