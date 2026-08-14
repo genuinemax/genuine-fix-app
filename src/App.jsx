@@ -658,7 +658,7 @@ _Thank you for choosing Genuine Fix!_`;
             </div>
             <div>
               <h1 className="font-extrabold text-lg text-white leading-tight tracking-tight">Genuine Fix</h1>
-              <p className="text-[10px] text-blue-400 font-bold uppercase tracking-widest">Repair & Phone/Laptop Trading</p>
+              <p className="text-[10px] text-blue-400 font-bold uppercase tracking-widest">Laptop & Smartphone Repair</p>
             </div>
           </div>
           
