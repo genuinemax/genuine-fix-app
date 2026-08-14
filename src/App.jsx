@@ -15,7 +15,7 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // NEW: Theme / GUI Variety State (Default to 'dim' for eye comfort)
+  // Theme / GUI Variety State (Default to 'dim' for eye comfort)
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem('gf_theme') || 'dim';
   });
@@ -70,8 +70,6 @@ export default function App() {
       'Tablet Parts', 'Unlocking Tools & Credits', 'Accessories'
     ];
   });
-
-  const [newCatInput, setNewCatInput] = useState('');
 
   // LocalStorage States with Sample Data pre-loaded
   const [repairs, setRepairs] = useState(() => {
@@ -167,8 +165,6 @@ export default function App() {
   const [newExpense, setNewExpense] = useState({ description: '', amount: '' });
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [editingInvoice, setEditingInvoice] = useState(null);
-  const [inventoryFilter, setInventoryFilter] = useState('All');
-  const [inventorySearch, setInventorySearch] = useState('');
   const [invoiceSearch, setInvoiceSearch] = useState('');
   const [invoiceFilterTab, setInvoiceFilterTab] = useState('All');
 
@@ -188,9 +184,6 @@ export default function App() {
   useEffect(() => { localStorage.setItem('gf_devices_stock', JSON.stringify(devicesStock)); }, [devicesStock]);
   useEffect(() => { localStorage.setItem('gf_expenses', JSON.stringify(expenses)); }, [expenses]);
 
-  // ==========================================
-  // २. सबै हुकहरू सकिएपछि मात्र तल कन्डिसन (Returns) राख्ने
-  // ==========================================
   if (loading) {
     return <div style={{ color: '#fff', textAlign: 'center', marginTop: '100px', fontSize: '18px' }}>लोड हुँदैछ...</div>;
   }
@@ -199,9 +192,6 @@ export default function App() {
     return <Login onLoginSuccess={(u) => setUser(u)} />;
   }
 
-  // ==========================================
-  // ३. Helper Functions & Handlers
-  // ==========================================
   const getCurrentDateTime = () => {
     const now = new Date();
     const date = now.toISOString().split('T')[0];
@@ -222,7 +212,6 @@ export default function App() {
   const totalRevenue = repairs.reduce((acc, curr) => acc + Number(curr.totalCost || 0), 0);
   const totalDue = repairs.reduce((acc, curr) => acc + Number(curr.dueAmount || 0), 0);
   const totalExp = expenses.reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
-  const totalStockValue = inventory.reduce((acc, curr) => acc + (Number(curr.stock || 0) * Number(curr.costPrice || 0)), 0);
 
   const exportData = () => {
     const backupData = {
@@ -803,7 +792,7 @@ _Thank you for choosing Genuine Fix!_`;
           </div>
         )}
 
-        {/* REPAIRS / JOB SHEETS TAB WITH PHOTO UPLOADS */}
+        {/* REPAIRS / JOB SHEETS TAB */}
         {activeTab === 'repairs' && (
           <div className="space-y-6 animate-in fade-in duration-300">
             <h2 className={`text-xl font-bold ${t.textMain}`}>Create Repair / Unlocking Job Sheet</h2>
@@ -1133,7 +1122,7 @@ _Thank you for choosing Genuine Fix!_`;
           </div>
         )}
 
-        {/* NEW SETTINGS & THEME VARIETIES TAB */}
+        {/* SETTINGS & THEME VARIETIES TAB */}
         {activeTab === 'settings' && (
           <div className="space-y-6 animate-in fade-in duration-300 max-w-2xl mx-auto">
             <h2 className={`text-xl font-bold ${t.textMain}`}>Settings & GUI Theme Preferences</h2>
@@ -1180,18 +1169,18 @@ _Thank you for choosing Genuine Fix!_`;
 
       </main>
 
-      {/* INVOICE PREVIEW MODAL - PROFESSIONAL LAYOUT */}
+      {/* INVOICE PREVIEW MODAL - FIXED CLOSE & VIEWPORT */}
       {selectedInvoice && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white text-gray-900 rounded-3xl max-w-2xl w-full p-6 space-y-6 shadow-2xl animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-start justify-center p-4 overflow-y-auto py-10">
+          <div className="bg-white text-gray-900 rounded-3xl max-w-2xl w-full p-6 space-y-6 shadow-2xl relative my-auto">
             
-            {/* Modal Header Controls */}
-            <div className="flex items-center justify-between border-b pb-3">
+            {/* Modal Header Controls (Sticky so Close button is always visible) */}
+            <div className="flex items-center justify-between border-b pb-3 sticky top-0 bg-white z-10 pt-2">
               <div>
                 <span className="text-xs font-bold uppercase tracking-wider text-blue-600">Official Bill Preview</span>
                 <h3 className="text-lg font-extrabold text-gray-900">Invoice #{selectedInvoice.id}</h3>
               </div>
-              <button onClick={() => setSelectedInvoice(null)} className="p-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition"><X size={18}/></button>
+              <button onClick={() => setSelectedInvoice(null)} className="p-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition shadow"><X size={18}/></button>
             </div>
 
             {/* Professional Invoice Sheet Body */}
@@ -1264,7 +1253,7 @@ _Thank you for choosing Genuine Fix!_`;
                     <span className="font-bold text-slate-900">NPR {selectedInvoice.totalCost}</span>
                   </div>
                   <div className="flex justify-between text-slate-600">
-                    <span>Paid Amount:</span>
+                    <span>Amount Paid:</span>
                     <span className="font-bold text-emerald-600">NPR {selectedInvoice.paidAmount}</span>
                   </div>
                   <div className="border-t border-slate-200 pt-1.5 flex justify-between text-sm font-bold">
