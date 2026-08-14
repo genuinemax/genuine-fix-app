@@ -495,7 +495,7 @@ export default function App() {
 
     ctx.fillStyle = '#38BDF8';
     ctx.font = 'bold 13px sans-serif';
-    ctx.fillText('PROFESSIONAL LAPTOP & MOBILE REPAIR & TRADING CENTER', 50, 80);
+    ctx.fillText('LAPTOP & SMARTPHONE REPAIR ', 50, 80);
 
     ctx.fillStyle = '#94A3B8';
     ctx.font = '12px sans-serif';

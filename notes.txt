@@ -1,4 +1,4 @@
 git add .
-git commit -m "Fix login dashboard issue"
+git commit -m "Updating"
 git push
 vercel --prod
