@@ -296,26 +296,42 @@ export default function App() {
     setSelectedInvoice(repairItem);
   };
 
-  const handleAddDevice = (e) => {
+  const handleAddRepair = (e) => {
     e.preventDefault();
-    const sellPriceVal = Number(newDevice.sellPrice || 0);
-    const buyPriceVal = Number(newDevice.buyPrice || 0);
-
-    const deviceItem = {
-      id: `DEV-${Math.floor(1000 + Math.random() * 9000)}`,
-      deviceCategory: newDevice.deviceCategory,
-      brandModel: newDevice.brandModel || 'Unknown Device',
-      imeiOrSerial: newDevice.imeiOrSerial || 'N/A',
-      condition: newDevice.condition,
-      partyName: newDevice.partyName || 'Walk-in Party',
-      partyPhone: newDevice.partyPhone || 'N/A',
-      buyPrice: buyPriceVal,
-      sellPrice: sellPriceVal,
-      status: 'In Stock',
-      date: new Date().toISOString().split('T')[0]
+    const total = Number(newRepair.totalCost || 0);
+    const paid = Number(newRepair.paidAmount || 0);
+    const repairItem = {
+      ...newRepair,
+      id: `GF-${Math.floor(1000 + Math.random() * 9000)}`,
+      customerName: newRepair.customerName || 'Walk-in Customer',
+      phone: newRepair.phone || 'N/A',
+      model: newRepair.model || 'General Device',
+      totalCost: total,
+      paidAmount: paid,
+      dueAmount: total - paid,
+      issue: newRepair.issue || 'General Repair / Unlocking',
+      status: 'Pending',
+      dateTime: getCurrentDateTime(),
+      billType: 'Repair',
+      items: [
+        {
+          name: newRepair.model ? `${newRepair.deviceType} - ${newRepair.model}` : newRepair.deviceType,
+          price: total,
+          qty: 1,
+          remarks: newRepair.issue || 'Repair & Maintenance'
+        }
+      ]
     };
-
-    setDevicesStock([deviceItem, ...devicesStock]);
+    setRepairs([repairItem, ...repairs]);
+    setNewRepair({ 
+      customerName: '', phone: '', citizenshipNo: '', 
+      customerPhoto: '', citizenshipPhoto: '', 
+      deviceType: 'Mobile (Unlock)', model: '', 
+      totalCost: '', paidAmount: '', issue: '', warrantyDays: '30' 
+    });
+    
+    alert('Job Sheet सफलतापूर्वक Save भयो!');
+  };
 
     const deviceInvoice = {
       id: `DVB-${Math.floor(1000 + Math.random() * 9000)}`,
