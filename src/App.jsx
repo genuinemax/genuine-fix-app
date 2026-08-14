@@ -46,7 +46,10 @@ export default function App() {
         warrantyDays: '30',
         status: 'In Progress',
         dateTime: '2026-06-10 11:15:20',
-        billType: 'Repair'
+        billType: 'Repair',
+        items: [
+          { name: 'Mobile (Unlock) - iPhone 13 Pro', price: 5000, qty: 1, remarks: 'iCloud / Network Unlock' }
+        ]
       }
     ];
   });
@@ -217,7 +220,15 @@ export default function App() {
       issue: newRepair.issue || 'General Repair / Unlocking',
       status: 'Pending',
       dateTime: getCurrentDateTime(),
-      billType: 'Repair'
+      billType: 'Repair',
+      items: [
+        {
+          name: newRepair.model ? `${newRepair.deviceType} - ${newRepair.model}` : newRepair.deviceType,
+          price: total,
+          qty: 1,
+          remarks: newRepair.issue || 'Repair & Maintenance'
+        }
+      ]
     };
     setRepairs([repairItem, ...repairs]);
     setNewRepair({ customerName: '', phone: '', citizenshipNo: '', customerPhoto: '', citizenshipPhoto: '', deviceType: 'Mobile (Unlock)', model: '', totalCost: '', paidAmount: '', issue: '', warrantyDays: '30' });
@@ -283,7 +294,13 @@ export default function App() {
       warrantyDays: posBill.warrantyDays,
       status: 'Delivered',
       dateTime: getCurrentDateTime(),
-      billType: 'Accessories'
+      billType: 'Accessories',
+      items: posBill.items.map(i => ({
+        name: i.name || 'Accessory Item',
+        price: Number(i.price || 0),
+        qty: Number(i.qty || 1),
+        remarks: 'Store Sale'
+      }))
     };
 
     setRepairs([newBill, ...repairs]);
@@ -335,121 +352,174 @@ export default function App() {
     }));
   };
 
+  // ==========================================
+  // PROFESSIONAL & MODERN INVOICE CANVAS GENERATOR
+  // ==========================================
   const downloadInvoiceImage = (inv) => {
     const canvas = document.createElement('canvas');
     canvas.width = 800;
-    canvas.height = 1000;
+    canvas.height = 1100;
     const ctx = canvas.getContext('2d');
 
-    ctx.fillStyle = '#0B0F17';
+    // 1. Crisp White Clean Background
+    ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    ctx.fillStyle = '#0F1420';
-    ctx.fillRect(40, 40, 720, 140);
-    ctx.strokeStyle = '#1e293b';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(40, 40, 720, 140);
+    // 2. Header Top Banner (Dark Pro Theme)
+    ctx.fillStyle = '#0F172A';
+    ctx.fillRect(0, 0, canvas.width, 160);
 
+    // Brand Title
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'bold 24px sans-serif';
-    ctx.fillText('GENUINE FIX', 70, 85);
+    ctx.font = 'bold 28px sans-serif';
+    ctx.fillText('GENUINE FIX', 50, 55);
 
-    ctx.fillStyle = '#60a5fa';
+    ctx.fillStyle = '#38BDF8';
     ctx.font = 'bold 13px sans-serif';
-    ctx.fillText('LAPTOP & MOBILE REPAIR CENTER', 70, 110);
+    ctx.fillText('PROFESSIONAL LAPTOP & MOBILE REPAIR CENTER', 50, 80);
 
-    ctx.fillStyle = '#94a3b8';
+    ctx.fillStyle = '#94A3B8';
     ctx.font = '12px sans-serif';
-    ctx.fillText('Taalchowk, Lekhnath, Pokhara | Phone: 9765676982', 70, 135);
+    ctx.fillText('Taalchowk, Lekhnath, Pokhara  |  Phone: 9765676982', 50, 105);
 
-    ctx.fillStyle = '#60a5fa';
-    ctx.font = 'bold 14px monospace';
-    ctx.fillText(`INVOICE #${inv.id}`, 540, 85);
-    ctx.fillStyle = '#cbd5e1';
+    // Invoice Meta Right Aligned
+    ctx.fillStyle = '#38BDF8';
+    ctx.font = 'bold 16px monospace';
+    ctx.fillText(`INVOICE #${inv.id}`, 560, 55);
+
+    ctx.fillStyle = '#E2E8F0';
     ctx.font = '12px sans-serif';
-    ctx.fillText(`Date: ${inv.dateTime}`, 540, 115);
-    ctx.fillText(`Status: ${Number(inv.dueAmount) > 0 ? 'Due Pending' : 'Paid in Full'}`, 540, 140);
+    ctx.fillText(`Date: ${inv.dateTime}`, 560, 85);
+    
+    const isPaid = Number(inv.dueAmount) <= 0;
+    ctx.fillStyle = isPaid ? '#34D399' : '#F87171';
+    ctx.font = 'bold 13px sans-serif';
+    ctx.fillText(`Status: ${isPaid ? 'PAID IN FULL' : 'DUE PENDING'}`, 560, 110);
 
-    ctx.fillStyle = '#0F1420';
-    ctx.fillRect(40, 205, 720, 110);
-    ctx.strokeRect(40, 205, 720, 110);
-
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = 'bold 11px sans-serif';
-    ctx.fillText('CUSTOMER DETAILS', 60, 230);
-
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 15px sans-serif';
-    ctx.fillText(inv.customerName, 60, 260);
-
-    ctx.fillStyle = '#cbd5e1';
-    ctx.font = '13px sans-serif';
-    ctx.fillText(`Phone: ${inv.phone}`, 60, 288);
-    ctx.fillText(`Service Type: ${inv.deviceType}`, 420, 260);
-    ctx.fillText(`Warranty: ${inv.warrantyDays || '30'} Days`, 420, 288);
-
-    ctx.fillStyle = '#1e293b';
-    ctx.fillRect(40, 345, 720, 45);
-    ctx.strokeRect(40, 345, 720, 45);
-
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = 'bold 12px sans-serif';
-    ctx.fillText('ITEM / MODEL DESCRIPTION', 60, 372);
-    ctx.fillText('REMARKS / ISSUE', 380, 372);
-    ctx.fillText('AMOUNT', 640, 372);
-
-    ctx.fillStyle = '#0F1420';
-    ctx.fillRect(40, 390, 720, 60);
-    ctx.strokeRect(40, 390, 720, 60);
-
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 14px sans-serif';
-    ctx.fillText(inv.model, 60, 425);
-    ctx.fillStyle = '#cbd5e1';
-    ctx.font = '13px sans-serif';
-    ctx.fillText(inv.issue, 380, 425);
-    ctx.font = 'bold 14px monospace';
-    ctx.fillText(`NPR ${inv.totalCost}`, 630, 425);
-
-    ctx.fillStyle = '#0F1420';
-    ctx.fillRect(40, 480, 720, 130);
-    ctx.strokeRect(40, 480, 720, 130);
-
-    ctx.fillStyle = '#cbd5e1';
-    ctx.font = '13px sans-serif';
-    ctx.fillText('Subtotal:', 450, 515);
-    ctx.fillText(`NPR ${inv.totalCost}`, 630, 515);
-
-    ctx.fillText('Amount Paid:', 450, 545);
-    ctx.fillStyle = '#34d399';
-    ctx.fillText(`NPR ${inv.paidAmount}`, 630, 545);
-
-    ctx.strokeStyle = '#334155';
+    // 3. Customer Details Section Box
+    ctx.fillStyle = '#F8FAFC';
+    ctx.strokeStyle = '#E2E8F0';
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.moveTo(440, 560);
-    ctx.lineTo(740, 560);
+    ctx.roundRect(50, 185, 700, 95, 8);
+    ctx.fill();
     ctx.stroke();
 
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 15px sans-serif';
-    ctx.fillText('BALANCE DUE:', 440, 592);
-    ctx.fillStyle = Number(inv.dueAmount) > 0 ? '#f87171' : '#34d399';
-    ctx.font = 'bold 16px monospace';
-    ctx.fillText(`NPR ${inv.dueAmount}`, 620, 592);
-
-    ctx.fillStyle = '#1e1b4b';
-    ctx.fillRect(40, 640, 720, 70);
-    ctx.strokeStyle = '#312e81';
-    ctx.strokeRect(40, 640, 720, 70);
-
-    ctx.fillStyle = '#fde047';
+    ctx.fillStyle = '#64748B';
     ctx.font = 'bold 11px sans-serif';
-    ctx.fillText('Warranty Terms:', 60, 665);
-    ctx.fillStyle = '#e2e8f0';
-    ctx.font = '11px sans-serif';
-    ctx.fillText('Warranty covers only repaired/replaced parts. Physical or water damage voids warranty.', 60, 688);
-    ctx.fillText('Thank you for choosing Genuine Fix!', 60, 703);
+    ctx.fillText('BILL TO:', 70, 210);
 
+    ctx.fillStyle = '#0F172A';
+    ctx.font = 'bold 16px sans-serif';
+    ctx.fillText(inv.customerName, 70, 238);
+
+    ctx.fillStyle = '#475569';
+    ctx.font = '13px sans-serif';
+    ctx.fillText(`Phone: ${inv.phone}`, 70, 262);
+
+    ctx.fillText(`Service Type: ${inv.deviceType || 'Repair & Parts'}`, 420, 210);
+    ctx.fillText(`Warranty Coverage: ${inv.warrantyDays || '30'} Days`, 420, 238);
+
+    // 4. Itemized Table Header
+    ctx.fillStyle = '#1E293B';
+    ctx.fillRect(50, 310, 700, 40);
+
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.fillText('S.N.', 70, 335);
+    ctx.fillText('ITEM / DESCRIPTION', 120, 335);
+    ctx.fillText('QTY', 480, 335);
+    ctx.fillText('PRICE (NPR)', 560, 335);
+    ctx.fillText('TOTAL', 660, 335);
+
+    // 5. Itemized Table Rows Loop
+    const itemsList = inv.items && inv.items.length > 0 ? inv.items : [
+      { name: inv.model || inv.issue, price: inv.totalCost, qty: 1 }
+    ];
+
+    let startY = 375;
+    itemsList.forEach((item, index) => {
+      ctx.fillStyle = index % 2 === 0 ? '#FFFFFF' : '#F8FAFC';
+      ctx.fillRect(50, startY - 20, 700, 36);
+
+      ctx.strokeStyle = '#F1F5F9';
+      ctx.strokeRect(50, startY - 20, 700, 36);
+
+      ctx.fillStyle = '#334155';
+      ctx.font = '13px sans-serif';
+      ctx.fillText(`${index + 1}`, 75, startY + 2);
+      ctx.fillText(item.name || 'Service / Item', 120, startY + 2);
+      ctx.fillText(`${item.qty || 1}`, 490, startY + 2);
+      ctx.fillText(`${item.price || 0}`, 570, startY + 2);
+      ctx.fillText(`${(item.price || 0) * (item.qty || 1)}`, 660, startY + 2);
+
+      startY += 36;
+    });
+
+    // 6. Totals Section
+    const totalsY = Math.max(startY + 30, 520);
+    
+    ctx.fillStyle = '#F8FAFC';
+    ctx.strokeStyle = '#E2E8F0';
+    ctx.beginPath();
+    ctx.roundRect(430, totalsY, 320, 130, 8);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#64748B';
+    ctx.font = '13px sans-serif';
+    ctx.fillText('Subtotal:', 460, totalsY + 30);
+    ctx.fillText(`NPR ${inv.totalCost}`, 630, totalsY + 30);
+
+    ctx.fillText('Amount Paid:', 460, totalsY + 65);
+    ctx.fillStyle = '#16A34A';
+    ctx.font = 'bold 13px sans-serif';
+    ctx.fillText(`NPR ${inv.paidAmount}`, 630, totalsY + 65);
+
+    ctx.strokeStyle = '#CBD5E1';
+    ctx.beginPath();
+    ctx.moveTo(450, totalsY + 80);
+    ctx.lineTo(730, totalsY + 80);
+    ctx.stroke();
+
+    ctx.fillStyle = '#0F172A';
+    ctx.font = 'bold 15px sans-serif';
+    ctx.fillText('BALANCE DUE:', 460, totalsY + 110);
+    
+    ctx.fillStyle = Number(inv.dueAmount) > 0 ? '#DC2626' : '#16A34A';
+    ctx.font = 'bold 16px monospace';
+    ctx.fillText(`NPR ${inv.dueAmount}`, 615, totalsY + 110);
+
+    // 7. Warranty Terms & Signature
+    const footerY = totalsY + 160;
+    
+    ctx.fillStyle = '#FEF9C3';
+    ctx.strokeStyle = '#FEF08A';
+    ctx.beginPath();
+    ctx.roundRect(50, footerY, 700, 65, 8);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#854D0E';
+    ctx.font = 'bold 11px sans-serif';
+    ctx.fillText('WARRANTY TERMS & CONDITIONS:', 70, footerY + 22);
+
+    ctx.fillStyle = '#713F12';
+    ctx.font = '11px sans-serif';
+    ctx.fillText('Warranty covers only repaired/replaced parts. Physical or water damage voids all warranty.', 70, footerY + 42);
+    ctx.fillText('Thank you for choosing Genuine Fix! Your trusted repair partner.', 70, footerY + 56);
+
+    // Signature Line
+    ctx.fillStyle = '#0F172A';
+    ctx.font = '12px sans-serif';
+    ctx.fillText('Authorized Signature', 600, footerY + 130);
+    ctx.strokeStyle = '#94A3B8';
+    ctx.beginPath();
+    ctx.moveTo(560, footerY + 105);
+    ctx.lineTo(730, footerY + 105);
+    ctx.stroke();
+
+    // Trigger Download
     const dataUrl = canvas.toDataURL('image/png');
     const link = document.createElement('a');
     link.href = dataUrl;
@@ -656,7 +726,7 @@ _Thank you for choosing Genuine Fix!_`;
               <input type="text" placeholder="Warranty Days (e.g. 30 Days)" value={newRepair.warrantyDays} onChange={e => setNewRepair({...newRepair, warrantyDays: e.target.value})} className="p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" />
               <input type="text" placeholder="Issue / Details (Optional)" value={newRepair.issue} onChange={e => setNewRepair({...newRepair, issue: e.target.value})} className="md:col-span-2 p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none" />
               
-              <button type="submit" className="md:col-span-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-blue-600/35">Save Job Sheet & Open Invoice Bill</button>
+              <button type="submit" className="md:col-span-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-blue-600/35">Save Job Sheet & Open Professional Invoice</button>
             </form>
           </div>
         )}
@@ -881,7 +951,7 @@ _Thank you for choosing Genuine Fix!_`;
           <div className="bg-[#0F1420] border border-slate-800 rounded-3xl max-w-xl w-full p-6 space-y-6 shadow-2xl animate-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between border-b border-slate-800 pb-4">
               <div>
-                <h3 className="text-lg font-bold text-white">Invoice #{selectedInvoice.id}</h3>
+                <h3 className="text-lg font-bold text-white">Professional Invoice #{selectedInvoice.id}</h3>
                 <p className="text-xs text-slate-400">{selectedInvoice.dateTime}</p>
               </div>
               <button onClick={() => setSelectedInvoice(null)} className="p-2 bg-slate-800 text-slate-400 hover:text-white rounded-xl"><X size={18}/></button>
@@ -890,8 +960,7 @@ _Thank you for choosing Genuine Fix!_`;
             <div className="space-y-3 bg-slate-950 p-4 rounded-2xl border border-slate-800 text-sm">
               <div className="flex justify-between"><span className="text-slate-400">Customer Name:</span><span className="font-bold text-white">{selectedInvoice.customerName}</span></div>
               <div className="flex justify-between"><span className="text-slate-400">Phone:</span><span className="font-bold text-white">{selectedInvoice.phone}</span></div>
-              <div className="flex justify-between"><span className="text-slate-400">Device/Model:</span><span className="font-bold text-white">{selectedInvoice.model}</span></div>
-              <div className="flex justify-between"><span className="text-slate-400">Issue / Details:</span><span className="text-slate-300">{selectedInvoice.issue}</span></div>
+              <div className="flex justify-between"><span className="text-slate-400">Service / Items:</span><span className="font-bold text-white">{selectedInvoice.model}</span></div>
               <div className="flex justify-between"><span className="text-slate-400">Warranty:</span><span className="text-blue-400 font-bold">{selectedInvoice.warrantyDays || '30'} Days</span></div>
               <hr className="border-slate-800 my-2" />
               <div className="flex justify-between"><span className="text-slate-400">Total Cost:</span><span className="font-bold text-white">NPR {selectedInvoice.totalCost}</span></div>
@@ -901,7 +970,7 @@ _Thank you for choosing Genuine Fix!_`;
 
             <div className="flex flex-wrap items-center gap-3">
               <button onClick={() => downloadInvoiceImage(selectedInvoice)} className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl transition flex items-center justify-center gap-2 text-sm shadow-lg shadow-blue-600/30">
-                <Download size={16}/> Download Image Bill
+                <Download size={16}/> Download Pro Image Bill
               </button>
               <button onClick={() => sendToWhatsApp(selectedInvoice)} className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl transition flex items-center justify-center gap-2 text-sm shadow-lg shadow-emerald-600/30">
                 <MessageSquare size={16}/> Send WhatsApp
