@@ -4,7 +4,7 @@ import Login from './Login';
 import React, { useState, useEffect } from 'react';
 import { 
   Wrench, Package, FileText, LayoutDashboard, DollarSign, 
-  Trash2, Printer, ShieldCheck, User, CreditCard, Search, Eye, ChevronRight, Download, Upload, ShoppingBag, MessageSquare, Plus, AlertTriangle, ArrowUpRight, ArrowDownRight, X, CheckCircle2, Image as ImageIcon
+  Trash2, Printer, ShieldCheck, User, CreditCard, Search, Eye, ChevronRight, Download, Upload, ShoppingBag, MessageSquare, Plus, AlertTriangle, ArrowUpRight, ArrowDownRight, X, CheckCircle2, Image as ImageIcon, Pencil
 } from 'lucide-react';
 
 export default function App() {
@@ -88,6 +88,7 @@ export default function App() {
   const [newPart, setNewPart] = useState({ name: '', stock: '', costPrice: '', price: '', minStock: '5' });
   const [newExpense, setNewExpense] = useState({ description: '', amount: '' });
   const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const [editingInvoice, setEditingInvoice] = useState(null); // Edit state added
   const [inventoryFilter, setInventoryFilter] = useState('All');
   const [inventorySearch, setInventorySearch] = useState('');
   const [invoiceSearch, setInvoiceSearch] = useState('');
@@ -350,6 +351,21 @@ export default function App() {
       }
       return r;
     }));
+  };
+
+  // Edit Invoice Handler
+  const handleUpdateInvoice = (e) => {
+    e.preventDefault();
+    const total = Number(editingInvoice.totalCost || 0);
+    const paid = Number(editingInvoice.paidAmount || 0);
+    const updated = {
+      ...editingInvoice,
+      totalCost: total,
+      paidAmount: paid,
+      dueAmount: total - paid
+    };
+    setRepairs(repairs.map(r => r.id === updated.id ? updated : r));
+    setEditingInvoice(null);
   };
 
   // ==========================================
@@ -818,6 +834,12 @@ _Thank you for choosing Genuine Fix!_`;
                       </td>
                       <td className="p-4 text-right space-x-2">
                         <button onClick={() => setSelectedInvoice(inv)} className="px-3 py-1.5 bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 rounded-xl text-xs font-bold">Preview</button>
+                        <button onClick={() => setEditingInvoice(inv)} className="px-3 py-1.5 bg-amber-600/20 text-amber-400 hover:bg-amber-600/30 rounded-xl text-xs font-bold inline-flex items-center gap-1">
+                          <Pencil size={14}/> Edit
+                        </button>
+                        <button onClick={() => { if(window.confirm('के तपाईं यो रेकर्ड डिलेट गर्न चाहनुहुन्छ?')) deleteRepair(inv.id); }} className="p-2 bg-rose-500/10 text-rose-400 rounded-xl hover:bg-rose-500/20 inline-flex items-center align-middle">
+                          <Trash2 size={14}/>
+                        </button>
                         {Number(inv.dueAmount) > 0 && (
                           <button onClick={() => markInvoiceAsPaid(inv.id)} className="px-3 py-1.5 bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 rounded-xl text-xs font-bold">Mark Paid</button>
                         )}
@@ -976,6 +998,61 @@ _Thank you for choosing Genuine Fix!_`;
                 <MessageSquare size={16}/> Send WhatsApp
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT INVOICE / REPAIR MODAL */}
+      {editingInvoice && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-[#0F1420] border border-slate-800 rounded-3xl max-w-xl w-full p-6 space-y-6 shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+              <h3 className="text-lg font-bold text-white">Edit Invoice / Job Sheet #{editingInvoice.id}</h3>
+              <button onClick={() => setEditingInvoice(null)} className="p-2 bg-slate-800 text-slate-400 hover:text-white rounded-xl"><X size={18}/></button>
+            </div>
+
+            <form onSubmit={handleUpdateInvoice} className="space-y-4">
+              <div>
+                <label className="text-xs text-slate-400 block mb-1">Customer Name</label>
+                <input type="text" value={editingInvoice.customerName} onChange={e => setEditingInvoice({...editingInvoice, customerName: e.target.value})} className="w-full p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none focus:border-blue-600" />
+              </div>
+              <div>
+                <label className="text-xs text-slate-400 block mb-1">Phone Number</label>
+                <input type="text" value={editingInvoice.phone} onChange={e => setEditingInvoice({...editingInvoice, phone: e.target.value})} className="w-full p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none focus:border-blue-600" />
+              </div>
+              <div>
+                <label className="text-xs text-slate-400 block mb-1">Model / Description</label>
+                <input type="text" value={editingInvoice.model} onChange={e => setEditingInvoice({...editingInvoice, model: e.target.value})} className="w-full p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none focus:border-blue-600" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs text-slate-400 block mb-1">Total Cost (NPR)</label>
+                  <input type="number" value={editingInvoice.totalCost} onChange={e => setEditingInvoice({...editingInvoice, totalCost: e.target.value})} className="w-full p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none focus:border-blue-600" />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-400 block mb-1">Paid Amount (NPR)</label>
+                  <input type="number" value={editingInvoice.paidAmount} onChange={e => setEditingInvoice({...editingInvoice, paidAmount: e.target.value})} className="w-full p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none focus:border-blue-600" />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs text-slate-400 block mb-1">Warranty Days</label>
+                <input type="text" value={editingInvoice.warrantyDays} onChange={e => setEditingInvoice({...editingInvoice, warrantyDays: e.target.value})} className="w-full p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none focus:border-blue-600" />
+              </div>
+              <div>
+                <label className="text-xs text-slate-400 block mb-1">Status</label>
+                <select value={editingInvoice.status} onChange={e => setEditingInvoice({...editingInvoice, status: e.target.value})} className="w-full p-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-white focus:outline-none">
+                  <option value="Pending">Pending</option>
+                  <option value="In Progress">In Progress</option>
+                  <option value="Completed">Completed</option>
+                  <option value="Delivered">Delivered</option>
+                </select>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4">
+                <button type="button" onClick={() => setEditingInvoice(null)} className="px-5 py-2.5 bg-slate-800 text-slate-300 font-bold rounded-xl text-sm">Cancel</button>
+                <button type="submit" className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-sm shadow-lg shadow-blue-600/30">Save Changes</button>
+              </div>
+            </form>
           </div>
         </div>
       )}
