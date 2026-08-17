@@ -15,6 +15,18 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Shop Settings / Business Rules State (PAN/VAT, Name, etc.)
+  const [shopInfo, setShopInfo] = useState(() => {
+    const saved = localStorage.getItem('gf_shop_info');
+    return saved ? JSON.parse(saved) : {
+      name: 'Genuine Fix',
+      tagline: 'Laptop & Smartphone Repair Center',
+      address: 'Taalchowk, Lekhnath, Pokhara',
+      phone: '9765676982',
+      panNo: '609876543'
+    };
+  });
+
   // Theme / GUI Variety State (Default to 'dim' for eye comfort)
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem('gf_theme') || 'dim';
@@ -178,6 +190,7 @@ export default function App() {
   }, []);
 
   useEffect(() => { localStorage.setItem('gf_theme', theme); }, [theme]);
+  useEffect(() => { localStorage.setItem('gf_shop_info', JSON.stringify(shopInfo)); }, [shopInfo]);
   useEffect(() => { localStorage.setItem('gf_categories', JSON.stringify(categories)); }, [categories]);
   useEffect(() => { localStorage.setItem('gf_repairs', JSON.stringify(repairs)); }, [repairs]);
   useEffect(() => { localStorage.setItem('gf_inventory', JSON.stringify(inventory)); }, [inventory]);
@@ -215,6 +228,7 @@ export default function App() {
 
   const exportData = () => {
     const backupData = {
+      shopInfo,
       categories,
       repairs,
       inventory,
@@ -238,6 +252,7 @@ export default function App() {
       try {
         const parsed = JSON.parse(event.target.result);
         if (parsed.repairs && parsed.inventory && parsed.expenses && parsed.categories) {
+          if (parsed.shopInfo) setShopInfo(parsed.shopInfo);
           setCategories(parsed.categories);
           setRepairs(parsed.repairs);
           setInventory(parsed.inventory);
@@ -492,15 +507,15 @@ export default function App() {
 
     ctx.fillStyle = '#FFFFFF';
     ctx.font = 'bold 28px sans-serif';
-    ctx.fillText('GENUINE FIX', 50, 55);
+    ctx.fillText(shopInfo.name, 50, 55);
 
     ctx.fillStyle = '#38BDF8';
     ctx.font = 'bold 13px sans-serif';
-    ctx.fillText('LAPTOP & SMARTPHONE REPAIR ', 50, 80);
+    ctx.fillText(shopInfo.tagline.toUpperCase(), 50, 80);
 
     ctx.fillStyle = '#94A3B8';
     ctx.font = '12px sans-serif';
-    ctx.fillText('Taalchowk, Lekhnath, Pokhara  |  Phone: 9765676982', 50, 105);
+    ctx.fillText(`${shopInfo.address}  |  Phone: ${shopInfo.phone}  |  PAN: ${shopInfo.panNo}`, 50, 105);
 
     ctx.fillStyle = '#38BDF8';
     ctx.font = 'bold 16px monospace';
@@ -621,7 +636,7 @@ export default function App() {
     ctx.fillStyle = '#713F12';
     ctx.font = '11px sans-serif';
     ctx.fillText('Warranty covers devices/parts as specified. Physical or water damage voids all warranty.', 70, footerY + 42);
-    ctx.fillText('Thank you for choosing Genuine Fix! Your trusted tech partner.', 70, footerY + 56);
+    ctx.fillText(`Thank you for choosing ${shopInfo.name}! Your trusted tech partner.`, 70, footerY + 56);
 
     ctx.fillStyle = '#0F172A';
     ctx.font = '12px sans-serif';
@@ -660,8 +675,8 @@ export default function App() {
   };
 
   const sendToWhatsApp = (inv) => {
-    const text = `*GENUINE FIX - LAPTOP & MOBILE CENTER*
-📍 Taalchowk, Pokhara | 📞 9765676982
+    const text = `*${shopInfo.name.toUpperCase()} - ${shopInfo.tagline.toUpperCase()}*
+📍 ${shopInfo.address} | 📞 ${shopInfo.phone} | PAN: ${shopInfo.panNo}
 ----------------------------------------
 👤 *Customer:* ${inv.customerName}
 📞 *Phone:* ${inv.phone}
@@ -675,7 +690,7 @@ export default function App() {
 💵 *Amount Paid:* NPR ${inv.paidAmount}
 🔴 *Balance Due:* NPR ${inv.dueAmount}
 ----------------------------------------
-_Thank you for choosing Genuine Fix!_`;
+_Thank you for choosing ${shopInfo.name}!_`;
 
     let cleanPhone = inv.phone.replace(/\D/g, '');
     if (cleanPhone.length === 10 && cleanPhone.startsWith('9')) {
@@ -713,7 +728,7 @@ _Thank you for choosing Genuine Fix!_`;
               <img src="/logo.jpg" alt="Genuine Fix Logo" className="w-full h-full object-cover" />
             </div>
             <div>
-              <h1 className={`font-extrabold text-lg ${t.textMain} leading-tight tracking-tight`}>Genuine Fix</h1>
+              <h1 className={`font-extrabold text-lg ${t.textMain} leading-tight tracking-tight`}>{shopInfo.name}</h1>
               <p className="text-[10px] text-blue-400 font-bold uppercase tracking-widest">Laptop & Smartphone Repair</p>
             </div>
           </div>
@@ -1148,6 +1163,30 @@ _Thank you for choosing Genuine Fix!_`;
           <div className="space-y-6 animate-in fade-in duration-300 max-w-2xl mx-auto">
             <h2 className={`text-xl font-bold ${t.textMain}`}>Settings & GUI Theme Preferences</h2>
             <div className={`${t.cardBg} border ${t.border} p-8 rounded-3xl space-y-6 shadow-xl`}>
+              
+              {/* Shop Profile Details / PAN Setup */}
+              <div className="space-y-4 border-b pb-6 border-slate-700">
+                <h3 className={`font-bold ${t.textMain} text-base`}>🏢 Shop Profile & PAN Details</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className={`text-xs ${t.textMuted} block mb-1`}>Shop Name</label>
+                    <input type="text" value={shopInfo.name} onChange={e => setShopInfo({...shopInfo, name: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                  </div>
+                  <div>
+                    <label className={`text-xs ${t.textMuted} block mb-1`}>PAN / VAT Number</label>
+                    <input type="text" value={shopInfo.panNo} onChange={e => setShopInfo({...shopInfo, panNo: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                  </div>
+                  <div>
+                    <label className={`text-xs ${t.textMuted} block mb-1`}>Phone Number</label>
+                    <input type="text" value={shopInfo.phone} onChange={e => setShopInfo({...shopInfo, phone: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                  </div>
+                  <div>
+                    <label className={`text-xs ${t.textMuted} block mb-1`}>Address</label>
+                    <input type="text" value={shopInfo.address} onChange={e => setShopInfo({...shopInfo, address: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <h3 className={`font-bold ${t.textMain} text-lg mb-1`}>🎨 GUI Theme Varieties (आँखालाई आरामदायी बनाउने सेटिङ)</h3>
                 <p className={`text-xs ${t.textMuted} mb-6`}>कलो थिममा धेरै उज्यालो वा कन्ट्रास्ट भएर आँखा दुखेको वा चराएको छ भने यहाँबाट नरम (Soft Dim) वा लाइट (Light) थिम छान्नुहोस्。</p>
@@ -1210,9 +1249,9 @@ _Thank you for choosing Genuine Fix!_`;
               {/* Dark Header Banner */}
               <div className="bg-[#0F172A] text-white p-6 flex flex-wrap justify-between items-start gap-4">
                 <div>
-                  <h2 className="text-2xl font-black tracking-tight">GENUINE FIX</h2>
-                  <p className="text-xs font-bold text-[#38BDF8] tracking-wide mt-0.5">LAPTOP & SMARTPHONE REPAIR</p>
-                  <p className="text-xs text-[#94A3B8] mt-1">Taalchowk, Lekhnath, Pokhara | Phone: 9765676982</p>
+                  <h2 className="text-2xl font-black tracking-tight">{shopInfo.name}</h2>
+                  <p className="text-xs font-bold text-[#38BDF8] tracking-wide mt-0.5">{shopInfo.tagline.toUpperCase()}</p>
+                  <p className="text-xs text-[#94A3B8] mt-1">{shopInfo.address} | Phone: {shopInfo.phone} | PAN: {shopInfo.panNo}</p>
                 </div>
                 <div className="text-right">
                   <h3 className="text-base font-extrabold font-mono text-[#38BDF8]">INVOICE #{selectedInvoice.id}</h3>
@@ -1299,7 +1338,7 @@ _Thank you for choosing Genuine Fix!_`;
                 <div className="bg-[#FEF9C3] border border-[#FEF08A] p-4 rounded-xl text-xs space-y-1">
                   <p className="font-bold text-[#854D0E] uppercase text-[11px]">Warranty & Trading Terms:</p>
                   <p className="text-[#713F12]">Warranty covers devices/parts as specified. Physical or water damage voids all warranty.</p>
-                  <p className="text-[#713F12] font-medium">Thank you for choosing Genuine Fix! Your trusted tech partner.</p>
+                  <p className="text-[#713F12] font-medium">Thank you for choosing {shopInfo.name}! Your trusted tech partner.</p>
                 </div>
 
                 {/* Signature line */}
@@ -1358,7 +1397,7 @@ _Thank you for choosing Genuine Fix!_`;
                 </div>
                 <div>
                   <label className={`text-xs ${t.textMuted} block mb-1`}>Paid Amount (NPR)</label>
-                  <input type="number" value={editingInvoice.paidAmount} onChange={e => setEditingInvoice({...editingInvoice, paidModal: e.target.value})} onChange={e => setEditingInvoice({...editingInvoice, paidAmount: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`} />
+                  <input type="number" value={editingInvoice.paidAmount} onChange={e => setEditingInvoice({...editingInvoice, paidAmount: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`} />
                 </div>
               </div>
               <div>
@@ -1367,7 +1406,7 @@ _Thank you for choosing Genuine Fix!_`;
               </div>
 
               <div className="flex justify-end gap-3 pt-4">
-                <button type="button" onClick={() => setEditingInvoice(null)} className={`px-5 py-2.5 ${t.cardSecondary} ${t.textMuted} font-bold rounded-xl text-sm`}>Cancel</button>
+                <button type="button" onClick={() => setEditingInvoice(null)} className={`px-5 py-2.5 ${t.cardSecondary} ${t.textMuted} font-bold rounded-xl text-sm`},Cancel</button>
                 <button type="submit" className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-sm shadow-lg shadow-blue-600/30">Save Changes</button>
               </div>
             </form>
