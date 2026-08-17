@@ -88,7 +88,7 @@ export default function App() {
         paidAmount: 2000,
         dueAmount: 3000,
         issue: 'iCloud / Network Unlock',
-        warrantyMonths: '1',
+        warrantyMonths: '30 Days',
         status: 'In Progress',
         dateTime: '2026-06-10 11:15:20',
         billType: 'Repair',
@@ -137,7 +137,7 @@ export default function App() {
   const [newRepair, setNewRepair] = useState({ 
     customerName: '', phone: '', citizenshipNo: '', 
     customerPhoto: '', citizenshipPhoto: '', 
-    deviceType: 'Mobile (Unlock)', model: '', totalCost: '', paidAmount: '', issue: '', warrantyMonths: '1' 
+    deviceType: 'Mobile (Unlock)', model: '', totalCost: '', paidAmount: '', issue: '', warrantyMonths: '30 Days' 
   });
   
   const [posBill, setPosBill] = useState({
@@ -145,7 +145,7 @@ export default function App() {
     phone: '',
     items: [{ name: '', price: '', qty: 1 }],
     paidAmount: '',
-    warrantyMonths: '1'
+    warrantyMonths: '30 Days'
   });
 
   const [newDevice, setNewDevice] = useState({
@@ -157,7 +157,7 @@ export default function App() {
     partyPhone: '',
     buyPrice: '',
     sellPrice: '',
-    warrantyMonths: '1'
+    warrantyMonths: '30 Days'
   });
 
   const [selectedCategory, setSelectedCategory] = useState(categories[0] || 'Mobile Parts');
@@ -268,7 +268,7 @@ export default function App() {
       paidAmount: paid,
       dueAmount: total - paid,
       issue: newRepair.issue || 'General Repair / Unlocking',
-      warrantyMonths: newRepair.warrantyMonths || '1',
+      warrantyMonths: newRepair.warrantyMonths || '30 Days',
       status: 'Pending',
       dateTime: getCurrentDateTime(),
       billType: 'Repair',
@@ -282,7 +282,7 @@ export default function App() {
       ]
     };
     setRepairs([repairItem, ...repairs]);
-    setNewRepair({ customerName: '', phone: '', citizenshipNo: '', customerPhoto: '', citizenshipPhoto: '', deviceType: 'Mobile (Unlock)', model: '', totalCost: '', paidAmount: '', issue: '', warrantyMonths: '1' });
+    setNewRepair({ customerName: '', phone: '', citizenshipNo: '', customerPhoto: '', citizenshipPhoto: '', deviceType: 'Mobile (Unlock)', model: '', totalCost: '', paidAmount: '', issue: '', warrantyMonths: '30 Days' });
     alert('Job Sheet सफलतापूर्वक Save भयो!');
   };
 
@@ -320,7 +320,7 @@ export default function App() {
       paidAmount: sellPriceVal,
       dueAmount: 0,
       issue: `${newDevice.deviceCategory} Purchase/Stock Entry`,
-      warrantyMonths: newDevice.warrantyMonths || '1',
+      warrantyMonths: newDevice.warrantyMonths || '30 Days',
       status: 'Delivered',
       dateTime: getCurrentDateTime(),
       billType: 'Device Sale',
@@ -344,7 +344,7 @@ export default function App() {
       partyPhone: '',
       buyPrice: '',
       sellPrice: '',
-      warrantyMonths: '1'
+      warrantyMonths: '30 Days'
     });
     alert('Device सफलतापूर्वक Save भयो!');
   };
@@ -403,7 +403,7 @@ export default function App() {
       paidAmount,
       dueAmount,
       issue: 'Direct Store Sale / Custom Bill',
-      warrantyMonths: posBill.warrantyMonths || '1',
+      warrantyMonths: posBill.warrantyMonths || '30 Days',
       status: 'Delivered',
       dateTime: getCurrentDateTime(),
       billType: 'Accessories',
@@ -416,7 +416,7 @@ export default function App() {
     };
 
     setRepairs([newBill, ...repairs]);
-    setPosBill({ customerName: '', phone: '', items: [{ name: '', price: '', qty: 1 }], paidAmount: '', warrantyMonths: '1' });
+    setPosBill({ customerName: '', phone: '', items: [{ name: '', price: '', qty: 1 }], paidAmount: '', warrantyMonths: '30 Days' });
     alert('Accessories Bill सफलतापूर्वक Save भयो!');
   };
 
@@ -536,7 +536,7 @@ export default function App() {
     ctx.fillText(`Phone: ${inv.phone}`, 70, 262);
 
     ctx.fillText(`Type: ${inv.deviceType || 'Repair & Sales'}`, 420, 210);
-    ctx.fillText(`Warranty: ${inv.warrantyMonths || '1'} Months`, 420, 238);
+    ctx.fillText(`Warranty: ${inv.warrantyMonths || '30 Days'}`, 420, 238);
 
     ctx.fillStyle = '#1E293B';
     ctx.fillRect(50, 310, 700, 40);
@@ -669,7 +669,7 @@ export default function App() {
 ----------------------------------------
 🛠️ *Service/Device:* ${inv.model}
 📝 *Details:* ${inv.issue}
-🛡️ *Warranty:* ${inv.warrantyMonths || '1'} Months
+🛡️ *Warranty:* ${inv.warrantyMonths || '30 Days'}
 ----------------------------------------
 💰 *Total Cost:* NPR ${inv.totalCost}
 💵 *Amount Paid:* NPR ${inv.paidAmount}
@@ -833,7 +833,7 @@ _Thank you for choosing Genuine Fix!_`;
               <input type="text" placeholder="Device Model (Optional)" value={newRepair.model} onChange={e => setNewRepair({...newRepair, model: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
               <input type="number" placeholder="Total Cost (NPR)" value={newRepair.totalCost} onChange={e => setNewRepair({...newRepair, totalCost: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
               <input type="number" placeholder="Paid Amount (NPR)" value={newRepair.paidAmount} onChange={e => setNewRepair({...newRepair, paidAmount: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-              <input type="number" min="0" placeholder="Warranty (Months, e.g. 1)" value={newRepair.warrantyMonths} onChange={e => setNewRepair({...newRepair, warrantyMonths: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+              <input type="text" placeholder="Warranty (e.g. 30 Days, 1 Year)" value={newRepair.warrantyMonths} onChange={e => setNewRepair({...newRepair, warrantyMonths: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
               <input type="text" placeholder="Issue / Details (Optional)" value={newRepair.issue} onChange={e => setNewRepair({...newRepair, issue: e.target.value})} className={`md:col-span-2 p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
 
               <div className={`md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-4 ${t.cardSecondary} p-4 rounded-2xl border ${t.border}`}>
@@ -879,7 +879,7 @@ _Thank you for choosing Genuine Fix!_`;
 
               <input type="number" placeholder="Buy Price / Cost Price (NPR)" value={newDevice.buyPrice} onChange={e => setNewDevice({...newDevice, buyPrice: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
               <input type="number" placeholder="Selling Price (NPR)" value={newDevice.sellPrice} onChange={e => setNewDevice({...newDevice, sellPrice: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
-              <input type="number" min="0" placeholder="Warranty (Months, e.g. 3)" value={newDevice.warrantyMonths} onChange={e => setNewDevice({...newDevice, warrantyMonths: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+              <input type="text" placeholder="Warranty (e.g. 3 Months)" value={newDevice.warrantyMonths} onChange={e => setNewDevice({...newDevice, warrantyMonths: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
 
               <button type="submit" className="md:col-span-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-emerald-600/30">Save Device & Generate Bill</button>
             </form>
@@ -956,7 +956,7 @@ _Thank you for choosing Genuine Fix!_`;
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                 <input type="number" placeholder="Paid Amount" value={posBill.paidAmount} onChange={e => setPosBill({...posBill, paidAmount: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-                <input type="number" min="0" placeholder="Warranty (Months, e.g. 1)" value={posBill.warrantyMonths} onChange={e => setPosBill({...posBill, warrantyMonths: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                <input type="text" placeholder="Warranty (e.g. 30 Days)" value={posBill.warrantyMonths} onChange={e => setPosBill({...posBill, warrantyMonths: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
               </div>
 
               <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-emerald-600/30">Complete Sale & Print Bill</button>
@@ -1235,7 +1235,7 @@ _Thank you for choosing Genuine Fix!_`;
                   <div className="text-right">
                     <p className="text-slate-400 font-bold uppercase mb-1">Service Details:</p>
                     <p className="font-semibold text-slate-800">{selectedInvoice.model || selectedInvoice.deviceType}</p>
-                    <p className="text-blue-600 font-bold mt-1">Warranty: {selectedInvoice.warrantyMonths || '1'} Months</p>
+                    <p className="text-blue-600 font-bold mt-1">Warranty: {selectedInvoice.warrantyMonths || '30 Days'}</p>
                   </div>
                 </div>
 
@@ -1362,8 +1362,8 @@ _Thank you for choosing Genuine Fix!_`;
                 </div>
               </div>
               <div>
-                <label className={`text-xs ${t.textMuted} block mb-1`}>Warranty (Months)</label>
-                <input type="number" min="0" value={editingInvoice.warrantyMonths || ''} onChange={e => setEditingInvoice({...editingInvoice, warrantyMonths: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`} />
+                <label className={`text-xs ${t.textMuted} block mb-1`}>Warranty (e.g. 30 Days)</label>
+                <input type="text" value={editingInvoice.warrantyMonths || ''} onChange={e => setEditingInvoice({...editingInvoice, warrantyMonths: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`} />
               </div>
 
               <div className="flex justify-end gap-3 pt-4">
