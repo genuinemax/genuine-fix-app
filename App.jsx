@@ -145,6 +145,15 @@ export default function App() {
     ];
   });
 
+  // Unique Customers List (Auto-extracted from repairs and devices for autocomplete)
+  const uniqueCustomers = Array.from(
+    new Map(
+      repairs
+        .filter(r => r.customerName && r.customerName !== 'Walk-in Customer')
+        .map(r => [r.customerName.trim().toLowerCase(), { name: r.customerName, phone: r.phone }])
+    ).values()
+  );
+
   // Form & UI States
   const [newRepair, setNewRepair] = useState({ 
     customerName: '', phone: '', citizenshipNo: '', 
@@ -267,6 +276,20 @@ export default function App() {
       }
     };
     reader.readAsText(file);
+  };
+
+  // Helper to auto-fill phone when customer name matches existing record
+  const handleCustomerSelect = (name, formType) => {
+    const found = uniqueCustomers.find(c => c.name.toLowerCase() === name.toLowerCase());
+    const phoneVal = found ? found.phone : '';
+
+    if (formType === 'repair') {
+      setNewRepair(prev => ({ ...prev, customerName: name, phone: phoneVal || prev.phone }));
+    } else if (formType === 'device') {
+      setNewDevice(prev => ({ ...prev, partyName: name, partyPhone: phoneVal || prev.partyPhone }));
+    } else if (formType === 'pos') {
+      setPosBill(prev => ({ ...prev, customerName: name, phone: phoneVal || prev.phone }));
+    }
   };
 
   const handleAddRepair = (e) => {
@@ -720,6 +743,13 @@ _Thank you for choosing ${shopInfo.name}!_`;
 
   return (
     <div className={`min-h-screen ${t.appBg} font-sans transition-colors duration-200`}>
+      {/* Global Datalist for Customer Name Autocomplete */}
+      <datalist id="customer-list">
+        {uniqueCustomers.map((c, idx) => (
+          <option key={idx} value={c.name} data-phone={c.phone} />
+        ))}
+      </datalist>
+
       {/* Top Navigation Bar */}
       <nav className={`border-b ${t.border} ${t.navBg} backdrop-blur-xl sticky top-0 z-30 shadow-lg`}>
         <div className="max-w-7xl mx-auto px-6 py-4 flex flex-wrap items-center justify-between gap-4">
@@ -833,7 +863,14 @@ _Thank you for choosing ${shopInfo.name}!_`;
           <div className="space-y-6 animate-in fade-in duration-300">
             <h2 className={`text-xl font-bold ${t.textMain}`}>Create Repair / Unlocking Job Sheet</h2>
             <form onSubmit={handleAddRepair} className={`${t.cardBg} border ${t.border} p-6 rounded-3xl grid grid-cols-1 md:grid-cols-3 gap-4 shadow-xl`}>
-              <input type="text" placeholder="Customer Full Name (Optional)" value={newRepair.customerName} onChange={e => setNewRepair({...newRepair, customerName: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`} />
+              <input 
+                type="text" 
+                list="customer-list"
+                placeholder="Customer Full Name (सुझाव आउँछ)" 
+                value={newRepair.customerName} 
+                onChange={e => handleCustomerSelect(e.target.value, 'repair')} 
+                className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`} 
+              />
               <input type="text" placeholder="Phone Number (e.g. 98xxxxxxxx)" value={newRepair.phone} onChange={e => setNewRepair({...newRepair, phone: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`} />
               <input type="text" placeholder="Citizenship No. (Optional)" value={newRepair.citizenshipNo} onChange={e => setNewRepair({...newRepair, citizenshipNo: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`} />
 
@@ -889,7 +926,14 @@ _Thank you for choosing ${shopInfo.name}!_`;
               <input type="text" placeholder="IMEI Number or Serial No." value={newDevice.imeiOrSerial} onChange={e => setNewDevice({...newDevice, imeiOrSerial: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
               
               <input type="text" placeholder="Condition / Specs (e.g. Battery 90%, Scratchless)" value={newDevice.condition} onChange={e => setNewDevice({...newDevice, condition: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-              <input type="text" placeholder="Customer / Party Name" value={newDevice.partyName} onChange={e => setNewDevice({...newDevice, partyName: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+              <input 
+                type="text" 
+                list="customer-list"
+                placeholder="Customer / Party Name (सुझाव आउँछ)" 
+                value={newDevice.partyName} 
+                onChange={e => handleCustomerSelect(e.target.value, 'device')} 
+                className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} 
+              />
               <input type="text" placeholder="Customer Phone Number" value={newDevice.partyPhone} onChange={e => setNewDevice({...newDevice, partyPhone: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
 
               <input type="number" placeholder="Buy Price / Cost Price (NPR)" value={newDevice.buyPrice} onChange={e => setNewDevice({...newDevice, buyPrice: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
@@ -950,7 +994,14 @@ _Thank you for choosing ${shopInfo.name}!_`;
 
             <form onSubmit={handleSavePosBill} className={`${t.cardBg} border ${t.border} p-6 rounded-3xl space-y-4 shadow-xl`}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input type="text" placeholder="Customer Name (Optional)" value={posBill.customerName} onChange={e => setPosBill({...posBill, customerName: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                <input 
+                  type="text" 
+                  list="customer-list"
+                  placeholder="Customer Name (सुझाव आउँछ)" 
+                  value={posBill.customerName} 
+                  onChange={e => handleCustomerSelect(e.target.value, 'pos')} 
+                  className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} 
+                />
                 <input type="text" placeholder="Phone Number (Optional)" value={posBill.phone} onChange={e => setPosBill({...posBill, phone: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
               </div>
 
@@ -1388,7 +1439,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
               </div>
               <div>
                 <label className={`text-xs ${t.textMuted} block mb-1`}>Model / Description</label>
-                <input type="text" value={editingInvoice.model} onChange={e => setEditingInvoice({...editingInvoice, model: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`} />
+                <input type="text" value={editingInvoice.model} onChange={e => setEditingInvoice({...editingInvoice, model: e.target.value})} className={`w-full p-3 ${t.inputBg, border rounded-2xl text-sm focus:outline-none focus:border-blue-600`} />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -1396,7 +1447,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
                   <input type="number" value={editingInvoice.totalCost} onChange={e => setEditingInvoice({...editingInvoice, totalCost: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`} />
                 </div>
                 <div>
-                  <label className={`text-xs ${t.textMuted} block mb-1`}>Paid Amount (NPR)</label>
+                  <label className={`text-xs ${t.textMuted} data-[s]:block mb-1`}>Paid Amount (NPR)</label>
                   <input type="number" value={editingInvoice.paidAmount} onChange={e => setEditingInvoice({...editingInvoice, paidAmount: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`} />
                 </div>
               </div>
@@ -1406,7 +1457,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
               </div>
 
               <div className="flex justify-end gap-3 pt-4">
-                <button type="button" onClick={() => setEditingInvoice(null)} className={`px-5 py-2.5 ${t.cardSecondary} ${t.textMuted} font-bold rounded-xl text-sm`},Cancel</button>
+                <button type="button" onClick={() => setEditingInvoice(null)} className={`px-5 py-2.5 ${t.cardSecondary} ${t.textMuted} font-bold rounded-xl text-sm`}>Cancel</button>
                 <button type="submit" className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-sm shadow-lg shadow-blue-600/30">Save Changes</button>
               </div>
             </form>
