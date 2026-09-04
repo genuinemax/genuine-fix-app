@@ -11,7 +11,7 @@ export default function App() {
   // ==========================================
   // १. सबै सबै useState र useEffect हरू सधैं यहाँ माथि राख्ने
   // ==========================================
-  const [activeTab, setActiveTab] = useState('invoices');
+  const [activeTab, setActiveTab] = useState('repairs');
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -745,7 +745,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
       {/* Global Datalist for Customer Name Autocomplete */}
       <datalist id="customer-list">
         {uniqueCustomers.map((c, idx) => (
-          <option key={idx} value={c.name} data-phone={c.phone} />
+          <option key={idx} value={c.name} />
         ))}
       </datalist>
 
@@ -865,7 +865,6 @@ _Thank you for choosing ${shopInfo.name}!_`;
               <input 
                 type="text" 
                 list="customer-list"
-                autoComplete="on"
                 placeholder="Customer Full Name (पुराना नाम सुझाव आउँछ)" 
                 value={newRepair.customerName} 
                 onChange={e => handleCustomerSelect(e.target.value, 'repair')} 
@@ -929,7 +928,6 @@ _Thank you for choosing ${shopInfo.name}!_`;
               <input 
                 type="text" 
                 list="customer-list"
-                autoComplete="on"
                 placeholder="Customer / Party Name (सुझाव आउँछ)" 
                 value={newDevice.partyName} 
                 onChange={e => handleCustomerSelect(e.target.value, 'device')} 
@@ -998,7 +996,6 @@ _Thank you for choosing ${shopInfo.name}!_`;
                 <input 
                   type="text" 
                   list="customer-list"
-                  autoComplete="on"
                   placeholder="Customer Name (सुझाव आउँछ)" 
                   value={posBill.customerName} 
                   onChange={e => handleCustomerSelect(e.target.value, 'pos')} 
@@ -1427,13 +1424,13 @@ _Thank you for choosing ${shopInfo.name}!_`;
                 <input type="text" value={editingInvoice.customerName} onChange={e => setEditingInvoice({...editingInvoice, customerName: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
               </div>
               <div>
-                <label className={`text-xs ${t.textMuted} block mb-1`}>Phone Number</label>
+                <label className={`text-xs ${t.textMuted} data-phone block mb-1`}>Phone Number</label>
                 <input type="text" value={editingInvoice.phone} onChange={e => setEditingInvoice({...editingInvoice, phone: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className={`text-xs ${t.textMuted} block mb-1`}>Total Cost (NPR)</label>
-                  <input type="number" value={editingInvoice.totalCost} onChange={e => setEditingInvoice({...editingInvoice, totalCost: e.target.value})} className={`w-0.5% w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
+                  <input type="number" value={editingInvoice.totalCost} onChange={e => setEditingInvoice({...editingInvoice, totalCost: e.target.value})} className={`w-0.5 w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
                 </div>
                 <div>
                   <label className={`text-xs ${t.textMuted} block mb-1`}>Paid Amount (NPR)</label>
@@ -1446,7 +1443,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
               </div>
 
               <div className="flex justify-end gap-3 pt-2">
-                <button type="button" onClick={() => setEditingInvoice(null)} className={`px-4 py-2.5 ${t.cardSecondary} ${t.textMain} rounded-xl text-xs font-bold border ${t.border}`}>Cancel`}</button>
+                <button type="button" onClick={() => setEditingInvoice(null)} className={`px-4 py-2.5 ${t.cardSecondary} ${t.textMain} rounded-xl text-xs font-bold border ${t.border}`}>Cancel</button>
                 <button type="submit" className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-blue-600/30">Update Invoice</button>
               </div>
             </form>
