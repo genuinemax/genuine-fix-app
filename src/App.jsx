@@ -58,7 +58,7 @@ function CustomerAutocomplete({ value, customers, placeholder, className, onChan
       />
 
       {open && suggestions.length > 0 && (
-        <div className="absolute left-0 right-0 top-full mt-1 z-[60] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+        <div className="absolute left-0 right-0 top-full mt-1 z-[60] overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl">
           {suggestions.map((customer, index) => (
             <button
               type="button"
@@ -68,12 +68,13 @@ function CustomerAutocomplete({ value, customers, placeholder, className, onChan
               className={`w-full px-4 py-3 text-left border-b border-slate-100 last:border-b-0 hover:bg-blue-50 ${index === highlighted ? 'bg-blue-50' : ''}`}
             >
               <div className="font-semibold text-slate-800 text-sm">{customer.name}</div>
-              <div className="text-xs text-slate-500 mt-0.5">📞 {customer.phone || 'No phone saved'}</div>
+              <div className="text-xs text-slate-500 mt-0.5">{customer.phone || 'No phone saved'}</div>
             </button>
           ))}
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }
 
@@ -266,7 +267,7 @@ export default function App() {
   useEffect(() => { localStorage.setItem('gf_expenses', JSON.stringify(expenses)); }, [expenses]);
 
   if (loading) {
-    return <div style={{ color: '#fff', textAlign: 'center', marginTop: '100px', fontSize: '18px' }}>लोड हुँदैछ...</div>;
+    return <div style={{ color: '#fff', textAlign: 'center', marginTop: '100px', fontSize: '18px' }}>Loading...</div>;
   }
 
   if (!user) {
@@ -335,12 +336,12 @@ export default function App() {
           setInventory(parsed.inventory);
           if (parsed.devicesStock) setDevicesStock(parsed.devicesStock);
           setExpenses(parsed.expenses);
-          alert('तपाईको पसलको डाटा सफलतापूर्वक Restore भयो!');
+          alert('Store data restored successfully.');
         } else {
-          alert('अमान्य ब्याकअप फाइल!');
+          alert('Invalid backup file.');
         }
       } catch (err) {
-        alert('फाइल पढ्न असफल भयो!');
+        alert('Unable to read backup file.');
       }
     };
     reader.readAsText(file);
@@ -375,7 +376,7 @@ export default function App() {
     };
     setRepairs([repairItem, ...repairs]);
     setNewRepair({ customerName: '', phone: '', citizenshipNo: '', customerPhoto: '', citizenshipPhoto: '', deviceType: 'Mobile (Unlock)', model: '', totalCost: '', paidAmount: '', issue: '', warrantyMonths: '30 Days' });
-    alert('Job Sheet सफलतापूर्वक Save भयो!');
+    alert('Job Sheet saved successfully.');
   };
 
   const handleAddDevice = (e) => {
@@ -438,7 +439,7 @@ export default function App() {
       sellPrice: '',
       warrantyMonths: '30 Days'
     });
-    alert('Device सफलतापूर्वक Save भयो!');
+    alert('Device saved successfully.');
   };
 
   const handleAddPosItem = () => {
@@ -509,7 +510,7 @@ export default function App() {
 
     setRepairs([newBill, ...repairs]);
     setPosBill({ customerName: '', phone: '', items: [{ name: '', price: '', qty: 1 }], paidAmount: '', warrantyMonths: '30 Days' });
-    alert('Accessories Bill सफलतापूर्वक Save भयो!');
+    alert('Accessories Bill saved successfully.');
   };
 
   const handleAddPart = (e) => {
@@ -575,12 +576,19 @@ export default function App() {
   });
 
   return (
-    <div className={`min-h-screen ${t.appBg} font-sans transition-colors duration-200`}>
+    <>
+      <style>{`
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif; }
+        input, select, textarea, button { font-family: inherit; }
+        button { -webkit-tap-highlight-color: transparent; }
+      `}</style>
+      <div className={`min-h-screen ${t.appBg} font-sans transition-colors duration-200`}>
       {/* Top Navigation Bar */}
       <nav className={`border-b ${t.border} ${t.navBg} backdrop-blur-xl sticky top-0 z-30 shadow-lg`}>
         <div className="max-w-7xl mx-auto px-6 py-4 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl overflow-hidden border border-slate-700 shadow-md bg-slate-900 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg overflow-hidden border border-slate-700 shadow-md bg-slate-900 flex items-center justify-center">
               <img src="/logo.jpg" alt="Genuine Fix Logo" className="w-full h-full object-cover" />
             </div>
             <div>
@@ -589,7 +597,7 @@ export default function App() {
             </div>
           </div>
           
-          <div className={`flex flex-wrap items-center gap-1.5 ${t.cardSecondary} p-1.5 rounded-2xl border ${t.border}`}>
+          <div className={`flex flex-wrap items-center gap-1.5 ${t.cardSecondary} p-1.5 rounded-lg border ${t.border}`}>
             {[
               { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
               { id: 'repairs', icon: ShieldCheck, label: 'Job Sheets' },
@@ -604,7 +612,7 @@ export default function App() {
               <button 
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition-all ${
                   activeTab === item.id 
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' 
                     : `${t.textMuted} hover:text-white hover:bg-blue-600/10`
@@ -625,21 +633,21 @@ export default function App() {
         {activeTab === 'dashboard' && (
           <div className="space-y-8 animate-in fade-in duration-300">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className={`bg-gradient-to-br from-blue-500/10 to-transparent border ${t.border} p-6 rounded-3xl shadow-xl`}>
+              <div className={`bg-gradient-to-br from-blue-500/10 to-transparent border ${t.border} p-6 rounded-lg shadow-lg`}>
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Total Revenue</p>
                 <h3 className="text-3xl font-black text-blue-400">NPR {totalRevenue}</h3>
               </div>
-              <div className={`bg-gradient-to-br from-emerald-500/10 to-transparent border ${t.border} p-6 rounded-3xl shadow-xl`}>
+              <div className={`bg-gradient-to-br from-emerald-500/10 to-transparent border ${t.border} p-6 rounded-lg shadow-lg`}>
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Total Balance Due</p>
                 <h3 className="text-3xl font-black text-emerald-400">NPR {totalDue}</h3>
               </div>
-              <div className={`bg-gradient-to-br from-rose-500/10 to-transparent border ${t.border} p-6 rounded-3xl shadow-xl`}>
+              <div className={`bg-gradient-to-br from-rose-500/10 to-transparent border ${t.border} p-6 rounded-lg shadow-lg`}>
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Shop Expenses</p>
                 <h3 className="text-3xl font-black text-rose-400">NPR {totalExp}</h3>
               </div>
             </div>
 
-            <div className={`${t.cardBg} border ${t.border} rounded-3xl p-6 shadow-xl`}>
+            <div className={`${t.cardBg} border ${t.border} rounded-2xl p-6 shadow-lg`}>
               <div className="flex items-center justify-between mb-6">
                 <h2 className={`text-lg font-bold ${t.textMain}`}>Recent Bills & Job Sheets</h2>
                 <button onClick={() => setActiveTab('invoices')} className="text-blue-400 text-xs font-bold flex items-center gap-1 hover:text-blue-300">
@@ -671,7 +679,7 @@ export default function App() {
                           </span>
                         </td>
                         <td className="py-4 text-right">
-                          <button onClick={() => setSelectedInvoice(r)} className="px-3 py-1.5 bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 rounded-xl text-xs font-bold inline-flex items-center gap-1">
+                          <button onClick={() => setSelectedInvoice(r)} className="px-3 py-1.5 bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 rounded-lg text-xs font-bold inline-flex items-center gap-1">
                             <Eye size={14}/> Preview
                           </button>
                         </td>
@@ -687,20 +695,20 @@ export default function App() {
         {/* REPAIRS / JOB SHEETS TAB */}
         {activeTab === 'repairs' && (
           <div className="space-y-6 animate-in fade-in duration-300">
-            <h2 className={`text-xl font-bold ${t.textMain}`}>Create Repair / Unlocking Job Sheet (Auto-Fill Active)</h2>
-            <form onSubmit={handleAddRepair} className={`${t.cardBg} border ${t.border} p-6 rounded-3xl grid grid-cols-1 md:grid-cols-3 gap-4 shadow-xl`}>
+            <h2 className={`text-xl font-bold ${t.textMain}`}>Create Repair / Unlocking Job Sheet</h2>
+            <form onSubmit={handleAddRepair} className={`${t.cardBg} border ${t.border} p-6 rounded-2xl grid grid-cols-1 md:grid-cols-3 gap-4 shadow-lg`}>
               <CustomerAutocomplete
                   value={newRepair.customerName}
                   customers={uniqueCustomers}
-                  placeholder="Customer Full Name (पुरानो customer छान्नुहोस्)"
+                  placeholder="Customer Full Name"
                   onChange={(value) => setNewRepair(prev => ({ ...prev, customerName: value }))}
                   onSelect={(customer) => handleCustomerSelect(customer, 'repair')}
-                  className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`}
+                  className={`w-full p-3 ${t.inputBg} border rounded-lg text-sm focus:outline-none focus:border-blue-600`}
                 />
-              <input type="text" placeholder="Phone Number (e.g. 98xxxxxxxx)" value={newRepair.phone} onChange={e => setNewRepair({...newRepair, phone: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`} />
-              <input type="text" placeholder="Citizenship No. (Optional)" value={newRepair.citizenshipNo} onChange={e => setNewRepair({...newRepair, citizenshipNo: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`} />
+              <input type="text" placeholder="Phone Number (e.g. 98xxxxxxxx)" value={newRepair.phone} onChange={e => setNewRepair({...newRepair, phone: e.target.value})} className={`p-3 ${t.inputBg} border rounded-lg text-sm focus:outline-none focus:border-blue-600`} />
+              <input type="text" placeholder="Citizenship No. (Optional)" value={newRepair.citizenshipNo} onChange={e => setNewRepair({...newRepair, citizenshipNo: e.target.value})} className={`p-3 ${t.inputBg} border rounded-lg text-sm focus:outline-none focus:border-blue-600`} />
 
-              <select value={newRepair.deviceType} onChange={e => setNewRepair({...newRepair, deviceType: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}>
+              <select value={newRepair.deviceType} onChange={e => setNewRepair({...newRepair, deviceType: e.target.value})} className={`p-3 ${t.inputBg} border rounded-lg text-sm focus:outline-none`}>
                 <option value="Laptop Repair">Laptop Repair</option>
                 <option value="Mobile Repair">Mobile Repair</option>
                 <option value="Mobile (Unlock)">Mobile (Unlock)</option>
@@ -708,26 +716,26 @@ export default function App() {
                 <option value="Tablet Repair">Tablet Repair</option>
               </select>
 
-              <input type="text" placeholder="Device Model (Optional)" value={newRepair.model} onChange={e => setNewRepair({...newRepair, model: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-              <input type="number" placeholder="Total Cost (NPR)" value={newRepair.totalCost} onChange={e => setNewRepair({...newRepair, totalCost: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-              <input type="number" placeholder="Paid Amount (NPR)" value={newRepair.paidAmount} onChange={e => setNewRepair({...newRepair, paidAmount: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-              <input type="text" placeholder="Warranty (e.g. 30 Days, 1 Year)" value={newRepair.warrantyMonths} onChange={e => setNewRepair({...newRepair, warrantyMonths: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-              <input type="text" placeholder="Issue / Details (Optional)" value={newRepair.issue} onChange={e => setNewRepair({...newRepair, issue: e.target.value})} className={`md:col-span-2 p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+              <input type="text" placeholder="Device Model (Optional)" value={newRepair.model} onChange={e => setNewRepair({...newRepair, model: e.target.value})} className={`p-3 ${t.inputBg} border rounded-lg text-sm focus:outline-none`} />
+              <input type="number" placeholder="Total Cost (NPR)" value={newRepair.totalCost} onChange={e => setNewRepair({...newRepair, totalCost: e.target.value})} className={`p-3 ${t.inputBg} border rounded-lg text-sm focus:outline-none`} />
+              <input type="number" placeholder="Paid Amount (NPR)" value={newRepair.paidAmount} onChange={e => setNewRepair({...newRepair, paidAmount: e.target.value})} className={`p-3 ${t.inputBg} border rounded-lg text-sm focus:outline-none`} />
+              <input type="text" placeholder="Warranty (e.g. 30 Days, 1 Year)" value={newRepair.warrantyMonths} onChange={e => setNewRepair({...newRepair, warrantyMonths: e.target.value})} className={`p-3 ${t.inputBg} border rounded-lg text-sm focus:outline-none`} />
+              <input type="text" placeholder="Issue / Details (Optional)" value={newRepair.issue} onChange={e => setNewRepair({...newRepair, issue: e.target.value})} className={`md:col-span-2 p-3 ${t.inputBg} border rounded-lg text-sm focus:outline-none`} />
 
-              <div className={`md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-4 ${t.cardSecondary} p-4 rounded-2xl border ${t.border}`}>
+              <div className={`md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-4 ${t.cardSecondary} p-4 rounded-lg border ${t.border}`}>
                 <div>
                   <label className="text-xs font-bold text-slate-400 block mb-1">Customer Photo (Optional)</label>
-                  <input type="file" accept="image/*" onChange={e => handleImageUpload(e, 'customerPhoto')} className="text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer" />
+                  <input type="file" accept="image/*" onChange={e => handleImageUpload(e, 'customerPhoto')} className="text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer" />
                   {newRepair.customerPhoto && <span className="text-xs text-emerald-400 mt-1 block font-semibold">✓ Customer Photo Attached</span>}
                 </div>
                 <div>
                   <label className="text-xs font-bold text-slate-400 block mb-1">Citizenship Photo (Optional)</label>
-                  <input type="file" accept="image/*" onChange={e => handleImageUpload(e, 'citizenshipPhoto')} className="text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer" />
+                  <input type="file" accept="image/*" onChange={e => handleImageUpload(e, 'citizenshipPhoto')} className="text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer" />
                   {newRepair.citizenshipPhoto && <span className="text-xs text-emerald-400 mt-1 block font-semibold">✓ Citizenship Photo Attached</span>}
                 </div>
               </div>
               
-              <button type="submit" className="md:col-span-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-blue-600/35">Save Job Sheet</button>
+              <button type="submit" className="md:col-span-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg p-3.5 transition shadow-lg shadow-blue-600/35">Save Job Sheet</button>
             </form>
           </div>
         )}
@@ -736,40 +744,40 @@ export default function App() {
         {activeTab === 'devices' && (
           <div className="space-y-6 animate-in fade-in duration-300">
             <div>
-              <h2 className={`text-xl font-bold ${t.textMain}`}>📱 Second-Hand & New Phone / Laptop Trading</h2>
+              <h2 className={`text-xl font-bold ${t.textMain}`}>Second-Hand & New Device Trading</h2>
               <p className={`text-xs ${t.textMuted} mt-0.5`}>Record 2nd-hand phone/laptop buybacks, trade-ins, or new device sales with IMEI & customer details.</p>
             </div>
 
-            <form onSubmit={handleAddDevice} className={`${t.cardBg} border ${t.border} p-6 rounded-3xl grid grid-cols-1 md:grid-cols-3 gap-4 shadow-xl`}>
-              <select value={newDevice.deviceCategory} onChange={e => setNewDevice({...newDevice, deviceCategory: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}>
+            <form onSubmit={handleAddDevice} className={`${t.cardBg} border ${t.border} p-6 rounded-2xl grid grid-cols-1 md:grid-cols-3 gap-4 shadow-lg`}>
+              <select value={newDevice.deviceCategory} onChange={e => setNewDevice({...newDevice, deviceCategory: e.target.value})} className={`p-3 ${t.inputBg} border rounded-lg text-sm focus:outline-none`}>
                 <option value="Second-Hand Phone">Second-Hand Phone</option>
                 <option value="Second-Hand Laptop">Second-Hand Laptop</option>
                 <option value="New Phone">New Phone (Brand New)</option>
                 <option value="New Laptop">New Laptop (Brand New)</option>
               </select>
 
-              <input type="text" placeholder="Brand & Model (e.g. iPhone 13 / Dell Inspiron)" value={newDevice.brandModel} onChange={e => setNewDevice({...newDevice, brandModel: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
-              <input type="text" placeholder="IMEI Number or Serial No." value={newDevice.imeiOrSerial} onChange={e => setNewDevice({...newDevice, imeiOrSerial: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
+              <input type="text" placeholder="Brand & Model (e.g. iPhone 13 / Dell Inspiron)" value={newDevice.brandModel} onChange={e => setNewDevice({...newDevice, brandModel: e.target.value})} className={`p-3 ${t.inputBg} border rounded-lg text-sm focus:outline-none`} required />
+              <input type="text" placeholder="IMEI Number or Serial No." value={newDevice.imeiOrSerial} onChange={e => setNewDevice({...newDevice, imeiOrSerial: e.target.value})} className={`p-3 ${t.inputBg} border rounded-lg text-sm focus:outline-none`} required />
               
-              <input type="text" placeholder="Condition / Specs (e.g. Battery 90%, Scratchless)" value={newDevice.condition} onChange={e => setNewDevice({...newDevice, condition: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+              <input type="text" placeholder="Condition / Specs (e.g. Battery 90%, Scratchless)" value={newDevice.condition} onChange={e => setNewDevice({...newDevice, condition: e.target.value})} className={`p-3 ${t.inputBg} border rounded-lg text-sm focus:outline-none`} />
               <CustomerAutocomplete
                   value={newDevice.partyName}
                   customers={uniqueCustomers}
-                  placeholder="Customer / Party Name (पुरानो customer छान्नुहोस्)"
+                  placeholder="Customer / Party Name"
                   onChange={(value) => setNewDevice(prev => ({ ...prev, partyName: value }))}
                   onSelect={(customer) => handleCustomerSelect(customer, 'device')}
-                  className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}
+                  className={`w-full p-3 ${t.inputBg} border rounded-lg text-sm focus:outline-none`}
                 />
-              <input type="text" placeholder="Customer Phone Number" value={newDevice.partyPhone} onChange={e => setNewDevice({...newDevice, partyPhone: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+              <input type="text" placeholder="Customer Phone Number" value={newDevice.partyPhone} onChange={e => setNewDevice({...newDevice, partyPhone: e.target.value})} className={`p-3 ${t.inputBg} border rounded-lg text-sm focus:outline-none`} />
 
-              <input type="number" placeholder="Buy Price / Cost Price (NPR)" value={newDevice.buyPrice} onChange={e => setNewDevice({...newDevice, buyPrice: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-              <input type="number" placeholder="Selling Price (NPR)" value={newDevice.sellPrice} onChange={e => setNewDevice({...newDevice, sellPrice: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
-              <input type="text" placeholder="Warranty (e.g. 3 Months)" value={newDevice.warrantyMonths} onChange={e => setNewDevice({...newDevice, warrantyMonths: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+              <input type="number" placeholder="Buy Price / Cost Price (NPR)" value={newDevice.buyPrice} onChange={e => setNewDevice({...newDevice, buyPrice: e.target.value})} className={`p-3 ${t.inputBg} border rounded-lg text-sm focus:outline-none`} />
+              <input type="number" placeholder="Selling Price (NPR)" value={newDevice.sellPrice} onChange={e => setNewDevice({...newDevice, sellPrice: e.target.value})} className={`p-3 ${t.inputBg} border rounded-lg text-sm focus:outline-none`} required />
+              <input type="text" placeholder="Warranty (e.g. 3 Months)" value={newDevice.warrantyMonths} onChange={e => setNewDevice({...newDevice, warrantyMonths: e.target.value})} className={`p-3 ${t.inputBg} border rounded-lg text-sm focus:outline-none`} />
 
-              <button type="submit" className="md:col-span-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-emerald-600/30">Save Device & Generate Bill</button>
+              <button type="submit" className="md:col-span-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg p-3.5 transition shadow-lg shadow-emerald-600/30">Save Device & Generate Bill</button>
             </form>
 
-            <div className={`${t.cardBg} border ${t.border} rounded-3xl overflow-hidden shadow-xl`}>
+            <div className={`${t.cardBg} border ${t.border} rounded-lg overflow-hidden shadow-lg`}>
               <table className="w-full text-left text-sm">
                 <thead className={`${t.tableHeader} text-xs uppercase border-b`}>
                   <tr>
@@ -800,7 +808,7 @@ export default function App() {
                         <p className="text-sm font-bold text-emerald-400">Sell: NPR {dev.sellPrice}</p>
                       </td>
                       <td className="p-4 text-right space-x-2">
-                        <button onClick={() => deleteDevice(dev.id)} className="p-2 bg-rose-500/10 text-rose-400 rounded-xl hover:bg-rose-500/20"><Trash2 size={14}/></button>
+                        <button onClick={() => deleteDevice(dev.id)} className="p-2 bg-rose-500/10 text-rose-400 rounded-lg hover:bg-rose-500/20"><Trash2 size={14}/></button>
                       </td>
                     </tr>
                   ))}
@@ -818,40 +826,40 @@ export default function App() {
               <p className={`text-xs ${t.textMuted} mt-0.5`}>Pick from stock or type custom item names and prices freely. Stock will deduct automatically.</p>
             </div>
 
-            <form onSubmit={handleSavePosBill} className={`${t.cardBg} border ${t.border} p-6 rounded-3xl space-y-4 shadow-xl`}>
+            <form onSubmit={handleSavePosBill} className={`${t.cardBg} border ${t.border} p-6 rounded-lg space-y-4 shadow-lg`}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <CustomerAutocomplete
                     value={posBill.customerName}
                     customers={uniqueCustomers}
-                    placeholder="Customer Name (पुरानो customer छान्नुहोस्)"
+                    placeholder="Customer Name"
                     onChange={(value) => setPosBill(prev => ({ ...prev, customerName: value }))}
                     onSelect={(customer) => handleCustomerSelect(customer, 'pos')}
-                    className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}
+                    className={`w-full p-3 ${t.inputBg} border rounded-lg text-sm focus:outline-none`}
                   />
-                <input type="text" placeholder="Phone Number (Optional)" value={posBill.phone} onChange={e => setPosBill({...posBill, phone: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                <input type="text" placeholder="Phone Number (Optional)" value={posBill.phone} onChange={e => setPosBill({...posBill, phone: e.target.value})} className={`p-3 ${t.inputBg} border rounded-lg text-sm focus:outline-none`} />
               </div>
 
               <div className="space-y-3">
                 <label className="text-xs font-bold uppercase text-slate-400">Items List</label>
                 {posBill.items.map((item, idx) => (
-                  <div key={idx} className={`flex flex-wrap items-center gap-3 ${t.cardSecondary} p-3 rounded-2xl border ${t.border}`}>
-                    <input type="text" placeholder="Item Name" value={item.name} onChange={e => handlePosItemChange(idx, 'name', e.target.value)} className={`flex-1 min-w-[200px] p-2.5 ${t.inputBg} border rounded-xl text-sm focus:outline-none`} />
-                    <input type="number" placeholder="Price" value={item.price} onChange={e => handlePosItemChange(idx, 'price', e.target.value)} className={`w-28 p-2.5 ${t.inputBg} border rounded-xl text-sm focus:outline-none`} />
-                    <input type="number" placeholder="Qty" value={item.qty} onChange={e => handlePosItemChange(idx, 'qty', e.target.value)} className={`w-20 p-2.5 ${t.inputBg} border rounded-xl text-sm focus:outline-none`} />
+                  <div key={idx} className={`flex flex-wrap items-center gap-3 ${t.cardSecondary} p-3 rounded-lg border ${t.border}`}>
+                    <input type="text" placeholder="Item Name" value={item.name} onChange={e => handlePosItemChange(idx, 'name', e.target.value)} className={`flex-1 min-w-[200px] p-2.5 ${t.inputBg} border rounded-lg text-sm focus:outline-none`} />
+                    <input type="number" placeholder="Price" value={item.price} onChange={e => handlePosItemChange(idx, 'price', e.target.value)} className={`w-28 p-2.5 ${t.inputBg} border rounded-lg text-sm focus:outline-none`} />
+                    <input type="number" placeholder="Qty" value={item.qty} onChange={e => handlePosItemChange(idx, 'qty', e.target.value)} className={`w-20 p-2.5 ${t.inputBg} border rounded-lg text-sm focus:outline-none`} />
                     {posBill.items.length > 1 && (
-                      <button type="button" onClick={() => handleRemovePosItem(idx)} className="p-2.5 bg-rose-500/10 text-rose-400 rounded-xl hover:bg-rose-500/20"><Trash2 size={16}/></button>
+                      <button type="button" onClick={() => handleRemovePosItem(idx)} className="p-2.5 bg-rose-500/10 text-rose-400 rounded-lg hover:bg-rose-500/20"><Trash2 size={16}/></button>
                     )}
                   </div>
                 ))}
-                <button type="button" onClick={handleAddPosItem} className={`px-4 py-2 ${t.cardSecondary} hover:opacity-80 ${t.textMain} rounded-xl text-xs font-bold border ${t.border}`}>+ Add Another Item</button>
+                <button type="button" onClick={handleAddPosItem} className={`px-4 py-2 ${t.cardSecondary} hover:opacity-80 ${t.textMain} rounded-lg text-xs font-bold border ${t.border}`}>+ Add Another Item</button>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                <input type="number" placeholder="Paid Amount" value={posBill.paidAmount} onChange={e => setPosBill({...posBill, paidAmount: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-                <input type="text" placeholder="Warranty (e.g. 30 Days)" value={posBill.warrantyMonths} onChange={e => setPosBill({...posBill, warrantyMonths: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                <input type="number" placeholder="Paid Amount" value={posBill.paidAmount} onChange={e => setPosBill({...posBill, paidAmount: e.target.value})} className={`p-3 ${t.inputBg} border rounded-lg text-sm focus:outline-none`} />
+                <input type="text" placeholder="Warranty (e.g. 30 Days)" value={posBill.warrantyMonths} onChange={e => setPosBill({...posBill, warrantyMonths: e.target.value})} className={`p-3 ${t.inputBg} border rounded-lg text-sm focus:outline-none`} />
               </div>
 
-              <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-emerald-600/30">Complete Sale & Print Bill</button>
+              <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg p-3.5 transition shadow-lg shadow-emerald-600/30">Complete Sale & Print Bill</button>
             </form>
           </div>
         )}
@@ -862,8 +870,8 @@ export default function App() {
             <div className="flex flex-wrap items-center justify-between gap-4">
               <h2 className={`text-xl font-bold ${t.textMain}`}>Invoices & Records</h2>
               <div className="flex items-center gap-3">
-                <input type="text" placeholder="Search by name, ID, phone..." value={invoiceSearch} onChange={e => setInvoiceSearch(e.target.value)} className={`p-2.5 ${t.cardBg} border ${t.border} rounded-xl text-sm ${t.textMain} w-64 focus:outline-none`} />
-                <div className={`flex ${t.cardBg} p-1 rounded-xl border ${t.border}`}>
+                <input type="text" placeholder="Search by name, ID, phone..." value={invoiceSearch} onChange={e => setInvoiceSearch(e.target.value)} className={`p-2.5 ${t.cardBg} border ${t.border} rounded-lg text-sm ${t.textMain} w-64 focus:outline-none`} />
+                <div className={`flex ${t.cardBg} p-1 rounded-lg border ${t.border}`}>
                   {['All', 'Repair', 'Devices', 'Accessories', 'Due', 'Paid'].map(tab => (
                     <button key={tab} onClick={() => setInvoiceFilterTab(tab)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${invoiceFilterTab === tab ? 'bg-blue-600 text-white' : `${t.textMuted} hover:text-white`}`}>{tab}</button>
                   ))}
@@ -871,7 +879,7 @@ export default function App() {
               </div>
             </div>
 
-            <div className={`${t.cardBg} border ${t.border} rounded-3xl overflow-hidden shadow-xl`}>
+            <div className={`${t.cardBg} border ${t.border} rounded-lg overflow-hidden shadow-lg`}>
               <table className="w-full text-left text-sm">
                 <thead className={`${t.tableHeader} text-xs uppercase border-b`}>
                   <tr>
@@ -903,12 +911,12 @@ export default function App() {
                         )}
                       </td>
                       <td className="p-4 text-right space-x-2">
-                        <button onClick={() => setSelectedInvoice(inv)} className="px-3 py-1.5 bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 rounded-xl text-xs font-bold">Preview</button>
-                        <button onClick={() => { if(window.confirm('के तपाईं यो रेकर्ड डिलेट गर्न चाहनुहुन्छ?')) deleteRepair(inv.id); }} className="p-2 bg-rose-500/10 text-rose-400 rounded-xl hover:bg-rose-500/20 inline-flex items-center align-middle">
+                        <button onClick={() => setSelectedInvoice(inv)} className="px-3 py-1.5 bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 rounded-lg text-xs font-bold">Preview</button>
+                        <button onClick={() => { if(window.confirm('Delete this record?')) deleteRepair(inv.id); }} className="p-2 bg-rose-500/10 text-rose-400 rounded-lg hover:bg-rose-500/20 inline-flex items-center align-middle">
                           <Trash2 size={14}/>
                         </button>
                         {Number(inv.dueAmount) > 0 && (
-                          <button onClick={() => markInvoiceAsPaid(inv.id)} className="px-3 py-1.5 bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 rounded-xl text-xs font-bold">Mark Paid</button>
+                          <button onClick={() => markInvoiceAsPaid(inv.id)} className="px-3 py-1.5 bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 rounded-lg text-xs font-bold">Mark Paid</button>
                         )}
                       </td>
                     </tr>
@@ -926,18 +934,18 @@ export default function App() {
               <h2 className={`text-xl font-bold ${t.textMain}`}>Parts & Accessories Inventory</h2>
             </div>
 
-            <form onSubmit={handleAddPart} className={`${t.cardBg} border ${t.border} p-6 rounded-3xl grid grid-cols-1 md:grid-cols-4 gap-4 shadow-xl`}>
-              <select value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}>
+            <form onSubmit={handleAddPart} className={`${t.cardBg} border ${t.border} p-6 rounded-lg grid grid-cols-1 md:grid-cols-4 gap-4 shadow-lg`}>
+              <select value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)} className={`p-3 ${t.inputBg} border rounded-lg text-sm focus:outline-none`}>
                 {categories.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
-              <input type="text" placeholder="Part Name" value={newPart.name} onChange={e => setNewPart({...newPart, name: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
-              <input type="number" placeholder="Stock Quantity" value={newPart.stock} onChange={e => setNewPart({...newPart, stock: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
-              <input type="number" placeholder="Cost Price (NPR)" value={newPart.costPrice} onChange={e => setNewPart({...newPart, costPrice: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-              <input type="number" placeholder="Selling Price (NPR)" value={newPart.price} onChange={e => setNewPart({...newPart, price: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
-              <button type="submit" className="md:col-span-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-blue-600/30">Add New Part to Stock</button>
+              <input type="text" placeholder="Part Name" value={newPart.name} onChange={e => setNewPart({...newPart, name: e.target.value})} className={`p-3 ${t.inputBg} border rounded-lg text-sm focus:outline-none`} required />
+              <input type="number" placeholder="Stock Quantity" value={newPart.stock} onChange={e => setNewPart({...newPart, stock: e.target.value})} className={`p-3 ${t.inputBg} border rounded-lg text-sm focus:outline-none`} required />
+              <input type="number" placeholder="Cost Price (NPR)" value={newPart.costPrice} onChange={e => setNewPart({...newPart, costPrice: e.target.value})} className={`p-3 ${t.inputBg} border rounded-lg text-sm focus:outline-none`} />
+              <input type="number" placeholder="Selling Price (NPR)" value={newPart.price} onChange={e => setNewPart({...newPart, price: e.target.value})} className={`p-3 ${t.inputBg} border rounded-lg text-sm focus:outline-none`} required />
+              <button type="submit" className="md:col-span-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg p-3.5 transition shadow-lg shadow-blue-600/30">Add New Part to Stock</button>
             </form>
 
-            <div className={`${t.cardBg} border ${t.border} rounded-3xl overflow-hidden shadow-xl`}>
+            <div className={`${t.cardBg} border ${t.border} rounded-lg overflow-hidden shadow-lg`}>
               <table className="w-full text-left text-sm">
                 <thead className={`${t.tableHeader} text-xs uppercase border-b`}>
                   <tr>
@@ -972,13 +980,13 @@ export default function App() {
         {activeTab === 'expenses' && (
           <div className="space-y-6 animate-in fade-in duration-300">
             <h2 className={`text-xl font-bold ${t.textMain}`}>Shop Expenses Tracker</h2>
-            <form onSubmit={handleAddExpense} className={`${t.cardBg} border ${t.border} p-6 rounded-3xl grid grid-cols-1 md:grid-cols-3 gap-4 shadow-xl`}>
-              <input type="text" placeholder="Expense Description (e.g. Rent, Electricity)" value={newExpense.description} onChange={e => setNewExpense({...newExpense, description: e.target.value})} className={`md:col-span-2 p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
-              <input type="number" placeholder="Amount (NPR)" value={newExpense.amount} onChange={e => setNewExpense({...newExpense, amount: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
-              <button type="submit" className="md:col-span-3 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-rose-600/30">Add Expense Record</button>
+            <form onSubmit={handleAddExpense} className={`${t.cardBg} border ${t.border} p-6 rounded-2xl grid grid-cols-1 md:grid-cols-3 gap-4 shadow-lg`}>
+              <input type="text" placeholder="Expense Description (e.g. Rent, Electricity)" value={newExpense.description} onChange={e => setNewExpense({...newExpense, description: e.target.value})} className={`md:col-span-2 p-3 ${t.inputBg} border rounded-lg text-sm focus:outline-none`} required />
+              <input type="number" placeholder="Amount (NPR)" value={newExpense.amount} onChange={e => setNewExpense({...newExpense, amount: e.target.value})} className={`p-3 ${t.inputBg} border rounded-lg text-sm focus:outline-none`} required />
+              <button type="submit" className="md:col-span-3 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg p-3.5 transition shadow-lg shadow-rose-600/30">Add Expense Record</button>
             </form>
 
-            <div className={`${t.cardBg} border ${t.border} rounded-3xl overflow-hidden shadow-xl`}>
+            <div className={`${t.cardBg} border ${t.border} rounded-lg overflow-hidden shadow-lg`}>
               <table className="w-full text-left text-sm">
                 <thead className={`${t.tableHeader} text-xs uppercase border-b`}>
                   <tr>
@@ -995,7 +1003,7 @@ export default function App() {
                       <td className={`p-4 font-bold ${t.textMain}`}>{exp.description}</td>
                       <td className="p-4 font-bold text-rose-400">NPR {exp.amount}</td>
                       <td className="p-4 text-right">
-                        <button onClick={() => deleteExpense(exp.id)} className="p-2 bg-rose-500/10 text-rose-400 rounded-xl hover:bg-rose-500/20"><Trash2 size={15}/></button>
+                        <button onClick={() => deleteExpense(exp.id)} className="p-2 bg-rose-500/10 text-rose-400 rounded-lg hover:bg-rose-500/20"><Trash2 size={15}/></button>
                       </td>
                     </tr>
                   ))}
@@ -1009,11 +1017,11 @@ export default function App() {
         {activeTab === 'backup' && (
           <div className="space-y-6 animate-in fade-in duration-300 max-w-2xl mx-auto">
             <h2 className={`text-xl font-bold ${t.textMain}`}>Data Backup & Restore</h2>
-            <div className={`${t.cardBg} border ${t.border} p-8 rounded-3xl space-y-6 shadow-xl text-center`}>
+            <div className={`${t.cardBg} border ${t.border} p-8 rounded-lg space-y-6 shadow-lg text-center`}>
               <div>
                 <h3 className={`font-bold ${t.textMain} text-lg`}>Download Backup File</h3>
                 <p className={`text-xs ${t.textMuted} mt-1`}>Export all your repairs, device trading, inventory, expenses into a secure JSON file.</p>
-                <button onClick={exportData} className="mt-4 px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl transition shadow-lg shadow-blue-600/30 inline-flex items-center gap-2">
+                <button onClick={exportData} className="mt-4 px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg transition shadow-lg shadow-blue-600/30 inline-flex items-center gap-2">
                   <Download size={18}/> Export Backup Now
                 </button>
               </div>
@@ -1023,7 +1031,7 @@ export default function App() {
               <div>
                 <h3 className={`font-bold ${t.textMain} text-lg`}>Restore from Backup</h3>
                 <p className={`text-xs ${t.textMuted} mt-1`}>Upload your previously exported JSON backup file to restore shop data.</p>
-                <label className="mt-4 inline-block px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl transition shadow-lg shadow-emerald-600/30 cursor-pointer">
+                <label className="mt-4 inline-block px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg transition shadow-lg shadow-emerald-600/30 cursor-pointer">
                   <Upload size={18} className="inline mr-2"/> Select & Restore Backup File
                   <input type="file" accept=".json" onChange={importData} className="hidden" />
                 </label>
@@ -1036,32 +1044,32 @@ export default function App() {
         {activeTab === 'settings' && (
           <div className="space-y-6 animate-in fade-in duration-300 max-w-2xl mx-auto">
             <h2 className={`text-xl font-bold ${t.textMain}`}>Settings & GUI Theme Preferences</h2>
-            <div className={`${t.cardBg} border ${t.border} p-8 rounded-3xl space-y-6 shadow-xl`}>
+            <div className={`${t.cardBg} border ${t.border} p-8 rounded-lg space-y-6 shadow-lg`}>
               
               <div className="space-y-4 border-b pb-6 border-slate-700">
-                <h3 className={`font-bold ${t.textMain} text-base`}>🏢 Shop Profile & PAN Details</h3>
+                <h3 className={`font-bold ${t.textMain} text-base`}>Shop Profile & PAN Details</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className={`text-xs ${t.textMuted} block mb-1`}>Shop Name</label>
-                    <input type="text" value={shopInfo.name} onChange={e => setShopInfo({...shopInfo, name: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                    <input type="text" value={shopInfo.name} onChange={e => setShopInfo({...shopInfo, name: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-lg text-sm focus:outline-none`} />
                   </div>
                   <div>
                     <label className={`text-xs ${t.textMuted} block mb-1`}>PAN / VAT Number</label>
-                    <input type="text" value={shopInfo.panNo} onChange={e => setShopInfo({...shopInfo, panNo: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                    <input type="text" value={shopInfo.panNo} onChange={e => setShopInfo({...shopInfo, panNo: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-lg text-sm focus:outline-none`} />
                   </div>
                   <div>
                     <label className={`text-xs ${t.textMuted} block mb-1`}>Phone Number</label>
-                    <input type="text" value={shopInfo.phone} onChange={e => setShopInfo({...shopInfo, phone: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                    <input type="text" value={shopInfo.phone} onChange={e => setShopInfo({...shopInfo, phone: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-lg text-sm focus:outline-none`} />
                   </div>
                   <div>
                     <label className={`text-xs ${t.textMuted} block mb-1`}>Address</label>
-                    <input type="text" value={shopInfo.address} onChange={e => setShopInfo({...shopInfo, address: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                    <input type="text" value={shopInfo.address} onChange={e => setShopInfo({...shopInfo, address: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-lg text-sm focus:outline-none`} />
                   </div>
                 </div>
               </div>
 
               <div className="space-y-4">
-                <h3 className={`font-bold ${t.textMain} text-base`}>🎨 Appearance & Color Theme</h3>
+                <h3 className={`font-bold ${t.textMain} text-base`}>Appearance & Color Theme</h3>
                 <div className="grid grid-cols-3 gap-3">
                   {[
                     { id: 'dim', label: 'Dim Tech (Default)', bg: 'bg-[#181B22]' },
@@ -1071,7 +1079,7 @@ export default function App() {
                     <button
                       key={thm.id}
                       onClick={() => setTheme(thm.id)}
-                      className={`p-4 rounded-2xl border text-xs font-bold transition flex flex-col items-center gap-2 ${thm.bg} ${
+                      className={`p-4 rounded-lg border text-xs font-bold transition flex flex-col items-center gap-2 ${thm.bg} ${
                         theme === thm.id ? 'border-blue-500 ring-2 ring-blue-500/30' : t.border
                       }`}
                     >
@@ -1090,7 +1098,7 @@ export default function App() {
       {/* INVOICE PREVIEW MODAL */}
       {selectedInvoice && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white text-slate-900 rounded-3xl max-w-2xl w-full p-6 space-y-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+          <div className="bg-white text-slate-900 rounded-lg max-w-2xl w-full p-6 space-y-6 shadow-xl relative max-h-[90vh] overflow-y-auto">
             
             <button 
               onClick={() => setSelectedInvoice(null)} 
@@ -1100,7 +1108,7 @@ export default function App() {
             </button>
 
             <div className="space-y-6 text-sm">
-              <div className="bg-slate-900 text-white p-6 rounded-2xl flex justify-between items-start">
+              <div className="bg-slate-900 text-white p-6 rounded-lg flex justify-between items-start">
                 <div>
                   <h2 className="text-xl font-black">{shopInfo.name}</h2>
                   <p className="text-xs text-sky-400 font-bold uppercase">{shopInfo.tagline}</p>
@@ -1117,7 +1125,7 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex justify-between">
+              <div className="bg-slate-50 border border-slate-200 p-4 rounded-lg flex justify-between">
                 <div>
                   <p className="text-[10px] font-bold text-slate-400 uppercase">Bill To:</p>
                   <p className="font-bold text-base text-slate-900">{selectedInvoice.customerName}</p>
@@ -1165,7 +1173,7 @@ export default function App() {
               </div>
 
               <div className="flex justify-end pt-4">
-                <div className="bg-white p-4 rounded-xl border border-slate-200 w-72 space-y-2 text-xs">
+                <div className="bg-white p-4 rounded-lg border border-slate-200 w-72 space-y-2 text-xs">
                   <div className="flex justify-between text-slate-600">
                     <span>Subtotal:</span>
                     <span>NPR {selectedInvoice.totalCost}</span>
@@ -1184,7 +1192,7 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl text-xs space-y-1">
+              <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg text-xs space-y-1">
                 <p className="font-bold text-amber-800 uppercase">WARRANTY & TRADING TERMS:</p>
                 <p className="text-amber-900">Warranty covers devices/parts as specified. Physical or water damage voids all warranty.</p>
                 <p className="text-amber-900 font-medium">Thank you for choosing {shopInfo.name}! Your trusted tech partner.</p>
@@ -1202,7 +1210,7 @@ export default function App() {
             <div className="flex flex-wrap items-center justify-end gap-3 pt-2">
               <button 
                 onClick={() => setSelectedInvoice(null)}
-                className="px-4 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold rounded-xl text-xs transition"
+                className="px-4 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold rounded-lg text-xs transition"
               >
                 Close
               </button>
@@ -1210,6 +1218,7 @@ export default function App() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }
