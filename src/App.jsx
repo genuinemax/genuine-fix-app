@@ -62,7 +62,7 @@ function CustomerAutocomplete({ value, onChange, onSelect, customers, placeholde
             >
               <div className="text-sm font-bold text-white">{customer.name}</div>
               {customer.phone && customer.phone !== 'N/A' && (
-                <div className="text-[11px] text-slate-400 mt-0.5">{customer.phone}</div>
+                <div className="text-sm text-slate-400 mt-0.5">{customer.phone}</div>
               )}
             </button>
           ))}
@@ -882,7 +882,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
             </div>
             <div>
               <div className="flex items-center gap-2"><h1 className={`font-extrabold text-lg ${t.textMain} leading-tight tracking-tight`}>{shopInfo.name}</h1><span className="px-1.5 py-0.5 rounded-md bg-blue-600/15 text-blue-400 border border-blue-500/20 text-[9px] font-black tracking-wider">PRO</span></div>
-              <p className="text-[10px] text-blue-400 font-bold uppercase tracking-widest">Laptop & Smartphone Repair</p>
+              <p className="text-sm text-blue-400 font-bold uppercase tracking-widest">Laptop & Smartphone Repair</p>
             </div>
           </div>
           
@@ -902,7 +902,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
               <button 
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all duration-200 ${
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold transition-all duration-200 ${
                   activeTab === item.id 
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 scale-[1.01]' 
                     : `${t.textMuted} hover:text-white hover:bg-blue-600/10 hover:-translate-y-0.5`
@@ -924,75 +924,33 @@ _Thank you for choosing ${shopInfo.name}!_`;
           <div className="space-y-8 animate-in fade-in duration-300">
             <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
               <div>
-                <p className={`text-[11px] uppercase tracking-[0.22em] font-black ${t.textMuted}`}>Genuine Fix • Shop Control Center</p>
+                <p className={`text-sm uppercase tracking-[0.22em] font-black ${t.textMuted}`}>Genuine Fix • Shop Control Center</p>
                 <h2 className={`text-2xl sm:text-3xl font-black tracking-tight ${t.textMain}`}>Good morning, manage the shop faster.</h2>
               </div>
-              <div className={`inline-flex items-center gap-2 ${t.cardSecondary} border ${t.border} rounded-2xl px-3 py-2 text-xs font-bold ${t.textMuted}`}>
+              <div className={`inline-flex items-center gap-2 ${t.cardSecondary} border ${t.border} rounded-2xl px-3 py-2 text-sm font-bold ${t.textMuted}`}>
                 <Clock3 size={15} className="text-blue-400" /> Live shop overview
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div className={`bg-gradient-to-br from-blue-500/10 to-transparent border ${t.border} p-6 rounded-3xl shadow-xl`}>
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Active Jobs</p>
+                <p className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">Active Jobs</p>
                 <h3 className="text-3xl font-black text-blue-400">{repairs.filter(r => r.status === 'In Progress' || r.status === 'Pending').length}</h3>
-                <p className={`text-xs mt-2 ${t.textMuted}`}>Currently in service</p>
+                <p className={`text-sm mt-2 ${t.textMuted}`}>Currently in service</p>
               </div>
               <div className={`bg-gradient-to-br from-emerald-500/10 to-transparent border ${t.border} p-6 rounded-3xl shadow-xl`}>
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Ready for Pickup</p>
+                <p className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">Ready for Pickup</p>
                 <h3 className="text-3xl font-black text-emerald-400">{repairs.filter(r => r.status === 'Ready for Pickup' || r.status === 'Completed').length}</h3>
-                <p className={`text-xs mt-2 ${t.textMuted}`}>Customers to notify</p>
+                <p className={`text-sm mt-2 ${t.textMuted}`}>Customers to notify</p>
               </div>
               <div className={`bg-gradient-to-br from-amber-500/10 to-transparent border ${t.border} p-6 rounded-3xl shadow-xl`}>
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Today's Jobs</p>
+                <p className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">Today's Jobs</p>
                 <h3 className="text-3xl font-black text-amber-400">{repairs.filter(r => String(r.dateTime || '').startsWith(new Date().toISOString().split('T')[0])).length}</h3>
-                <p className={`text-xs mt-2 ${t.textMuted}`}>Jobs & bills created today</p>
+                <p className={`text-sm mt-2 ${t.textMuted}`}>Jobs & bills created today</p>
               </div>
               <div className={`bg-gradient-to-br from-rose-500/10 to-transparent border ${t.border} p-6 rounded-3xl shadow-xl`}>
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Low Stock</p>
+                <p className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">Low Stock</p>
                 <h3 className="text-3xl font-black text-rose-400">{inventory.filter(i => Number(i.stock || 0) <= Number(i.minStock || 5)).length}</h3>
-                <p className={`text-xs mt-2 ${t.textMuted}`}>Items need attention</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}>
-                <p className={`text-xs uppercase tracking-wider font-black ${t.textMuted}`}>Total Income Received</p>
-                <p className="text-2xl font-black text-emerald-400 mt-2">NPR {totalIncome}</p>
-                <p className={`text-[11px] ${t.textMuted} mt-1`}>Paid amounts from saved bills</p>
-              </div>
-              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}>
-                <p className={`text-xs uppercase tracking-wider font-black ${t.textMuted}`}>Total Shop Expense</p>
-                <p className="text-2xl font-black text-rose-400 mt-2">NPR {totalExp}</p>
-                <p className={`text-[11px] ${t.textMuted} mt-1`}>All recorded shop expenses</p>
-              </div>
-              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}>
-                <p className={`text-xs uppercase tracking-wider font-black ${t.textMuted}`}>Estimated Net Cash</p>
-                <p className={`text-2xl font-black mt-2 ${netCash >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>NPR {netCash}</p>
-                <p className={`text-[11px] ${t.textMuted} mt-1`}>Income received − expenses</p>
-              </div>
-            </div>
-
-            <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}>
-              <div className="flex items-center justify-between gap-3 mb-4">
-                <div>
-                  <p className={`text-[11px] uppercase tracking-[0.18em] font-black ${t.textMuted}`}>Today</p>
-                  <h3 className={`text-base font-black ${t.textMain}`}>Daily cash snapshot</h3>
-                </div>
-                <DollarSign size={20} className="text-emerald-400" />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className={`${t.cardSecondary} border ${t.border} rounded-2xl p-4`}>
-                  <p className={`text-[11px] ${t.textMuted}`}>Income</p>
-                  <p className="text-lg font-black text-emerald-400 mt-1">NPR {todayIncome}</p>
-                </div>
-                <div className={`${t.cardSecondary} border ${t.border} rounded-2xl p-4`}>
-                  <p className={`text-[11px] ${t.textMuted}`}>Expense</p>
-                  <p className="text-lg font-black text-rose-400 mt-1">NPR {todayExpense}</p>
-                </div>
-                <div className={`${t.cardSecondary} border ${t.border} rounded-2xl p-4`}>
-                  <p className={`text-[11px] ${t.textMuted}`}>Net</p>
-                  <p className={`text-lg font-black mt-1 ${todayNet >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>NPR {todayNet}</p>
-                </div>
+                <p className={`text-sm mt-2 ${t.textMuted}`}>Items need attention</p>
               </div>
             </div>
 
@@ -1000,7 +958,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
               <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl lg:col-span-2`}>
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <p className={`text-[11px] uppercase tracking-[0.18em] font-black ${t.textMuted}`}>Quick Actions</p>
+                    <p className={`text-sm uppercase tracking-[0.18em] font-black ${t.textMuted}`}>Quick Actions</p>
                     <h3 className={`text-base font-black ${t.textMain}`}>Shop counter shortcuts</h3>
                   </div>
                   <PlusCircle size={20} className="text-blue-400" />
@@ -1015,7 +973,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
                     <button key={id} onClick={() => setActiveTab(id)}
                       className={`${t.cardSecondary} border ${t.border} rounded-2xl p-4 text-left hover:border-blue-500/50 hover:-translate-y-0.5 transition-all group`}>
                       <Icon size={18} className="text-blue-400 mb-3 group-hover:scale-110 transition-transform" />
-                      <span className={`text-xs font-black ${t.textMain}`}>{label}</span>
+                      <span className={`text-sm font-black ${t.textMain}`}>{label}</span>
                     </button>
                   ))}
                 </div>
@@ -1025,27 +983,29 @@ _Thank you for choosing ${shopInfo.name}!_`;
                 <div className="flex items-center gap-2 mb-4">
                   <ShieldCheck size={18} className="text-amber-400" />
                   <div>
-                    <p className={`text-[11px] uppercase tracking-[0.18em] font-black ${t.textMuted}`}>Warranty Control</p>
+                    <p className={`text-sm uppercase tracking-[0.18em] font-black ${t.textMuted}`}>Warranty Control</p>
                     <h3 className={`text-base font-black ${t.textMain}`}>Owner sets warranty</h3>
                   </div>
                 </div>
                 <div className={`${t.cardSecondary} border ${t.border} rounded-2xl p-4`}>
                   <p className={`text-sm font-bold ${t.textMain}`}>{warrantyActiveCount} bills have a warranty entered.</p>
-                  <p className={`text-[11px] ${t.textMuted} mt-1`}>No automatic 30-day rule or expiry alerts. Enter any warranty you choose on each bill.</p>
+                  <p className={`text-sm ${t.textMuted} mt-1`}>No automatic 30-day rule or expiry alerts. Enter any warranty you choose on each bill.</p>
                 </div>
               </div>
             </div>
 
+
+
             <div className={`${t.cardBg} border ${t.border} rounded-3xl p-6 shadow-xl`}>
               <div className="flex items-center justify-between mb-6">
                 <h2 className={`text-lg font-bold ${t.textMain}`}>Recent Bills & Job Sheets</h2>
-                <button onClick={() => setActiveTab('invoices')} className="text-blue-400 text-xs font-bold flex items-center gap-1 hover:text-blue-300">
+                <button onClick={() => setActiveTab('invoices')} className="text-blue-400 text-sm font-bold flex items-center gap-1 hover:text-blue-300">
                   View All <ChevronRight size={15}/>
                 </button>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className={`${t.tableHeader} font-bold uppercase text-xs border-b`}>
+                  <thead className={`${t.tableHeader} font-bold uppercase text-sm border-b`}>
                     <tr>
                       <th className="pb-4 text-left">Bill ID</th>
                       <th className="pb-4 text-left">Customer</th>
@@ -1063,12 +1023,12 @@ _Thank you for choosing ${shopInfo.name}!_`;
                         <td className={`py-4 ${t.textMuted}`}>{r.model}</td>
                         <td className="py-4 font-bold text-rose-400">NPR {r.dueAmount}</td>
                         <td className="py-4">
-                          <span className={`px-3 py-1 rounded-full ${t.cardSecondary} ${t.textMuted} text-xs font-bold border ${t.border}`}>
+                          <span className={`px-3 py-1 rounded-full ${t.cardSecondary} ${t.textMuted} text-sm font-bold border ${t.border}`}>
                             {r.status}
                           </span>
                         </td>
                         <td className="py-4 text-right">
-                          <button onClick={() => setSelectedInvoice(r)} className="px-3 py-1.5 bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 rounded-xl text-xs font-bold inline-flex items-center gap-1">
+                          <button onClick={() => setSelectedInvoice(r)} className="px-3 py-1.5 bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 rounded-xl text-sm font-bold inline-flex items-center gap-1">
                             <Eye size={14}/> Preview
                           </button>
                         </td>
@@ -1078,6 +1038,49 @@ _Thank you for choosing ${shopInfo.name}!_`;
                 </table>
               </div>
             </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}>
+                <p className={`text-sm uppercase tracking-wider font-black ${t.textMuted}`}>Total Income Received</p>
+                <p className="text-2xl font-black text-emerald-400 mt-2">NPR {totalIncome}</p>
+                <p className={`text-sm ${t.textMuted} mt-1`}>Paid amounts from saved bills</p>
+              </div>
+              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}>
+                <p className={`text-sm uppercase tracking-wider font-black ${t.textMuted}`}>Total Shop Expense</p>
+                <p className="text-2xl font-black text-rose-400 mt-2">NPR {totalExp}</p>
+                <p className={`text-sm ${t.textMuted} mt-1`}>All recorded shop expenses</p>
+              </div>
+              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}>
+                <p className={`text-sm uppercase tracking-wider font-black ${t.textMuted}`}>Estimated Net Cash</p>
+                <p className={`text-2xl font-black mt-2 ${netCash >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>NPR {netCash}</p>
+                <p className={`text-sm ${t.textMuted} mt-1`}>Income received − expenses</p>
+              </div>
+            </div>
+
+            <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}>
+              <div className="flex items-center justify-between gap-3 mb-4">
+                <div>
+                  <p className={`text-sm uppercase tracking-[0.18em] font-black ${t.textMuted}`}>Today</p>
+                  <h3 className={`text-base font-black ${t.textMain}`}>Daily cash snapshot</h3>
+                </div>
+                <DollarSign size={20} className="text-emerald-400" />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className={`${t.cardSecondary} border ${t.border} rounded-2xl p-4`}>
+                  <p className={`text-sm ${t.textMuted}`}>Income</p>
+                  <p className="text-lg font-black text-emerald-400 mt-1">NPR {todayIncome}</p>
+                </div>
+                <div className={`${t.cardSecondary} border ${t.border} rounded-2xl p-4`}>
+                  <p className={`text-sm ${t.textMuted}`}>Expense</p>
+                  <p className="text-lg font-black text-rose-400 mt-1">NPR {todayExpense}</p>
+                </div>
+                <div className={`${t.cardSecondary} border ${t.border} rounded-2xl p-4`}>
+                  <p className={`text-sm ${t.textMuted}`}>Net</p>
+                  <p className={`text-lg font-black mt-1 ${todayNet >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>NPR {todayNet}</p>
+                </div>
+              </div>
+            </div>
+
           </div>
         )}
 
@@ -1086,9 +1089,9 @@ _Thank you for choosing ${shopInfo.name}!_`;
           <div className="space-y-6 animate-in fade-in duration-300">
             <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
               <div>
-                <p className={`text-[11px] uppercase tracking-[0.2em] font-black ${t.textMuted}`}>Customer CRM</p>
+                <p className={`text-sm uppercase tracking-[0.2em] font-black ${t.textMuted}`}>Customer CRM</p>
                 <h2 className={`text-2xl font-black ${t.textMain}`}>Customers & Repair History</h2>
-                <p className={`text-xs ${t.textMuted} mt-1`}>Search customers, see visit count, due amount and previous jobs from one place.</p>
+                <p className={`text-sm ${t.textMuted} mt-1`}>Search customers, see visit count, due amount and previous jobs from one place.</p>
               </div>
               <div className={`flex items-center gap-2 ${t.inputBg} border ${t.border} rounded-2xl px-3 py-2.5 w-full lg:w-80`}>
                 <Search size={16} className={t.textMuted} />
@@ -1103,15 +1106,15 @@ _Thank you for choosing ${shopInfo.name}!_`;
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}>
-                <p className={`text-xs uppercase tracking-wider font-black ${t.textMuted}`}>Total Customers</p>
+                <p className={`text-sm uppercase tracking-wider font-black ${t.textMuted}`}>Total Customers</p>
                 <p className="text-3xl font-black text-blue-400 mt-2">{customerRecords.length}</p>
               </div>
               <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}>
-                <p className={`text-xs uppercase tracking-wider font-black ${t.textMuted}`}>Repeat Customers</p>
+                <p className={`text-sm uppercase tracking-wider font-black ${t.textMuted}`}>Repeat Customers</p>
                 <p className="text-3xl font-black text-emerald-400 mt-2">{customerRecords.filter(c => c.repairCount > 1).length}</p>
               </div>
               <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}>
-                <p className={`text-xs uppercase tracking-wider font-black ${t.textMuted}`}>Warranty Entered</p>
+                <p className={`text-sm uppercase tracking-wider font-black ${t.textMuted}`}>Warranty Entered</p>
                 <p className="text-3xl font-black text-amber-400 mt-2">{warrantyActiveCount}</p>
               </div>
             </div>
@@ -1119,7 +1122,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
             <div className="grid grid-cols-1 xl:grid-cols-5 gap-5">
               <div className={`${t.cardBg} border ${t.border} rounded-3xl overflow-hidden shadow-xl xl:col-span-2`}>
                 <div className={`p-4 border-b ${t.border} ${t.cardSecondary}`}>
-                  <p className={`text-xs font-black ${t.textMain}`}>Customer Directory</p>
+                  <p className={`text-sm font-black ${t.textMain}`}>Customer Directory</p>
                 </div>
                 <div className="max-h-[520px] overflow-y-auto divide-y divide-slate-700/40">
                   {filteredCustomers.map(c => (
@@ -1128,11 +1131,11 @@ _Thank you for choosing ${shopInfo.name}!_`;
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <p className={`font-black text-sm ${t.textMain}`}>{c.name}</p>
-                          <p className={`text-xs ${t.textMuted} mt-1`}>{c.phone || 'No phone saved'}</p>
+                          <p className={`text-sm ${t.textMuted} mt-1`}>{c.phone || 'No phone saved'}</p>
                         </div>
-                        <span className="text-[10px] font-black px-2 py-1 rounded-full bg-blue-500/10 text-blue-400">{c.repairCount} visits</span>
+                        <span className="text-sm font-black px-2 py-1 rounded-full bg-blue-500/10 text-blue-400">{c.repairCount} visits</span>
                       </div>
-                      {c.due > 0 && <p className="text-[11px] text-rose-400 font-bold mt-2">Outstanding: NPR {c.due}</p>}
+                      {c.due > 0 && <p className="text-sm text-rose-400 font-bold mt-2">Outstanding: NPR {c.due}</p>}
                     </button>
                   ))}
                   {filteredCustomers.length === 0 && (
@@ -1148,18 +1151,18 @@ _Thank you for choosing ${shopInfo.name}!_`;
                       <History size={28} className="text-blue-400" />
                     </div>
                     <h3 className={`font-black ${t.textMain}`}>Select a customer</h3>
-                    <p className={`text-xs ${t.textMuted} mt-1 max-w-sm`}>Their repair visits, device trades and outstanding amount will appear here.</p>
+                    <p className={`text-sm ${t.textMuted} mt-1 max-w-sm`}>Their repair visits, device trades and outstanding amount will appear here.</p>
                   </div>
                 ) : (
                   <div>
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-5 mb-5 border-slate-700/50">
                       <div>
                         <p className={`text-xl font-black ${t.textMain}`}>{selectedCustomer.name}</p>
-                        <p className={`text-xs ${t.textMuted} mt-1`}>{selectedCustomer.phone || 'No phone saved'}</p>
+                        <p className={`text-sm ${t.textMuted} mt-1`}>{selectedCustomer.phone || 'No phone saved'}</p>
                       </div>
                       <div className="flex gap-2">
-                        <span className="px-3 py-2 rounded-xl bg-blue-500/10 text-blue-400 text-xs font-black">{selectedCustomer.repairCount} visits</span>
-                        {selectedCustomer.due > 0 && <span className="px-3 py-2 rounded-xl bg-rose-500/10 text-rose-400 text-xs font-black">Due NPR {selectedCustomer.due}</span>}
+                        <span className="px-3 py-2 rounded-xl bg-blue-500/10 text-blue-400 text-sm font-black">{selectedCustomer.repairCount} visits</span>
+                        {selectedCustomer.due > 0 && <span className="px-3 py-2 rounded-xl bg-rose-500/10 text-rose-400 text-sm font-black">Due NPR {selectedCustomer.due}</span>}
                       </div>
                     </div>
                     <div className="space-y-3 max-h-[430px] overflow-y-auto">
@@ -1170,13 +1173,13 @@ _Thank you for choosing ${shopInfo.name}!_`;
                             <div className="flex items-start justify-between gap-3">
                               <div>
                                 <p className={`text-sm font-black ${t.textMain}`}>{isRepair ? (item.model || item.deviceType) : item.brandModel}</p>
-                                <p className={`text-[11px] ${t.textMuted} mt-1`}>{item.id} • {isRepair ? item.dateTime : item.date}</p>
+                                <p className={`text-sm ${t.textMuted} mt-1`}>{item.id} • {isRepair ? item.dateTime : item.date}</p>
                               </div>
-                              <span className={`text-[10px] font-black px-2 py-1 rounded-full ${isRepair ? 'bg-emerald-500/10 text-emerald-400' : 'bg-violet-500/10 text-violet-400'}`}>
+                              <span className={`text-sm font-black px-2 py-1 rounded-full ${isRepair ? 'bg-emerald-500/10 text-emerald-400' : 'bg-violet-500/10 text-violet-400'}`}>
                                 {isRepair ? item.status : item.status || 'Device'}
                               </span>
                             </div>
-                            {isRepair && <p className={`text-xs ${t.textMuted} mt-3`}>{item.issue || 'Repair / service job'}</p>}
+                            {isRepair && <p className={`text-sm ${t.textMuted} mt-3`}>{item.issue || 'Repair / service job'}</p>}
                           </div>
                         );
                       })}
@@ -1220,14 +1223,14 @@ _Thank you for choosing ${shopInfo.name}!_`;
 
               <div className={`md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-4 ${t.cardSecondary} p-4 rounded-2xl border ${t.border}`}>
                 <div>
-                  <label className="text-xs font-bold text-slate-400 block mb-1">Customer Photo (Optional)</label>
-                  <input type="file" accept="image/*" onChange={e => handleImageUpload(e, 'customerPhoto')} className="text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer" />
-                  {newRepair.customerPhoto && <span className="text-xs text-emerald-400 mt-1 block font-semibold">✓ Customer Photo Attached</span>}
+                  <label className="text-sm font-bold text-slate-400 block mb-1">Customer Photo (Optional)</label>
+                  <input type="file" accept="image/*" onChange={e => handleImageUpload(e, 'customerPhoto')} className="text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer" />
+                  {newRepair.customerPhoto && <span className="text-sm text-emerald-400 mt-1 block font-semibold">✓ Customer Photo Attached</span>}
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-400 block mb-1">Citizenship Photo (Optional)</label>
-                  <input type="file" accept="image/*" onChange={e => handleImageUpload(e, 'citizenshipPhoto')} className="text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer" />
-                  {newRepair.citizenshipPhoto && <span className="text-xs text-emerald-400 mt-1 block font-semibold">✓ Citizenship Photo Attached</span>}
+                  <label className="text-sm font-bold text-slate-400 block mb-1">Citizenship Photo (Optional)</label>
+                  <input type="file" accept="image/*" onChange={e => handleImageUpload(e, 'citizenshipPhoto')} className="text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer" />
+                  {newRepair.citizenshipPhoto && <span className="text-sm text-emerald-400 mt-1 block font-semibold">✓ Citizenship Photo Attached</span>}
                 </div>
               </div>
               
@@ -1241,7 +1244,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
           <div className="space-y-6 animate-in fade-in duration-300">
             <div>
               <h2 className={`text-xl font-bold ${t.textMain}`}>📱 Second-Hand & New Phone / Laptop Trading</h2>
-              <p className={`text-xs ${t.textMuted} mt-0.5`}>Record 2nd-hand phone/laptop buybacks, trade-ins, or new device sales with IMEI & customer details.</p>
+              <p className={`text-sm ${t.textMuted} mt-0.5`}>Record 2nd-hand phone/laptop buybacks, trade-ins, or new device sales with IMEI & customer details.</p>
             </div>
 
             <form onSubmit={handleAddDevice} className={`${t.cardBg} border ${t.border} p-6 rounded-3xl grid grid-cols-1 md:grid-cols-3 gap-4 shadow-xl`}>
@@ -1275,7 +1278,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
 
             <div className={`${t.cardBg} border ${t.border} rounded-3xl overflow-hidden shadow-xl`}>
               <table className="w-full text-left text-sm">
-                <thead className={`${t.tableHeader} text-xs uppercase border-b`}>
+                <thead className={`${t.tableHeader} text-sm uppercase border-b`}>
                   <tr>
                     <th className="p-4">Device & Category</th>
                     <th className="p-4">IMEI / S.N. & Condition</th>
@@ -1289,18 +1292,18 @@ _Thank you for choosing ${shopInfo.name}!_`;
                     <tr key={dev.id}>
                       <td className="p-4">
                         <p className={`font-bold ${t.textMain}`}>{dev.brandModel}</p>
-                        <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 text-[11px] font-bold">{dev.deviceCategory}</span>
+                        <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 text-sm font-bold">{dev.deviceCategory}</span>
                       </td>
                       <td className="p-4">
-                        <p className="font-mono text-xs text-blue-400">{dev.imeiOrSerial}</p>
-                        <p className={`text-xs ${t.textMuted}`}>{dev.condition}</p>
+                        <p className="font-mono text-sm text-blue-400">{dev.imeiOrSerial}</p>
+                        <p className={`text-sm ${t.textMuted}`}>{dev.condition}</p>
                       </td>
                       <td className="p-4">
                         <p className={`font-bold ${t.textMain}`}>{dev.partyName}</p>
-                        <p className={`text-xs ${t.textMuted}`}>{dev.partyPhone}</p>
+                        <p className={`text-sm ${t.textMuted}`}>{dev.partyPhone}</p>
                       </td>
                       <td className="p-4">
-                        <p className="text-xs text-rose-400">Buy: NPR {dev.buyPrice}</p>
+                        <p className="text-sm text-rose-400">Buy: NPR {dev.buyPrice}</p>
                         <p className="text-sm font-bold text-emerald-400">Sell: NPR {dev.sellPrice}</p>
                       </td>
                       <td className="p-4 text-right space-x-2">
@@ -1319,7 +1322,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
           <div className="space-y-6 animate-in fade-in duration-300">
             <div>
               <h2 className={`text-xl font-bold ${t.textMain}`}>Accessories & Parts Direct Billing (POS)</h2>
-              <p className={`text-xs ${t.textMuted} mt-0.5`}>Pick from stock or type custom item names and prices freely. Stock will deduct automatically.</p>
+              <p className={`text-sm ${t.textMuted} mt-0.5`}>Pick from stock or type custom item names and prices freely. Stock will deduct automatically.</p>
             </div>
 
             <form onSubmit={handleSavePosBill} className={`${t.cardBg} border ${t.border} p-6 rounded-3xl space-y-4 shadow-xl`}>
@@ -1336,7 +1339,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
               </div>
 
               <div className="space-y-3">
-                <label className="text-xs font-bold uppercase text-slate-400">Items List</label>
+                <label className="text-sm font-bold uppercase text-slate-400">Items List</label>
                 {posBill.items.map((item, idx) => (
                   <div key={idx} className={`flex flex-wrap items-center gap-3 ${t.cardSecondary} p-3 rounded-2xl border ${t.border}`}>
                     <input type="text" placeholder="Item Name" value={item.name} onChange={e => handlePosItemChange(idx, 'name', e.target.value)} className={`flex-1 min-w-[200px] p-2.5 ${t.inputBg} border rounded-xl text-sm focus:outline-none`} />
@@ -1347,7 +1350,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
                     )}
                   </div>
                 ))}
-                <button type="button" onClick={handleAddPosItem} className={`px-4 py-2 ${t.cardSecondary} hover:opacity-80 ${t.textMain} rounded-xl text-xs font-bold border ${t.border}`}>+ Add Another Item</button>
+                <button type="button" onClick={handleAddPosItem} className={`px-4 py-2 ${t.cardSecondary} hover:opacity-80 ${t.textMain} rounded-xl text-sm font-bold border ${t.border}`}>+ Add Another Item</button>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
@@ -1369,7 +1372,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
                 <input type="text" placeholder="Search by name, ID, phone..." value={invoiceSearch} onChange={e => setInvoiceSearch(e.target.value)} className={`p-2.5 ${t.cardBg} border ${t.border} rounded-xl text-sm ${t.textMain} w-64 focus:outline-none`} />
                 <div className={`flex ${t.cardBg} p-1 rounded-xl border ${t.border}`}>
                   {['All', 'Repair', 'Devices', 'Accessories', 'Due', 'Paid'].map(tab => (
-                    <button key={tab} onClick={() => setInvoiceFilterTab(tab)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${invoiceFilterTab === tab ? 'bg-blue-600 text-white' : `${t.textMuted} hover:text-white`}`}>{tab}</button>
+                    <button key={tab} onClick={() => setInvoiceFilterTab(tab)} className={`px-3 py-1.5 rounded-lg text-sm font-bold transition ${invoiceFilterTab === tab ? 'bg-blue-600 text-white' : `${t.textMuted} hover:text-white`}`}>{tab}</button>
                   ))}
                 </div>
               </div>
@@ -1377,7 +1380,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
 
             <div className={`${t.cardBg} border ${t.border} rounded-3xl overflow-hidden shadow-xl`}>
               <table className="w-full text-left text-sm">
-                <thead className={`${t.tableHeader} text-xs uppercase border-b`}>
+                <thead className={`${t.tableHeader} text-sm uppercase border-b`}>
                   <tr>
                     <th className="p-4">Invoice ID & Date</th>
                     <th className="p-4">Customer</th>
@@ -1391,40 +1394,40 @@ _Thank you for choosing ${shopInfo.name}!_`;
                     <tr key={inv.id}>
                       <td className="p-4 font-mono">
                         <p className="font-bold text-blue-400">{inv.id}</p>
-                        <p className={`text-[11px] ${t.textMuted}`}>{inv.dateTime}</p>
+                        <p className={`text-sm ${t.textMuted}`}>{inv.dateTime}</p>
                       </td>
                       <td className="p-4">
                         <p className={`font-bold ${t.textMain}`}>{inv.customerName}</p>
-                        <p className={`text-xs ${t.textMuted}`}>{inv.phone}</p>
+                        <p className={`text-sm ${t.textMuted}`}>{inv.phone}</p>
                       </td>
                       <td className={`p-4 ${t.textMuted}`}>{inv.model}</td>
                       <td className="p-4">
                         <p className={`font-bold ${t.textMain}`}>NPR {inv.totalCost}</p>
                         {Number(inv.dueAmount) > 0 ? (
-                          <span className="text-xs font-bold text-rose-400">Due: NPR {inv.dueAmount}</span>
+                          <span className="text-sm font-bold text-rose-400">Due: NPR {inv.dueAmount}</span>
                         ) : (
-                          <span className="text-xs font-bold text-emerald-400">Paid in Full</span>
+                          <span className="text-sm font-bold text-emerald-400">Paid in Full</span>
                         )}
                       </td>
                       <td className="p-4 text-right space-x-2">
                         <select
                           value={inv.status || 'Pending'}
                           onChange={e => updateJobStatus(inv.id, e.target.value)}
-                          className={`px-2.5 py-1.5 ${t.inputBg} border ${t.border} rounded-xl text-xs font-bold focus:outline-none`}
+                          className={`px-2.5 py-1.5 ${t.inputBg} border ${t.border} rounded-xl text-sm font-bold focus:outline-none`}
                         >
                           {['Pending', 'In Progress', 'Ready for Pickup', 'Delivered', 'Cancelled'].map(status => (
                             <option key={status} value={status}>{status}</option>
                           ))}
                         </select>
-                        <button onClick={() => setSelectedInvoice(inv)} className="px-3 py-1.5 bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 rounded-xl text-xs font-bold">Preview</button>
-                        <button onClick={() => setEditingInvoice(inv)} className="px-3 py-1.5 bg-amber-600/20 text-amber-400 hover:bg-amber-600/30 rounded-xl text-xs font-bold inline-flex items-center gap-1">
+                        <button onClick={() => setSelectedInvoice(inv)} className="px-3 py-1.5 bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 rounded-xl text-sm font-bold">Preview</button>
+                        <button onClick={() => setEditingInvoice(inv)} className="px-3 py-1.5 bg-amber-600/20 text-amber-400 hover:bg-amber-600/30 rounded-xl text-sm font-bold inline-flex items-center gap-1">
                           <Pencil size={14}/> Edit
                         </button>
                         <button onClick={() => { if(window.confirm('Delete this record?')) deleteRepair(inv.id); }} className="p-2 bg-rose-500/10 text-rose-400 rounded-xl hover:bg-rose-500/20 inline-flex items-center align-middle">
                           <Trash2 size={14}/>
                         </button>
                         {Number(inv.dueAmount) > 0 && (
-                          <button onClick={() => markInvoiceAsPaid(inv.id)} className="px-3 py-1.5 bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 rounded-xl text-xs font-bold">Mark Paid</button>
+                          <button onClick={() => markInvoiceAsPaid(inv.id)} className="px-3 py-1.5 bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 rounded-xl text-sm font-bold">Mark Paid</button>
                         )}
                       </td>
                     </tr>
@@ -1455,7 +1458,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
 
             <div className={`${t.cardBg} border ${t.border} rounded-3xl overflow-hidden shadow-xl`}>
               <table className="w-full text-left text-sm">
-                <thead className={`${t.tableHeader} text-xs uppercase border-b`}>
+                <thead className={`${t.tableHeader} text-sm uppercase border-b`}>
                   <tr>
                     <th className="p-4">Part Name</th>
                     <th className="p-4">Category</th>
@@ -1472,8 +1475,8 @@ _Thank you for choosing ${shopInfo.name}!_`;
                       <td className="p-4 font-bold text-blue-400">{item.stock} units</td>
                       <td className={`p-4 ${t.textMuted}`}>NPR {item.costPrice} / <span className="text-emerald-400 font-bold">NPR {item.price}</span></td>
                       <td className="p-4 text-right space-x-2">
-                        <button onClick={() => adjustStock(item.id, 1)} className="px-2.5 py-1 bg-emerald-500/10 text-emerald-400 rounded-lg text-xs font-bold">+</button>
-                        <button onClick={() => adjustStock(item.id, -1)} className="px-2.5 py-1 bg-rose-500/10 text-rose-400 rounded-lg text-xs font-bold">-</button>
+                        <button onClick={() => adjustStock(item.id, 1)} className="px-2.5 py-1 bg-emerald-500/10 text-emerald-400 rounded-lg text-sm font-bold">+</button>
+                        <button onClick={() => adjustStock(item.id, -1)} className="px-2.5 py-1 bg-rose-500/10 text-rose-400 rounded-lg text-sm font-bold">-</button>
                         <button onClick={() => deletePart(item.id)} className="p-1.5 bg-rose-500/10 text-rose-400 rounded-lg"><Trash2 size={14}/></button>
                       </td>
                     </tr>
@@ -1508,7 +1511,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
 
             <div className={`${t.cardBg} border ${t.border} rounded-3xl overflow-hidden shadow-xl`}>
               <table className="w-full text-left text-sm">
-                <thead className={`${t.tableHeader} text-xs uppercase border-b`}>
+                <thead className={`${t.tableHeader} text-sm uppercase border-b`}>
                   <tr>
                     <th className="p-4">Date</th>
                     <th className="p-4">Description</th>
@@ -1540,7 +1543,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
             <div className={`${t.cardBg} border ${t.border} p-8 rounded-3xl space-y-6 shadow-xl text-center`}>
               <div>
                 <h3 className={`font-bold ${t.textMain} text-lg`}>Download Backup File</h3>
-                <p className={`text-xs ${t.textMuted} mt-1`}>Export all your repairs, device trading, inventory, expenses into a secure JSON file.</p>
+                <p className={`text-sm ${t.textMuted} mt-1`}>Export all your repairs, device trading, inventory, expenses into a secure JSON file.</p>
                 <button onClick={exportData} className="mt-4 px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl transition shadow-lg shadow-blue-600/30 inline-flex items-center gap-2">
                   <Download size={18}/> Export Backup Now
                 </button>
@@ -1550,7 +1553,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
 
               <div>
                 <h3 className={`font-bold ${t.textMain} text-lg`}>Restore from Backup</h3>
-                <p className={`text-xs ${t.textMuted} mt-1`}>Upload your previously exported JSON backup file to restore shop data.</p>
+                <p className={`text-sm ${t.textMuted} mt-1`}>Upload your previously exported JSON backup file to restore shop data.</p>
                 <label className="mt-4 inline-block px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl transition shadow-lg shadow-emerald-600/30 cursor-pointer">
                   <Upload size={18} className="inline mr-2"/> Select & Restore Backup File
                   <input type="file" accept=".json" onChange={importData} className="hidden" />
@@ -1571,19 +1574,19 @@ _Thank you for choosing ${shopInfo.name}!_`;
                 <h3 className={`font-bold ${t.textMain} text-base`}>🏢 Shop Profile & PAN Details</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className={`text-xs ${t.textMuted} block mb-1`}>Shop Name</label>
+                    <label className={`text-sm ${t.textMuted} block mb-1`}>Shop Name</label>
                     <input type="text" value={shopInfo.name} onChange={e => setShopInfo({...shopInfo, name: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
                   </div>
                   <div>
-                    <label className={`text-xs ${t.textMuted} block mb-1`}>PAN / VAT Number</label>
+                    <label className={`text-sm ${t.textMuted} block mb-1`}>PAN / VAT Number</label>
                     <input type="text" value={shopInfo.panNo} onChange={e => setShopInfo({...shopInfo, panNo: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
                   </div>
                   <div>
-                    <label className={`text-xs ${t.textMuted} block mb-1`}>Phone Number</label>
+                    <label className={`text-sm ${t.textMuted} block mb-1`}>Phone Number</label>
                     <input type="text" value={shopInfo.phone} onChange={e => setShopInfo({...shopInfo, phone: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
                   </div>
                   <div>
-                    <label className={`text-xs ${t.textMuted} block mb-1`}>Address</label>
+                    <label className={`text-sm ${t.textMuted} block mb-1`}>Address</label>
                     <input type="text" value={shopInfo.address} onChange={e => setShopInfo({...shopInfo, address: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
                   </div>
                 </div>
@@ -1601,7 +1604,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
                     <button
                       key={thm.id}
                       onClick={() => setTheme(thm.id)}
-                      className={`p-4 rounded-2xl border text-xs font-bold transition flex flex-col items-center gap-2 ${thm.bg} ${
+                      className={`p-4 rounded-2xl border text-sm font-bold transition flex flex-col items-center gap-2 ${thm.bg} ${
                         theme === thm.id ? 'border-blue-500 ring-2 ring-blue-500/30' : t.border
                       }`}
                     >
@@ -1634,13 +1637,13 @@ _Thank you for choosing ${shopInfo.name}!_`;
               <div className="bg-slate-900 text-white p-6 rounded-2xl flex justify-between items-start">
                 <div>
                   <h2 className="text-xl font-black">{shopInfo.name}</h2>
-                  <p className="text-xs text-sky-400 font-bold uppercase">{shopInfo.tagline}</p>
-                  <p className="text-[11px] text-slate-400 mt-1">{shopInfo.address} | Phone: {shopInfo.phone} | PAN: {shopInfo.panNo}</p>
+                  <p className="text-sm text-sky-400 font-bold uppercase">{shopInfo.tagline}</p>
+                  <p className="text-sm text-slate-400 mt-1">{shopInfo.address} | Phone: {shopInfo.phone} | PAN: {shopInfo.panNo}</p>
                 </div>
                 <div className="text-right">
                   <p className="font-mono text-sky-400 font-bold">INVOICE #{selectedInvoice.id}</p>
-                  <p className="text-xs text-slate-300">Date: {selectedInvoice.dateTime}</p>
-                  <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold mt-1 ${
+                  <p className="text-sm text-slate-300">Date: {selectedInvoice.dateTime}</p>
+                  <span className={`inline-block px-2.5 py-0.5 rounded-full text-sm font-bold mt-1 ${
                     Number(selectedInvoice.dueAmount) <= 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'
                   }`}>
                     {Number(selectedInvoice.dueAmount) <= 0 ? 'PAID IN FULL' : 'DUE PENDING'}
@@ -1651,20 +1654,20 @@ _Thank you for choosing ${shopInfo.name}!_`;
               {/* Customer Box */}
               <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex justify-between">
                 <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase">Bill To:</p>
+                  <p className="text-sm font-bold text-slate-400 uppercase">Bill To:</p>
                   <p className="font-bold text-base text-slate-900">{selectedInvoice.customerName}</p>
-                  <p className="text-xs text-slate-600">Phone: {selectedInvoice.phone}</p>
+                  <p className="text-sm text-slate-600">Phone: {selectedInvoice.phone}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs text-slate-600"><strong className="text-slate-400">Type:</strong> {selectedInvoice.deviceType || 'Repair & Sales'}</p>
-                  <p className="text-xs text-slate-600"><strong className="text-slate-400">Warranty:</strong> {selectedInvoice.warrantyMonths || '30 Days'}</p>
-                  <p className="text-xs text-slate-600"><strong className="text-slate-400">Visit Count:</strong> {repairs.filter(r => r.customerName?.trim().toLowerCase() === selectedInvoice.customerName?.trim().toLowerCase()).length}</p>
+                  <p className="text-sm text-slate-600"><strong className="text-slate-400">Type:</strong> {selectedInvoice.deviceType || 'Repair & Sales'}</p>
+                  <p className="text-sm text-slate-600"><strong className="text-slate-400">Warranty:</strong> {selectedInvoice.warrantyMonths || '30 Days'}</p>
+                  <p className="text-sm text-slate-600"><strong className="text-slate-400">Visit Count:</strong> {repairs.filter(r => r.customerName?.trim().toLowerCase() === selectedInvoice.customerName?.trim().toLowerCase()).length}</p>
                 </div>
               </div>
 
               {/* Items Table */}
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
+                <table className="w-full text-left text-sm">
                   <thead className="bg-slate-900 text-white font-bold uppercase">
                     <tr>
                       <th className="p-3">S.N.</th>
@@ -1700,7 +1703,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
 
               {/* Totals Section */}
               <div className="flex justify-end pt-4">
-                <div className="bg-white p-4 rounded-xl border border-slate-200 w-72 space-y-2 text-xs">
+                <div className="bg-white p-4 rounded-xl border border-slate-200 w-72 space-y-2 text-sm">
                   <div className="flex justify-between text-slate-600">
                     <span>Subtotal:</span>
                     <span>NPR {selectedInvoice.totalCost}</span>
@@ -1720,7 +1723,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
               </div>
 
               {/* Footer Terms */}
-              <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl text-xs space-y-1">
+              <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl text-sm space-y-1">
                 <p className="font-bold text-amber-800 uppercase">WARRANTY & TRADING TERMS:</p>
                 <p className="text-amber-900">Warranty covers devices/parts as specified. Physical or water damage voids all warranty.</p>
                 <p className="text-amber-900 font-medium">Thank you for choosing {shopInfo.name}! Your trusted tech partner.</p>
@@ -1730,7 +1733,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
               <div className="pt-8 flex justify-end">
                 <div className="text-center">
                   <div className="w-48 border-b border-slate-400 mb-1"></div>
-                  <p className="text-xs font-bold text-slate-800">Authorized Signature</p>
+                  <p className="text-sm font-bold text-slate-800">Authorized Signature</p>
                 </div>
               </div>
 
@@ -1740,19 +1743,19 @@ _Thank you for choosing ${shopInfo.name}!_`;
             <div className="flex flex-wrap items-center justify-end gap-3 pt-2">
               <button 
                 onClick={() => downloadInvoiceImage(selectedInvoice)}
-                className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs flex items-center gap-2 shadow transition"
+                className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-sm flex items-center gap-2 shadow transition"
               >
                 <Download size={15}/> Download Image
               </button>
               <button 
                 onClick={() => printInvoice(selectedInvoice)}
-                className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl text-xs flex items-center gap-2 shadow transition"
+                className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl text-sm flex items-center gap-2 shadow transition"
               >
                 <Printer size={15}/> Print Bill
               </button>
               <button 
                 onClick={() => sendToWhatsApp(selectedInvoice)}
-                className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs flex items-center gap-2 shadow transition"
+                className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-sm flex items-center gap-2 shadow transition"
               >
                 <MessageSquare size={15}/> Send to WhatsApp
               </button>
@@ -1773,25 +1776,25 @@ _Thank you for choosing ${shopInfo.name}!_`;
 
             <form onSubmit={handleUpdateInvoice} className="space-y-4">
               <div>
-                <label className={`text-xs ${t.textMuted} block mb-1`}>Customer Name</label>
+                <label className={`text-sm ${t.textMuted} block mb-1`}>Customer Name</label>
                 <input type="text" value={editingInvoice.customerName} onChange={e => setEditingInvoice({...editingInvoice, customerName: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
               </div>
               <div>
-                <label className={`text-xs ${t.textMuted} block mb-1`}>Phone Number</label>
+                <label className={`text-sm ${t.textMuted} block mb-1`}>Phone Number</label>
                 <input type="text" value={editingInvoice.phone} onChange={e => setEditingInvoice({...editingInvoice, phone: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className={`text-xs ${t.textMuted} block mb-1`}>Total Cost (NPR)</label>
+                  <label className={`text-sm ${t.textMuted} block mb-1`}>Total Cost (NPR)</label>
                   <input type="number" value={editingInvoice.totalCost} onChange={e => setEditingInvoice({...editingInvoice, totalCost: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
                 </div>
                 <div>
-                  <label className={`text-xs ${t.textMuted} block mb-1`}>Paid Amount (NPR)</label>
+                  <label className={`text-sm ${t.textMuted} block mb-1`}>Paid Amount (NPR)</label>
                   <input type="number" value={editingInvoice.paidAmount} onChange={e => setEditingInvoice({...editingInvoice, paidAmount: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
                 </div>
               </div>
               <div>
-                <label className={`text-xs ${t.textMuted} block mb-1`}>Job Status</label>
+                <label className={`text-sm ${t.textMuted} block mb-1`}>Job Status</label>
                 <select value={editingInvoice.status || 'Pending'} onChange={e => setEditingInvoice({...editingInvoice, status: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}>
                   {['Pending', 'In Progress', 'Ready for Pickup', 'Delivered', 'Cancelled'].map(status => (
                     <option key={status} value={status}>{status}</option>
@@ -1800,8 +1803,8 @@ _Thank you for choosing ${shopInfo.name}!_`;
               </div>
 
               <div className="flex justify-end gap-3 pt-2">
-                <button type="button" onClick={() => setEditingInvoice(null)} className={`px-4 py-2.5 ${t.cardSecondary} ${t.textMain} rounded-xl text-xs font-bold border ${t.border}`}>Cancel</button>
-                <button type="submit" className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-blue-600/30">Update Invoice</button>
+                <button type="button" onClick={() => setEditingInvoice(null)} className={`px-4 py-2.5 ${t.cardSecondary} ${t.textMain} rounded-xl text-sm font-bold border ${t.border}`}>Cancel</button>
+                <button type="submit" className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-600/30">Update Invoice</button>
               </div>
             </form>
           </div>
