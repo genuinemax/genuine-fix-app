@@ -224,29 +224,20 @@ export default function App() {
   const totalDue = repairs.reduce((acc, curr) => acc + Number(curr.dueAmount || 0), 0);
   const totalExp = expenses.reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
 
-  // Auto-fill Handler for Customer Selection (Guaranteed Fix)
+  // Customer Auto-Fill: selecting an existing customer fills the saved phone number.
   const handleCustomerSelect = (name, formType) => {
-    const found = uniqueCustomers.find(c => c.name.trim().toLowerCase() === name.trim().toLowerCase());
-    const phoneVal = found ? found.phone : '';
+    const cleanName = name.trim();
+    const found = uniqueCustomers.find(
+      c => c.name.trim().toLowerCase() === cleanName.toLowerCase()
+    );
+    const phoneVal = found?.phone || '';
 
     if (formType === 'repair') {
-      setNewRepair(prev => ({ 
-        ...prev, 
-        customerName: name, 
-        phone: phoneVal ? phoneVal : prev.phone 
-      }));
+      setNewRepair(prev => ({ ...prev, customerName: name, phone: phoneVal }));
     } else if (formType === 'device') {
-      setNewDevice(prev => ({ 
-        ...prev, 
-        partyName: name, 
-        partyPhone: phoneVal ? phoneVal : prev.partyPhone 
-      }));
+      setNewDevice(prev => ({ ...prev, partyName: name, partyPhone: phoneVal }));
     } else if (formType === 'pos') {
-      setPosBill(prev => ({ 
-        ...prev, 
-        customerName: name, 
-        phone: phoneVal ? phoneVal : prev.phone 
-      }));
+      setPosBill(prev => ({ ...prev, customerName: name, phone: phoneVal }));
     }
   };
 
@@ -641,10 +632,9 @@ export default function App() {
               <input 
                 type="text" 
                 list="customer-list"
-                placeholder="Customer Full Name (नाम छान्दा फोन नम्बर आफैं बस्छ)" 
+                placeholder="Customer Full Name (पुराना नाम छान्दा फोन नम्बर आफैं बस्छ)" 
                 value={newRepair.customerName} 
                 onChange={(e) => handleCustomerSelect(e.target.value, 'repair')}
-                onInput={(e) => handleCustomerSelect(e.target.value, 'repair')}
                 className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`} 
               />
               <input type="text" placeholder="Phone Number (e.g. 98xxxxxxxx)" value={newRepair.phone} onChange={e => setNewRepair({...newRepair, phone: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`} />
@@ -708,7 +698,6 @@ export default function App() {
                 placeholder="Customer / Party Name (नाम छान्दा फोन नम्बर स्वतः आउँछ)" 
                 value={newDevice.partyName} 
                 onChange={e => handleCustomerSelect(e.target.value, 'device')}
-                onInput={e => handleCustomerSelect(e.target.value, 'device')}
                 className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} 
               />
               <input type="text" placeholder="Customer Phone Number" value={newDevice.partyPhone} onChange={e => setNewDevice({...newDevice, partyPhone: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
@@ -777,7 +766,6 @@ export default function App() {
                   placeholder="Customer Name (नाम छान्दा फोन नम्बर स्वतः बस्छ)" 
                   value={posBill.customerName} 
                   onChange={e => handleCustomerSelect(e.target.value, 'pos')}
-                  onInput={e => handleCustomerSelect(e.target.value, 'pos')}
                   className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} 
                 />
                 <input type="text" placeholder="Phone Number (Optional)" value={posBill.phone} onChange={e => setPosBill({...posBill, phone: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
