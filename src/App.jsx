@@ -7,80 +7,15 @@ import {
   Trash2, Printer, ShieldCheck, User, CreditCard, Search, Eye, ChevronRight, Download, Upload, ShoppingBag, MessageSquare, Plus, AlertTriangle, ArrowUpRight, ArrowDownRight, X, CheckCircle2, Image as ImageIcon, Pencil, Smartphone, Laptop, Settings, Sun, Moon, Monitor
 } from 'lucide-react';
 
-function CustomerAutocomplete({ value, customers, placeholder, className, onChange, onSelect }) {
-  const [open, setOpen] = React.useState(false);
-  const [highlighted, setHighlighted] = React.useState(0);
-
-  const query = String(value || '').trim().toLowerCase();
-  const suggestions = query
-    ? customers.filter(c => c.name.toLowerCase().includes(query)).slice(0, 8)
-    : customers.slice(0, 8);
-
-  const choose = (customer) => {
-    onChange(customer.name);
-    onSelect(customer);
-    setOpen(false);
-    setHighlighted(0);
-  };
-
-  return (
-    <div className="relative">
-      <input
-        type="text"
-        value={value}
-        placeholder={placeholder}
-        autoComplete="off"
-        onFocus={() => setOpen(true)}
-        onChange={(e) => {
-          onChange(e.target.value);
-          setOpen(true);
-          setHighlighted(0);
-        }}
-        onKeyDown={(e) => {
-          if (!open || suggestions.length === 0) return;
-          if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            setHighlighted(i => Math.min(i + 1, suggestions.length - 1));
-          } else if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            setHighlighted(i => Math.max(i - 1, 0));
-          } else if (e.key === 'Enter') {
-            e.preventDefault();
-            choose(suggestions[highlighted]);
-          } else if (e.key === 'Escape') {
-            setOpen(false);
-          }
-        }}
-        onBlur={() => setTimeout(() => setOpen(false), 180)}
-        className={className}
-      />
-
-      {open && suggestions.length > 0 && (
-        <div className="absolute left-0 right-0 top-full mt-1 z-[60] overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl">
-          {suggestions.map((customer, index) => (
-            <button
-              type="button"
-              key={`${customer.name}-${customer.phone}-${index}`}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => choose(customer)}
-              className={`w-full px-4 py-3 text-left border-b border-slate-100 last:border-b-0 hover:bg-blue-50 ${index === highlighted ? 'bg-blue-50' : ''}`}
-            >
-              <div className="font-semibold text-slate-800 text-sm">{customer.name}</div>
-              <div className="text-xs text-slate-500 mt-0.5">{customer.phone || 'No phone saved'}</div>
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 export default function App() {
-  // Keep all state hooks at the top of the component.
+  // ==========================================
+  // Keep all useState and useEffect hooks at the top of the component.
+  // ==========================================
   const [activeTab, setActiveTab] = useState('invoices');
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Shop Settings / Business Rules State (PAN/VAT, Name, etc.)
   const [shopInfo, setShopInfo] = useState(() => {
     const saved = localStorage.getItem('gf_shop_info');
     return saved ? JSON.parse(saved) : {
@@ -92,10 +27,12 @@ export default function App() {
     };
   });
 
+  // Theme / GUI Variety State (Default to 'dim' for eye comfort)
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem('gf_theme') || 'dim';
   });
 
+  // Theme configuration dictionary
   const themes = {
     dim: {
       appBg: 'bg-[#181B22] text-slate-200',
@@ -137,6 +74,7 @@ export default function App() {
 
   const t = themes[theme] || themes.dim;
 
+  // Dynamic Categories State with LocalStorage
   const [categories, setCategories] = useState(() => {
     const saved = localStorage.getItem('gf_categories');
     return saved ? JSON.parse(saved) : [
@@ -145,6 +83,7 @@ export default function App() {
     ];
   });
 
+  // LocalStorage States with Sample Data pre-loaded
   const [repairs, setRepairs] = useState(() => {
     const saved = localStorage.getItem('gf_repairs');
     return saved ? JSON.parse(saved) : [
@@ -206,6 +145,7 @@ export default function App() {
     ];
   });
 
+  // Unique Customers List (Auto-extracted from repairs and devices for autocomplete)
   const uniqueCustomers = Array.from(
     new Map(
       repairs
@@ -214,6 +154,7 @@ export default function App() {
     ).values()
   );
 
+  // Form & UI States
   const [newRepair, setNewRepair] = useState({ 
     customerName: '', phone: '', citizenshipNo: '', 
     customerPhoto: '', citizenshipPhoto: '', 
@@ -248,6 +189,7 @@ export default function App() {
   const [invoiceSearch, setInvoiceSearch] = useState('');
   const [invoiceFilterTab, setInvoiceFilterTab] = useState('All');
 
+  // useEffects
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -293,6 +235,49 @@ export default function App() {
   const totalDue = repairs.reduce((acc, curr) => acc + Number(curr.dueAmount || 0), 0);
   const totalExp = expenses.reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
 
+  const exportData = () => {
+    const backupData = {
+      shopInfo,
+      categories,
+      repairs,
+      inventory,
+      devicesStock,
+      expenses,
+      exportDate: getCurrentDateTime()
+    };
+    const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `GenuineFix_Backup_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+  };
+
+  const importData = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const parsed = JSON.parse(event.target.result);
+        if (parsed.repairs && parsed.inventory && parsed.expenses && parsed.categories) {
+          if (parsed.shopInfo) setShopInfo(parsed.shopInfo);
+          setCategories(parsed.categories);
+          setRepairs(parsed.repairs);
+          setInventory(parsed.inventory);
+          if (parsed.devicesStock) setDevicesStock(parsed.devicesStock);
+          setExpenses(parsed.expenses);
+          alert('Shop data restored successfully!');
+        } else {
+          alert('Invalid backup file format!');
+        }
+      } catch (err) {
+        alert('Failed to read the backup file!');
+      }
+    };
+    reader.readAsText(file);
+  };
+
   const handleCustomerSelect = (name, formType) => {
     const found = uniqueCustomers.find(c => c.name.toLowerCase() === name.toLowerCase());
     const phoneVal = found ? found.phone : '';
@@ -335,7 +320,7 @@ export default function App() {
     };
     setRepairs([repairItem, ...repairs]);
     setNewRepair({ customerName: '', phone: '', citizenshipNo: '', customerPhoto: '', citizenshipPhoto: '', deviceType: 'Mobile (Unlock)', model: '', totalCost: '', paidAmount: '', issue: '', warrantyMonths: '30 Days' });
-    alert('Saved successfully!');
+    alert('Job Sheet saved successfully!');
   };
 
   const handleAddDevice = (e) => {
@@ -469,7 +454,7 @@ export default function App() {
 
     setRepairs([newBill, ...repairs]);
     setPosBill({ customerName: '', phone: '', items: [{ name: '', price: '', qty: 1 }], paidAmount: '', warrantyMonths: '30 Days' });
-    alert('Accessories bill saved successfully!');
+    alert('Accessories Bill saved successfully!');
   };
 
   const handleAddPart = (e) => {
@@ -757,6 +742,14 @@ _Thank you for choosing ${shopInfo.name}!_`;
 
   return (
     <div className={`min-h-screen ${t.appBg} font-sans transition-colors duration-200`}>
+      {/* Global Datalist for Customer Name Autocomplete */}
+      <datalist id="customer-list">
+        {uniqueCustomers.map((c, idx) => (
+          <option key={idx} value={c.name} data-phone={c.phone} />
+        ))}
+      </datalist>
+
+      {/* Top Navigation Bar */}
       <nav className={`border-b ${t.border} ${t.navBg} backdrop-blur-xl sticky top-0 z-30 shadow-lg`}>
         <div className="max-w-7xl mx-auto px-6 py-4 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -798,21 +791,27 @@ _Thank you for choosing ${shopInfo.name}!_`;
         </div>
       </nav>
 
+      {/* Main Container */}
       <main className="max-w-7xl mx-auto px-6 py-8">
+        
+        {/* DASHBOARD TAB */}
         {activeTab === 'dashboard' && (
           <div className="space-y-8 animate-in fade-in duration-300">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className={`bg-gradient-to-br from-blue-500/10 to-transparent border ${t.border} p-6 rounded-3xl shadow-xl`}>
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Total Revenue</p>
-                <h3 className="text-3xl font-black text-blue-400">NPR {totalRevenue}</h3>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Active Jobs</p>
+                <h3 className="text-3xl font-black text-blue-400">{repairs.filter(r => r.status === 'In Progress' || r.status === 'Pending').length}</h3>
+                <p className={`text-xs mt-2 ${t.textMuted}`}>Currently in service</p>
               </div>
-              <div className={`bg-gradient-to-br from-emerald-500/10 to-transparent border ${t.border} p-6 rounded-3xl shadow-xl`}>
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Total Balance Due</p>
-                <h3 className="text-3xl font-black text-emerald-400">NPR {totalDue}</h3>
+              <div className={`bg-gradient-to-br from-amber-500/10 to-transparent border ${t.border} p-6 rounded-3xl shadow-xl`}>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Pending Jobs</p>
+                <h3 className="text-3xl font-black text-amber-400">{repairs.filter(r => r.status === 'Pending').length}</h3>
+                <p className={`text-xs mt-2 ${t.textMuted}`}>Awaiting completion</p>
               </div>
               <div className={`bg-gradient-to-br from-rose-500/10 to-transparent border ${t.border} p-6 rounded-3xl shadow-xl`}>
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Shop Expenses</p>
-                <h3 className="text-3xl font-black text-rose-400">NPR {totalExp}</h3>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Low Stock</p>
+                <h3 className="text-3xl font-black text-rose-400">{inventory.filter(i => Number(i.stock || 0) <= Number(i.minStock || 5)).length}</h3>
+                <p className={`text-xs mt-2 ${t.textMuted}`}>Items need attention</p>
               </div>
             </div>
 
@@ -861,17 +860,18 @@ _Thank you for choosing ${shopInfo.name}!_`;
           </div>
         )}
 
+        {/* REPAIRS / JOB SHEETS TAB */}
         {activeTab === 'repairs' && (
           <div className="space-y-6 animate-in fade-in duration-300">
             <h2 className={`text-xl font-bold ${t.textMain}`}>Create Repair / Unlocking Job Sheet</h2>
             <form onSubmit={handleAddRepair} className={`${t.cardBg} border ${t.border} p-6 rounded-3xl grid grid-cols-1 md:grid-cols-3 gap-4 shadow-xl`}>
-              <CustomerAutocomplete
-                value={newRepair.customerName}
-                customers={uniqueCustomers}
-                placeholder="Customer Full Name"
-                onChange={(value) => setNewRepair(prev => ({ ...prev, customerName: value }))}
-                onSelect={(customer) => handleCustomerSelect(customer.name, 'repair')}
-                className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`}
+              <input 
+                type="text" 
+                list="customer-list"
+                placeholder="Customer Full Name" 
+                value={newRepair.customerName} 
+                onChange={e => handleCustomerSelect(e.target.value, 'repair')} 
+                className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`} 
               />
               <input type="text" placeholder="Phone Number (e.g. 98xxxxxxxx)" value={newRepair.phone} onChange={e => setNewRepair({...newRepair, phone: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`} />
               <input type="text" placeholder="Citizenship No. (Optional)" value={newRepair.citizenshipNo} onChange={e => setNewRepair({...newRepair, citizenshipNo: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`} />
@@ -908,6 +908,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
           </div>
         )}
 
+        {/* DEVICES TAB */}
         {activeTab === 'devices' && (
           <div className="space-y-6 animate-in fade-in duration-300">
             <div>
@@ -927,13 +928,13 @@ _Thank you for choosing ${shopInfo.name}!_`;
               <input type="text" placeholder="IMEI Number or Serial No." value={newDevice.imeiOrSerial} onChange={e => setNewDevice({...newDevice, imeiOrSerial: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
               
               <input type="text" placeholder="Condition / Specs (e.g. Battery 90%, Scratchless)" value={newDevice.condition} onChange={e => setNewDevice({...newDevice, condition: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-              <CustomerAutocomplete
-                value={newDevice.partyName}
-                customers={uniqueCustomers}
-                placeholder="Customer / Party Name"
-                onChange={(value) => setNewDevice(prev => ({ ...prev, partyName: value }))}
-                onSelect={(customer) => handleCustomerSelect(customer.name, 'device')}
-                className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}
+              <input 
+                type="text" 
+                list="customer-list"
+                placeholder="Customer / Party Name" 
+                value={newDevice.partyName} 
+                onChange={e => handleCustomerSelect(e.target.value, 'device')} 
+                className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} 
               />
               <input type="text" placeholder="Customer Phone Number" value={newDevice.partyPhone} onChange={e => setNewDevice({...newDevice, partyPhone: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
 
@@ -985,6 +986,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
           </div>
         )}
 
+        {/* ACCESSORIES / POS BILLING TAB */}
         {activeTab === 'pos' && (
           <div className="space-y-6 animate-in fade-in duration-300">
             <div>
@@ -994,13 +996,13 @@ _Thank you for choosing ${shopInfo.name}!_`;
 
             <form onSubmit={handleSavePosBill} className={`${t.cardBg} border ${t.border} p-6 rounded-3xl space-y-4 shadow-xl`}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <CustomerAutocomplete
-                  value={posBill.customerName}
-                  customers={uniqueCustomers}
-                  placeholder="Customer Name"
-                  onChange={(value) => setPosBill(prev => ({ ...prev, customerName: value }))}
-                  onSelect={(customer) => handleCustomerSelect(customer.name, 'pos')}
-                  className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}
+                <input 
+                  type="text" 
+                  list="customer-list"
+                  placeholder="Customer Name" 
+                  value={posBill.customerName} 
+                  onChange={e => handleCustomerSelect(e.target.value, 'pos')} 
+                  className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} 
                 />
                 <input type="text" placeholder="Phone Number (Optional)" value={posBill.phone} onChange={e => setPosBill({...posBill, phone: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
               </div>
@@ -1030,6 +1032,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
           </div>
         )}
 
+        {/* INVOICES TAB */}
         {activeTab === 'invoices' && (
           <div className="space-y-6 animate-in fade-in duration-300">
             <div className="flex flex-wrap items-center justify-between gap-4">
@@ -1095,6 +1098,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
           </div>
         )}
 
+        {/* INVENTORY / PARTS STOCK TAB */}
         {activeTab === 'inventory' && (
           <div className="space-y-6 animate-in fade-in duration-300">
             <div className="flex items-center justify-between">
@@ -1143,6 +1147,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
           </div>
         )}
 
+        {/* EXPENSES TAB */}
         {activeTab === 'expenses' && (
           <div className="space-y-6 animate-in fade-in duration-300">
             <h2 className={`text-xl font-bold ${t.textMain}`}>Shop Expenses Tracker</h2>
@@ -1179,6 +1184,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
           </div>
         )}
 
+        {/* BACKUP & RESTORE TAB */}
         {activeTab === 'backup' && (
           <div className="space-y-6 animate-in fade-in duration-300 max-w-2xl mx-auto">
             <h2 className={`text-xl font-bold ${t.textMain}`}>Data Backup & Restore</h2>
@@ -1205,10 +1211,13 @@ _Thank you for choosing ${shopInfo.name}!_`;
           </div>
         )}
 
+        {/* SETTINGS & THEME VARIETIES TAB */}
         {activeTab === 'settings' && (
           <div className="space-y-6 animate-in fade-in duration-300 max-w-2xl mx-auto">
             <h2 className={`text-xl font-bold ${t.textMain}`}>Settings & GUI Theme Preferences</h2>
             <div className={`${t.cardBg} border ${t.border} p-8 rounded-3xl space-y-6 shadow-xl`}>
+              
+              {/* Shop Profile Details / PAN Setup */}
               <div className="space-y-4 border-b pb-6 border-slate-700">
                 <h3 className={`font-bold ${t.textMain} text-base`}>🏢 Shop Profile & PAN Details</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1231,6 +1240,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
                 </div>
               </div>
 
+              {/* Theme Selector */}
               <div className="space-y-4">
                 <h3 className={`font-bold ${t.textMain} text-base`}>🎨 Appearance & Color Theme</h3>
                 <div className="grid grid-cols-3 gap-3">
@@ -1258,6 +1268,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
 
       </main>
 
+      {/* INVOICE PREVIEW MODAL */}
       {selectedInvoice && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white text-slate-900 rounded-3xl max-w-2xl w-full p-6 space-y-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
@@ -1270,6 +1281,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
             </button>
 
             <div className="space-y-6 text-sm">
+              {/* Header */}
               <div className="bg-slate-900 text-white p-6 rounded-2xl flex justify-between items-start">
                 <div>
                   <h2 className="text-xl font-black">{shopInfo.name}</h2>
@@ -1287,6 +1299,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
                 </div>
               </div>
 
+              {/* Customer Box */}
               <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex justify-between">
                 <div>
                   <p className="text-[10px] font-bold text-slate-400 uppercase">Bill To:</p>
@@ -1299,6 +1312,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
                 </div>
               </div>
 
+              {/* Items Table */}
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
                   <thead className="bg-slate-900 text-white font-bold uppercase">
@@ -1334,6 +1348,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
                 </table>
               </div>
 
+              {/* Totals Section */}
               <div className="flex justify-end pt-4">
                 <div className="bg-white p-4 rounded-xl border border-slate-200 w-72 space-y-2 text-xs">
                   <div className="flex justify-between text-slate-600">
@@ -1354,12 +1369,14 @@ _Thank you for choosing ${shopInfo.name}!_`;
                 </div>
               </div>
 
+              {/* Footer Terms */}
               <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl text-xs space-y-1">
                 <p className="font-bold text-amber-800 uppercase">WARRANTY & TRADING TERMS:</p>
                 <p className="text-amber-900">Warranty covers devices/parts as specified. Physical or water damage voids all warranty.</p>
                 <p className="text-amber-900 font-medium">Thank you for choosing {shopInfo.name}! Your trusted tech partner.</p>
               </div>
 
+              {/* Signature line */}
               <div className="pt-8 flex justify-end">
                 <div className="text-center">
                   <div className="w-48 border-b border-slate-400 mb-1"></div>
@@ -1369,6 +1386,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
 
             </div>
 
+            {/* Modal Action Buttons */}
             <div className="flex flex-wrap items-center justify-end gap-3 pt-2">
               <button 
                 onClick={() => downloadInvoiceImage(selectedInvoice)}
@@ -1394,6 +1412,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
         </div>
       )}
 
+      {/* EDIT INVOICE MODAL */}
       {editingInvoice && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className={`${t.cardBg} border ${t.border} rounded-3xl max-w-lg w-full p-6 space-y-6 shadow-2xl`}>
