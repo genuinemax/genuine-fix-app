@@ -224,17 +224,29 @@ export default function App() {
   const totalDue = repairs.reduce((acc, curr) => acc + Number(curr.dueAmount || 0), 0);
   const totalExp = expenses.reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
 
-  // Auto-fill Handler for Customer Selection
+  // Auto-fill Handler for Customer Selection (Guaranteed Fix)
   const handleCustomerSelect = (name, formType) => {
-    const found = uniqueCustomers.find(c => c.name.toLowerCase() === name.toLowerCase());
+    const found = uniqueCustomers.find(c => c.name.trim().toLowerCase() === name.trim().toLowerCase());
     const phoneVal = found ? found.phone : '';
 
     if (formType === 'repair') {
-      setNewRepair(prev => ({ ...prev, customerName: name, phone: phoneVal || prev.phone }));
+      setNewRepair(prev => ({ 
+        ...prev, 
+        customerName: name, 
+        phone: phoneVal ? phoneVal : prev.phone 
+      }));
     } else if (formType === 'device') {
-      setNewDevice(prev => ({ ...prev, partyName: name, partyPhone: phoneVal || prev.partyPhone }));
+      setNewDevice(prev => ({ 
+        ...prev, 
+        partyName: name, 
+        partyPhone: phoneVal ? phoneVal : prev.partyPhone 
+      }));
     } else if (formType === 'pos') {
-      setPosBill(prev => ({ ...prev, customerName: name, phone: phoneVal || prev.phone }));
+      setPosBill(prev => ({ 
+        ...prev, 
+        customerName: name, 
+        phone: phoneVal ? phoneVal : prev.phone 
+      }));
     }
   };
 
@@ -629,7 +641,7 @@ export default function App() {
               <input 
                 type="text" 
                 list="customer-list"
-                placeholder="Customer Full Name (पुराना नाम छान्दा फोन नम्बर आफैं बस्छ)" 
+                placeholder="Customer Full Name (नाम छान्दा फोन नम्बर आफैं बस्छ)" 
                 value={newRepair.customerName} 
                 onChange={(e) => handleCustomerSelect(e.target.value, 'repair')}
                 onInput={(e) => handleCustomerSelect(e.target.value, 'repair')}
