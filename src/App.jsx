@@ -91,7 +91,7 @@ export default function App() {
       tagline: 'Laptop & Smartphone Repair Center',
       address: 'Taalchowk, Lekhnath, Pokhara',
       phone: '9765676982',
-      panNo: '609876543'
+      panNo: '617749552'
     };
   });
 
