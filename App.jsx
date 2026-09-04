@@ -631,8 +631,8 @@ export default function App() {
                 list="customer-list"
                 placeholder="Customer Full Name (पुराना नाम छान्दा फोन नम्बर आफैं बस्छ)" 
                 value={newRepair.customerName} 
-                onChange={e => handleCustomerSelect(e.target.value, 'repair')}
-                onBlur={e => handleCustomerSelect(e.target.value, 'repair')}
+                onChange={(e) => handleCustomerSelect(e.target.value, 'repair')}
+                onInput={(e) => handleCustomerSelect(e.target.value, 'repair')}
                 className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`} 
               />
               <input type="text" placeholder="Phone Number (e.g. 98xxxxxxxx)" value={newRepair.phone} onChange={e => setNewRepair({...newRepair, phone: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`} />
@@ -696,7 +696,7 @@ export default function App() {
                 placeholder="Customer / Party Name (नाम छान्दा फोन नम्बर स्वतः आउँछ)" 
                 value={newDevice.partyName} 
                 onChange={e => handleCustomerSelect(e.target.value, 'device')}
-                onBlur={e => handleCustomerSelect(e.target.value, 'device')}
+                onInput={e => handleCustomerSelect(e.target.value, 'device')}
                 className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} 
               />
               <input type="text" placeholder="Customer Phone Number" value={newDevice.partyPhone} onChange={e => setNewDevice({...newDevice, partyPhone: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
@@ -765,7 +765,7 @@ export default function App() {
                   placeholder="Customer Name (नाम छान्दा फोन नम्बर स्वतः बस्छ)" 
                   value={posBill.customerName} 
                   onChange={e => handleCustomerSelect(e.target.value, 'pos')}
-                  onBlur={e => handleCustomerSelect(e.target.value, 'pos')}
+                  onInput={e => handleCustomerSelect(e.target.value, 'pos')}
                   className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} 
                 />
                 <input type="text" placeholder="Phone Number (Optional)" value={posBill.phone} onChange={e => setPosBill({...posBill, phone: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
