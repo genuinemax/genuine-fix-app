@@ -137,7 +137,7 @@ export default function App() {
     ];
   });
 
-  // Unique Customers List for Autocomplete
+  // Unique Customers List for Autocomplete Suggestions
   const uniqueCustomers = Array.from(
     new Map(
       repairs
@@ -176,7 +176,6 @@ export default function App() {
   const [newPart, setNewPart] = useState({ name: '', stock: '', costPrice: '', price: '', minStock: '5' });
   const [newExpense, setNewExpense] = useState({ description: '', amount: '' });
   const [selectedInvoice, setSelectedInvoice] = useState(null);
-  const [editingInvoice, setEditingInvoice] = useState(null);
   const [invoiceSearch, setInvoiceSearch] = useState('');
   const [invoiceFilterTab, setInvoiceFilterTab] = useState('All');
 
@@ -225,7 +224,7 @@ export default function App() {
   const totalDue = repairs.reduce((acc, curr) => acc + Number(curr.dueAmount || 0), 0);
   const totalExp = expenses.reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
 
-  // Improved Auto-fill Handler supporting onChange and onBlur/Select
+  // Auto-fill Handler for Customer Selection
   const handleCustomerSelect = (name, formType) => {
     const found = uniqueCustomers.find(c => c.name.toLowerCase() === name.toLowerCase());
     const phoneVal = found ? found.phone : '';
@@ -1118,7 +1117,7 @@ export default function App() {
                   <hr className="border-slate-200" />
                   <div className="flex justify-between text-sm font-extrabold text-slate-900">
                     <span>BALANCE DUE:</span>
-                    <span className={Number(selectedInvoice.dueAddress) > 0 ? 'text-red-600' : 'text-emerald-600'}>
+                    <span className={Number(selectedInvoice.dueAmount) > 0 ? 'text-red-600' : 'text-emerald-600'}>
                       NPR {selectedInvoice.dueAmount}
                     </span>
                   </div>
