@@ -1,17 +1,85 @@
+// Genuine Fix PRO Premium GUI — customer CRM, warranty watch, quick actions, responsive polish
 import { auth } from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import Login from './Login';
 import React, { useState, useEffect } from 'react';
 import { 
   Wrench, Package, FileText, LayoutDashboard, DollarSign, 
-  Trash2, Printer, ShieldCheck, User, CreditCard, Search, Eye, ChevronRight, Download, Upload, ShoppingBag, MessageSquare, Plus, AlertTriangle, ArrowUpRight, ArrowDownRight, X, CheckCircle2, Image as ImageIcon, Pencil, Smartphone, Laptop, Settings, Sun, Moon, Monitor
+  Trash2, Printer, ShieldCheck, User, CreditCard, Search, Eye, ChevronRight, Download, Upload, ShoppingBag, MessageSquare, Plus, AlertTriangle, ArrowUpRight, ArrowDownRight, X, CheckCircle2, Image as ImageIcon, Pencil, Smartphone, Laptop, Settings, Sun, Moon, Monitor, Users, Bell, PlusCircle, History, Clock3
 } from 'lucide-react';
+
+
+function CustomerAutocomplete({ value, onChange, onSelect, customers, placeholder, className }) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState(value || '');
+
+  useEffect(() => {
+    setQuery(value || '');
+  }, [value]);
+
+  const suggestions = customers
+    .filter(c => {
+      const q = query.trim().toLowerCase();
+      if (!q) return true;
+      return c.name.toLowerCase().includes(q) || String(c.phone || '').includes(q);
+    })
+    .slice(0, 8);
+
+  const handleInput = (e) => {
+    const next = e.target.value;
+    setQuery(next);
+    onChange(next);
+    setOpen(true);
+  };
+
+  const choose = (customer) => {
+    setQuery(customer.name);
+    onSelect(customer);
+    setOpen(false);
+  };
+
+  return (
+    <div className="relative">
+      <input
+        type="text"
+        placeholder={placeholder}
+        value={query}
+        onChange={handleInput}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        className={className}
+        autoComplete="off"
+      />
+      {open && suggestions.length > 0 && (
+        <div className="absolute left-0 right-0 top-full mt-2 z-40 rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl overflow-hidden">
+          {suggestions.map((customer, idx) => (
+            <button
+              key={`${customer.name}-${customer.phone || 'no-phone'}-${idx}`}
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => choose(customer)}
+              className="w-full px-4 py-3 text-left hover:bg-blue-600/20 transition border-b border-slate-800 last:border-b-0"
+            >
+              <div className="text-sm font-bold text-white">{customer.name}</div>
+              {customer.phone && customer.phone !== 'N/A' && (
+                <div className="text-[11px] text-slate-400 mt-0.5">{customer.phone}</div>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function App() {
   // ==========================================
   // Keep all useState and useEffect hooks at the top of the component.
   // ==========================================
   const [activeTab, setActiveTab] = useState('invoices');
+  const [customerSearch, setCustomerSearch] = useState('');
+  const [selectedCustomerName, setSelectedCustomerName] = useState('');
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -145,12 +213,19 @@ export default function App() {
     ];
   });
 
-  // Unique Customers List (Auto-extracted from repairs and devices for autocomplete)
+  // Unique Customers List (Auto-extracted from repairs and device trading for smart customer lookup)
   const uniqueCustomers = Array.from(
     new Map(
-      repairs
-        .filter(r => r.customerName && r.customerName !== 'Walk-in Customer')
-        .map(r => [r.customerName.trim().toLowerCase(), { name: r.customerName, phone: r.phone }])
+      [
+        ...repairs
+          .filter(r => r.customerName && r.customerName !== 'Walk-in Customer')
+          .map(r => ({ name: r.customerName, phone: r.phone })),
+        ...devicesStock
+          .filter(d => d.partyName && d.partyName !== 'Walk-in Party')
+          .map(d => ({ name: d.partyName, phone: d.partyPhone }))
+      ]
+        .filter(c => c.name)
+        .map(c => [c.name.trim().toLowerCase(), { name: c.name.trim(), phone: c.phone || '' }])
     ).values()
   );
 
@@ -278,9 +353,12 @@ export default function App() {
     reader.readAsText(file);
   };
 
-  const handleCustomerSelect = (name, formType) => {
-    const found = uniqueCustomers.find(c => c.name.toLowerCase() === name.toLowerCase());
-    const phoneVal = found ? found.phone : '';
+  const handleCustomerSelect = (customerOrName, formType) => {
+    const selected = typeof customerOrName === 'string'
+      ? uniqueCustomers.find(c => c.name.toLowerCase() === customerOrName.trim().toLowerCase())
+      : customerOrName;
+    const name = typeof customerOrName === 'string' ? customerOrName : customerOrName.name;
+    const phoneVal = selected?.phone || '';
 
     if (formType === 'repair') {
       setNewRepair(prev => ({ ...prev, customerName: name, phone: phoneVal || prev.phone }));
@@ -515,6 +593,10 @@ export default function App() {
     setEditingInvoice(null);
   };
 
+  const updateJobStatus = (id, status) => {
+    setRepairs(repairs.map(r => r.id === id ? { ...r, status } : r));
+  };
+
   const generateInvoiceCanvas = (inv) => {
     const canvas = document.createElement('canvas');
     canvas.width = 800;
@@ -740,31 +822,72 @@ _Thank you for choosing ${shopInfo.name}!_`;
     return matchesSearch;
   });
 
+  const customerRecords = uniqueCustomers
+    .map(customer => {
+      const customerRepairs = repairs.filter(r =>
+        String(r.customerName || '').trim().toLowerCase() === customer.name.toLowerCase()
+      );
+      const customerDevices = devicesStock.filter(d =>
+        String(d.partyName || '').trim().toLowerCase() === customer.name.toLowerCase()
+      );
+      const lastRepair = customerRepairs
+        .slice()
+        .sort((a, b) => String(b.dateTime || '').localeCompare(String(a.dateTime || '')))[0];
+      return {
+        ...customer,
+        repairCount: customerRepairs.length,
+        deviceCount: customerDevices.length,
+        lastVisit: lastRepair?.dateTime || customerDevices[0]?.date || '',
+        due: customerRepairs.reduce((sum, r) => sum + Number(r.dueAmount || 0), 0),
+        history: [...customerRepairs, ...customerDevices]
+      };
+    })
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  const filteredCustomers = customerRecords.filter(c => {
+    const q = customerSearch.trim().toLowerCase();
+    return !q || c.name.toLowerCase().includes(q) || String(c.phone || '').includes(q);
+  });
+
+  const selectedCustomer = customerRecords.find(
+    c => c.name.toLowerCase() === selectedCustomerName.toLowerCase()
+  );
+
+  const warrantyAlerts = repairs.filter(r => {
+    const warranty = String(r.warrantyMonths || '').toLowerCase();
+    const match = warranty.match(/(\d+)\s*(day|days|month|months|year|years)/);
+    if (!match || !r.dateTime) return false;
+    const amount = Number(match[1]);
+    const unit = match[2];
+    const start = new Date(String(r.dateTime).replace(' ', 'T'));
+    if (Number.isNaN(start.getTime())) return false;
+    const expiry = new Date(start);
+    if (unit.startsWith('day')) expiry.setDate(expiry.getDate() + amount);
+    else if (unit.startsWith('month')) expiry.setMonth(expiry.getMonth() + amount);
+    else expiry.setFullYear(expiry.getFullYear() + amount);
+    const daysLeft = Math.ceil((expiry.getTime() - Date.now()) / 86400000);
+    return daysLeft >= 0 && daysLeft <= 30;
+  });
+
   return (
     <div className={`min-h-screen ${t.appBg} font-sans transition-colors duration-200`}>
-      {/* Global Datalist for Customer Name Autocomplete */}
-      <datalist id="customer-list">
-        {uniqueCustomers.map((c, idx) => (
-          <option key={idx} value={c.name} data-phone={c.phone} />
-        ))}
-      </datalist>
-
-      {/* Top Navigation Bar */}
-      <nav className={`border-b ${t.border} ${t.navBg} backdrop-blur-xl sticky top-0 z-30 shadow-lg`}>
-        <div className="max-w-7xl mx-auto px-6 py-4 flex flex-wrap items-center justify-between gap-4">
+      {/* Premium Top Navigation */}
+      <nav className={`border-b ${t.border} ${t.navBg} backdrop-blur-xl sticky top-0 z-30 shadow-2xl`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl overflow-hidden border border-slate-700 shadow-md bg-slate-900 flex items-center justify-center">
               <img src="/logo.jpg" alt="Genuine Fix Logo" className="w-full h-full object-cover" />
             </div>
             <div>
-              <h1 className={`font-extrabold text-lg ${t.textMain} leading-tight tracking-tight`}>{shopInfo.name}</h1>
+              <div className="flex items-center gap-2"><h1 className={`font-extrabold text-lg ${t.textMain} leading-tight tracking-tight`}>{shopInfo.name}</h1><span className="px-1.5 py-0.5 rounded-md bg-blue-600/15 text-blue-400 border border-blue-500/20 text-[9px] font-black tracking-wider">PRO</span></div>
               <p className="text-[10px] text-blue-400 font-bold uppercase tracking-widest">Laptop & Smartphone Repair</p>
             </div>
           </div>
           
-          <div className={`flex flex-wrap items-center gap-1.5 ${t.cardSecondary} p-1.5 rounded-2xl border ${t.border}`}>
+          <div className={`w-full lg:w-auto flex flex-wrap items-center gap-1.5 ${t.cardSecondary} p-1.5 rounded-2xl border ${t.border} shadow-inner`}>
             {[
               { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+              { id: 'customers', icon: Users, label: 'Customers' },
               { id: 'repairs', icon: ShieldCheck, label: 'Job Sheets' },
               { id: 'devices', icon: Smartphone, label: 'Device Buy/Sell' },
               { id: 'pos', icon: ShoppingBag, label: 'Accessories Bill' },
@@ -777,10 +900,10 @@ _Thank you for choosing ${shopInfo.name}!_`;
               <button 
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all duration-200 ${
                   activeTab === item.id 
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' 
-                    : `${t.textMuted} hover:text-white hover:bg-blue-600/10`
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 scale-[1.01]' 
+                    : `${t.textMuted} hover:text-white hover:bg-blue-600/10 hover:-translate-y-0.5`
                 }`}
               >
                 <item.icon size={15} />
@@ -792,26 +915,94 @@ _Thank you for choosing ${shopInfo.name}!_`;
       </nav>
 
       {/* Main Container */}
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         
         {/* DASHBOARD TAB */}
         {activeTab === 'dashboard' && (
           <div className="space-y-8 animate-in fade-in duration-300">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+              <div>
+                <p className={`text-[11px] uppercase tracking-[0.22em] font-black ${t.textMuted}`}>Genuine Fix • Shop Control Center</p>
+                <h2 className={`text-2xl sm:text-3xl font-black tracking-tight ${t.textMain}`}>Good morning, manage the shop faster.</h2>
+              </div>
+              <div className={`inline-flex items-center gap-2 ${t.cardSecondary} border ${t.border} rounded-2xl px-3 py-2 text-xs font-bold ${t.textMuted}`}>
+                <Clock3 size={15} className="text-blue-400" /> Live shop overview
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div className={`bg-gradient-to-br from-blue-500/10 to-transparent border ${t.border} p-6 rounded-3xl shadow-xl`}>
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Active Jobs</p>
                 <h3 className="text-3xl font-black text-blue-400">{repairs.filter(r => r.status === 'In Progress' || r.status === 'Pending').length}</h3>
                 <p className={`text-xs mt-2 ${t.textMuted}`}>Currently in service</p>
               </div>
+              <div className={`bg-gradient-to-br from-emerald-500/10 to-transparent border ${t.border} p-6 rounded-3xl shadow-xl`}>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Ready for Pickup</p>
+                <h3 className="text-3xl font-black text-emerald-400">{repairs.filter(r => r.status === 'Ready for Pickup' || r.status === 'Completed').length}</h3>
+                <p className={`text-xs mt-2 ${t.textMuted}`}>Customers to notify</p>
+              </div>
               <div className={`bg-gradient-to-br from-amber-500/10 to-transparent border ${t.border} p-6 rounded-3xl shadow-xl`}>
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Pending Jobs</p>
-                <h3 className="text-3xl font-black text-amber-400">{repairs.filter(r => r.status === 'Pending').length}</h3>
-                <p className={`text-xs mt-2 ${t.textMuted}`}>Awaiting completion</p>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Today's Jobs</p>
+                <h3 className="text-3xl font-black text-amber-400">{repairs.filter(r => String(r.dateTime || '').startsWith(new Date().toISOString().split('T')[0])).length}</h3>
+                <p className={`text-xs mt-2 ${t.textMuted}`}>Jobs & bills created today</p>
               </div>
               <div className={`bg-gradient-to-br from-rose-500/10 to-transparent border ${t.border} p-6 rounded-3xl shadow-xl`}>
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Low Stock</p>
                 <h3 className="text-3xl font-black text-rose-400">{inventory.filter(i => Number(i.stock || 0) <= Number(i.minStock || 5)).length}</h3>
                 <p className={`text-xs mt-2 ${t.textMuted}`}>Items need attention</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl lg:col-span-2`}>
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <p className={`text-[11px] uppercase tracking-[0.18em] font-black ${t.textMuted}`}>Quick Actions</p>
+                    <h3 className={`text-base font-black ${t.textMain}`}>Shop counter shortcuts</h3>
+                  </div>
+                  <PlusCircle size={20} className="text-blue-400" />
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {[
+                    ['repairs', 'New Job', ShieldCheck],
+                    ['pos', 'New Bill', ShoppingBag],
+                    ['devices', 'Device Trade', Smartphone],
+                    ['customers', 'Customers', Users]
+                  ].map(([id, label, Icon]) => (
+                    <button key={id} onClick={() => setActiveTab(id)}
+                      className={`${t.cardSecondary} border ${t.border} rounded-2xl p-4 text-left hover:border-blue-500/50 hover:-translate-y-0.5 transition-all group`}>
+                      <Icon size={18} className="text-blue-400 mb-3 group-hover:scale-110 transition-transform" />
+                      <span className={`text-xs font-black ${t.textMain}`}>{label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}>
+                <div className="flex items-center gap-2 mb-4">
+                  <Bell size={18} className="text-amber-400" />
+                  <div>
+                    <p className={`text-[11px] uppercase tracking-[0.18em] font-black ${t.textMuted}`}>Warranty Watch</p>
+                    <h3 className={`text-base font-black ${t.textMain}`}>Next 30 days</h3>
+                  </div>
+                </div>
+                {warrantyAlerts.length === 0 ? (
+                  <div className={`${t.cardSecondary} border ${t.border} rounded-2xl p-4 text-xs ${t.textMuted}`}>
+                    No warranty expiry alerts right now.
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-36 overflow-y-auto">
+                    {warrantyAlerts.slice(0, 4).map(r => (
+                      <button key={r.id} onClick={() => setSelectedInvoice(r)}
+                        className={`w-full ${t.cardSecondary} border ${t.border} rounded-2xl p-3 text-left hover:border-amber-500/50 transition`}>
+                        <div className="flex justify-between gap-3">
+                          <span className={`text-xs font-black ${t.textMain}`}>{r.customerName}</span>
+                          <span className="text-[10px] font-bold text-amber-400">{r.warrantyMonths}</span>
+                        </div>
+                        <p className={`text-[11px] ${t.textMuted} mt-1`}>{r.model || r.deviceType} • {r.id}</p>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -860,18 +1051,125 @@ _Thank you for choosing ${shopInfo.name}!_`;
           </div>
         )}
 
+        {/* CUSTOMER CRM TAB */}
+        {activeTab === 'customers' && (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+              <div>
+                <p className={`text-[11px] uppercase tracking-[0.2em] font-black ${t.textMuted}`}>Customer CRM</p>
+                <h2 className={`text-2xl font-black ${t.textMain}`}>Customers & Repair History</h2>
+                <p className={`text-xs ${t.textMuted} mt-1`}>Search customers, see visit count, due amount and previous jobs from one place.</p>
+              </div>
+              <div className={`flex items-center gap-2 ${t.inputBg} border ${t.border} rounded-2xl px-3 py-2.5 w-full lg:w-80`}>
+                <Search size={16} className={t.textMuted} />
+                <input
+                  value={customerSearch}
+                  onChange={e => setCustomerSearch(e.target.value)}
+                  placeholder="Search name or phone..."
+                  className="bg-transparent outline-none text-sm w-full"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}>
+                <p className={`text-xs uppercase tracking-wider font-black ${t.textMuted}`}>Total Customers</p>
+                <p className="text-3xl font-black text-blue-400 mt-2">{customerRecords.length}</p>
+              </div>
+              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}>
+                <p className={`text-xs uppercase tracking-wider font-black ${t.textMuted}`}>Repeat Customers</p>
+                <p className="text-3xl font-black text-emerald-400 mt-2">{customerRecords.filter(c => c.repairCount > 1).length}</p>
+              </div>
+              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}>
+                <p className={`text-xs uppercase tracking-wider font-black ${t.textMuted}`}>Warranty Alerts</p>
+                <p className="text-3xl font-black text-amber-400 mt-2">{warrantyAlerts.length}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 xl:grid-cols-5 gap-5">
+              <div className={`${t.cardBg} border ${t.border} rounded-3xl overflow-hidden shadow-xl xl:col-span-2`}>
+                <div className={`p-4 border-b ${t.border} ${t.cardSecondary}`}>
+                  <p className={`text-xs font-black ${t.textMain}`}>Customer Directory</p>
+                </div>
+                <div className="max-h-[520px] overflow-y-auto divide-y divide-slate-700/40">
+                  {filteredCustomers.map(c => (
+                    <button key={c.name} onClick={() => setSelectedCustomerName(c.name)}
+                      className={`w-full text-left p-4 transition ${selectedCustomerName === c.name ? 'bg-blue-600/10 border-l-2 border-blue-500' : 'hover:bg-blue-600/5'}`}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className={`font-black text-sm ${t.textMain}`}>{c.name}</p>
+                          <p className={`text-xs ${t.textMuted} mt-1`}>{c.phone || 'No phone saved'}</p>
+                        </div>
+                        <span className="text-[10px] font-black px-2 py-1 rounded-full bg-blue-500/10 text-blue-400">{c.repairCount} visits</span>
+                      </div>
+                      {c.due > 0 && <p className="text-[11px] text-rose-400 font-bold mt-2">Outstanding: NPR {c.due}</p>}
+                    </button>
+                  ))}
+                  {filteredCustomers.length === 0 && (
+                    <div className={`p-8 text-center text-sm ${t.textMuted}`}>No customers found.</div>
+                  )}
+                </div>
+              </div>
+
+              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl xl:col-span-3`}>
+                {!selectedCustomer ? (
+                  <div className="h-full min-h-[420px] flex flex-col items-center justify-center text-center">
+                    <div className="w-16 h-16 rounded-3xl bg-blue-500/10 flex items-center justify-center mb-4">
+                      <History size={28} className="text-blue-400" />
+                    </div>
+                    <h3 className={`font-black ${t.textMain}`}>Select a customer</h3>
+                    <p className={`text-xs ${t.textMuted} mt-1 max-w-sm`}>Their repair visits, device trades and outstanding amount will appear here.</p>
+                  </div>
+                ) : (
+                  <div>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-5 mb-5 border-slate-700/50">
+                      <div>
+                        <p className={`text-xl font-black ${t.textMain}`}>{selectedCustomer.name}</p>
+                        <p className={`text-xs ${t.textMuted} mt-1`}>{selectedCustomer.phone || 'No phone saved'}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <span className="px-3 py-2 rounded-xl bg-blue-500/10 text-blue-400 text-xs font-black">{selectedCustomer.repairCount} visits</span>
+                        {selectedCustomer.due > 0 && <span className="px-3 py-2 rounded-xl bg-rose-500/10 text-rose-400 text-xs font-black">Due NPR {selectedCustomer.due}</span>}
+                      </div>
+                    </div>
+                    <div className="space-y-3 max-h-[430px] overflow-y-auto">
+                      {selectedCustomer.history.map(item => {
+                        const isRepair = Boolean(item.id && item.customerName);
+                        return (
+                          <div key={`${isRepair ? 'repair' : 'device'}-${item.id}`} className={`${t.cardSecondary} border ${t.border} rounded-2xl p-4`}>
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <p className={`text-sm font-black ${t.textMain}`}>{isRepair ? (item.model || item.deviceType) : item.brandModel}</p>
+                                <p className={`text-[11px] ${t.textMuted} mt-1`}>{item.id} • {isRepair ? item.dateTime : item.date}</p>
+                              </div>
+                              <span className={`text-[10px] font-black px-2 py-1 rounded-full ${isRepair ? 'bg-emerald-500/10 text-emerald-400' : 'bg-violet-500/10 text-violet-400'}`}>
+                                {isRepair ? item.status : item.status || 'Device'}
+                              </span>
+                            </div>
+                            {isRepair && <p className={`text-xs ${t.textMuted} mt-3`}>{item.issue || 'Repair / service job'}</p>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* REPAIRS / JOB SHEETS TAB */}
         {activeTab === 'repairs' && (
           <div className="space-y-6 animate-in fade-in duration-300">
             <h2 className={`text-xl font-bold ${t.textMain}`}>Create Repair / Unlocking Job Sheet</h2>
             <form onSubmit={handleAddRepair} className={`${t.cardBg} border ${t.border} p-6 rounded-3xl grid grid-cols-1 md:grid-cols-3 gap-4 shadow-xl`}>
-              <input 
-                type="text" 
-                list="customer-list"
-                placeholder="Customer Full Name" 
-                value={newRepair.customerName} 
-                onChange={e => handleCustomerSelect(e.target.value, 'repair')} 
-                className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`} 
+              <CustomerAutocomplete
+                value={newRepair.customerName}
+                placeholder="Customer Full Name"
+                customers={uniqueCustomers}
+                onChange={value => setNewRepair(prev => ({ ...prev, customerName: value }))}
+                onSelect={customer => handleCustomerSelect(customer, 'repair')}
+                className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`}
               />
               <input type="text" placeholder="Phone Number (e.g. 98xxxxxxxx)" value={newRepair.phone} onChange={e => setNewRepair({...newRepair, phone: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`} />
               <input type="text" placeholder="Citizenship No. (Optional)" value={newRepair.citizenshipNo} onChange={e => setNewRepair({...newRepair, citizenshipNo: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`} />
@@ -928,13 +1226,13 @@ _Thank you for choosing ${shopInfo.name}!_`;
               <input type="text" placeholder="IMEI Number or Serial No." value={newDevice.imeiOrSerial} onChange={e => setNewDevice({...newDevice, imeiOrSerial: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
               
               <input type="text" placeholder="Condition / Specs (e.g. Battery 90%, Scratchless)" value={newDevice.condition} onChange={e => setNewDevice({...newDevice, condition: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-              <input 
-                type="text" 
-                list="customer-list"
-                placeholder="Customer / Party Name" 
-                value={newDevice.partyName} 
-                onChange={e => handleCustomerSelect(e.target.value, 'device')} 
-                className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} 
+              <CustomerAutocomplete
+                value={newDevice.partyName}
+                placeholder="Customer / Party Name"
+                customers={uniqueCustomers}
+                onChange={value => setNewDevice(prev => ({ ...prev, partyName: value }))}
+                onSelect={customer => handleCustomerSelect(customer, 'device')}
+                className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}
               />
               <input type="text" placeholder="Customer Phone Number" value={newDevice.partyPhone} onChange={e => setNewDevice({...newDevice, partyPhone: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
 
@@ -996,13 +1294,13 @@ _Thank you for choosing ${shopInfo.name}!_`;
 
             <form onSubmit={handleSavePosBill} className={`${t.cardBg} border ${t.border} p-6 rounded-3xl space-y-4 shadow-xl`}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input 
-                  type="text" 
-                  list="customer-list"
-                  placeholder="Customer Name" 
-                  value={posBill.customerName} 
-                  onChange={e => handleCustomerSelect(e.target.value, 'pos')} 
-                  className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} 
+                <CustomerAutocomplete
+                  value={posBill.customerName}
+                  placeholder="Customer Name"
+                  customers={uniqueCustomers}
+                  onChange={value => setPosBill(prev => ({ ...prev, customerName: value }))}
+                  onSelect={customer => handleCustomerSelect(customer, 'pos')}
+                  className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}
                 />
                 <input type="text" placeholder="Phone Number (Optional)" value={posBill.phone} onChange={e => setPosBill({...posBill, phone: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
               </div>
@@ -1079,6 +1377,15 @@ _Thank you for choosing ${shopInfo.name}!_`;
                         )}
                       </td>
                       <td className="p-4 text-right space-x-2">
+                        <select
+                          value={inv.status || 'Pending'}
+                          onChange={e => updateJobStatus(inv.id, e.target.value)}
+                          className={`px-2.5 py-1.5 ${t.inputBg} border ${t.border} rounded-xl text-xs font-bold focus:outline-none`}
+                        >
+                          {['Pending', 'In Progress', 'Ready for Pickup', 'Delivered', 'Cancelled'].map(status => (
+                            <option key={status} value={status}>{status}</option>
+                          ))}
+                        </select>
                         <button onClick={() => setSelectedInvoice(inv)} className="px-3 py-1.5 bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 rounded-xl text-xs font-bold">Preview</button>
                         <button onClick={() => setEditingInvoice(inv)} className="px-3 py-1.5 bg-amber-600/20 text-amber-400 hover:bg-amber-600/30 rounded-xl text-xs font-bold inline-flex items-center gap-1">
                           <Pencil size={14}/> Edit
@@ -1309,6 +1616,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
                 <div className="text-right">
                   <p className="text-xs text-slate-600"><strong className="text-slate-400">Type:</strong> {selectedInvoice.deviceType || 'Repair & Sales'}</p>
                   <p className="text-xs text-slate-600"><strong className="text-slate-400">Warranty:</strong> {selectedInvoice.warrantyMonths || '30 Days'}</p>
+                  <p className="text-xs text-slate-600"><strong className="text-slate-400">Visit Count:</strong> {repairs.filter(r => r.customerName?.trim().toLowerCase() === selectedInvoice.customerName?.trim().toLowerCase()).length}</p>
                 </div>
               </div>
 
@@ -1441,8 +1749,12 @@ _Thank you for choosing ${shopInfo.name}!_`;
                 </div>
               </div>
               <div>
-                <label className={`text-xs ${t.textMuted} block mb-1`}>Status / Notes</label>
-                <input type="text" value={editingInvoice.status} onChange={e => setEditingInvoice({...editingInvoice, status: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                <label className={`text-xs ${t.textMuted} block mb-1`}>Job Status</label>
+                <select value={editingInvoice.status || 'Pending'} onChange={e => setEditingInvoice({...editingInvoice, status: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}>
+                  {['Pending', 'In Progress', 'Ready for Pickup', 'Delivered', 'Cancelled'].map(status => (
+                    <option key={status} value={status}>{status}</option>
+                  ))}
+                </select>
               </div>
 
               <div className="flex justify-end gap-3 pt-2">
