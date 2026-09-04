@@ -8,37 +8,67 @@ import {
 } from 'lucide-react';
 
 
-function CustomerAutocomplete({ value, customers, onChange, onSelect, placeholder, inputClassName }) {
+
+function CustomerAutocomplete({ value, customers, placeholder, className, onChange, onSelect }) {
   const [open, setOpen] = React.useState(false);
-  const query = (value || '').trim().toLowerCase();
+  const [highlighted, setHighlighted] = React.useState(0);
+
+  const query = String(value || '').trim().toLowerCase();
   const suggestions = query
     ? customers.filter(c => c.name.toLowerCase().includes(query)).slice(0, 8)
     : customers.slice(0, 8);
 
+  const choose = (customer) => {
+    onChange(customer.name);
+    onSelect(customer);
+    setOpen(false);
+    setHighlighted(0);
+  };
+
   return (
-    <div className="relative w-full">
+    <div className="relative">
       <input
         type="text"
-        autoComplete="off"
-        placeholder={placeholder}
         value={value}
+        placeholder={placeholder}
+        autoComplete="off"
         onFocus={() => setOpen(true)}
-        onChange={e => { onChange(e.target.value); setOpen(true); }}
+        onChange={(e) => {
+          onChange(e.target.value);
+          setOpen(true);
+          setHighlighted(0);
+        }}
+        onKeyDown={(e) => {
+          if (!open || suggestions.length === 0) return;
+          if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            setHighlighted(i => Math.min(i + 1, suggestions.length - 1));
+          } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            setHighlighted(i => Math.max(i - 1, 0));
+          } else if (e.key === 'Enter') {
+            e.preventDefault();
+            choose(suggestions[highlighted]);
+          } else if (e.key === 'Escape') {
+            setOpen(false);
+          }
+        }}
         onBlur={() => setTimeout(() => setOpen(false), 180)}
-        className={inputClassName}
+        className={className}
       />
+
       {open && suggestions.length > 0 && (
-        <div className="absolute left-0 right-0 top-full mt-1 z-[100] max-h-56 overflow-y-auto rounded-2xl border border-slate-300 bg-white shadow-2xl">
-          {suggestions.map((customer, idx) => (
+        <div className="absolute left-0 right-0 top-full mt-1 z-[60] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+          {suggestions.map((customer, index) => (
             <button
               type="button"
-              key={`${customer.name}-${customer.phone}-${idx}`}
-              onMouseDown={e => e.preventDefault()}
-              onClick={() => { onSelect(customer); setOpen(false); }}
-              className="w-full px-4 py-3 text-left hover:bg-blue-50 border-b last:border-b-0 border-slate-100"
+              key={`${customer.name}-${customer.phone}-${index}`}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => choose(customer)}
+              className={`w-full px-4 py-3 text-left border-b border-slate-100 last:border-b-0 hover:bg-blue-50 ${index === highlighted ? 'bg-blue-50' : ''}`}
             >
-              <div className="font-semibold text-slate-800">{customer.name}</div>
-              <div className="text-xs text-slate-500">{customer.phone || 'No phone saved'}</div>
+              <div className="font-semibold text-slate-800 text-sm">{customer.name}</div>
+              <div className="text-xs text-slate-500 mt-0.5">📞 {customer.phone || 'No phone saved'}</div>
             </button>
           ))}
         </div>
@@ -264,18 +294,18 @@ export default function App() {
   const totalDue = repairs.reduce((acc, curr) => acc + Number(curr.dueAmount || 0), 0);
   const totalExp = expenses.reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
 
-  const handleCustomerInput = (name, formType) => {
-    const cleanName = name.trim().toLowerCase();
-    const found = uniqueCustomers.find(c => c.name.trim().toLowerCase() === cleanName);
-    if (formType === 'repair') setNewRepair(prev => ({ ...prev, customerName: name, phone: found ? found.phone : prev.phone }));
-    if (formType === 'device') setNewDevice(prev => ({ ...prev, partyName: name, partyPhone: found ? found.phone : prev.partyPhone }));
-    if (formType === 'pos') setPosBill(prev => ({ ...prev, customerName: name, phone: found ? found.phone : prev.phone }));
-  };
+  // Customer auto-fill: selecting an existing customer fills the saved phone number.
+  const handleCustomerSelect = (customer, formType) => {
+    const name = customer?.name || '';
+    const phoneVal = customer?.phone || '';
 
-  const handleCustomerPick = (customer, formType) => {
-    if (formType === 'repair') setNewRepair(prev => ({ ...prev, customerName: customer.name, phone: customer.phone || '' }));
-    if (formType === 'device') setNewDevice(prev => ({ ...prev, partyName: customer.name, partyPhone: customer.phone || '' }));
-    if (formType === 'pos') setPosBill(prev => ({ ...prev, customerName: customer.name, phone: customer.phone || '' }));
+    if (formType === 'repair') {
+      setNewRepair(prev => ({ ...prev, customerName: name, phone: phoneVal }));
+    } else if (formType === 'device') {
+      setNewDevice(prev => ({ ...prev, partyName: name, partyPhone: phoneVal }));
+    } else if (formType === 'pos') {
+      setPosBill(prev => ({ ...prev, customerName: name, phone: phoneVal }));
+    }
   };
 
   const exportData = () => {
@@ -546,7 +576,7 @@ export default function App() {
 
   return (
     <div className={`min-h-screen ${t.appBg} font-sans transition-colors duration-200`}>
-{/* Top Navigation Bar */}
+      {/* Top Navigation Bar */}
       <nav className={`border-b ${t.border} ${t.navBg} backdrop-blur-xl sticky top-0 z-30 shadow-lg`}>
         <div className="max-w-7xl mx-auto px-6 py-4 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -660,13 +690,13 @@ export default function App() {
             <h2 className={`text-xl font-bold ${t.textMain}`}>Create Repair / Unlocking Job Sheet (Auto-Fill Active)</h2>
             <form onSubmit={handleAddRepair} className={`${t.cardBg} border ${t.border} p-6 rounded-3xl grid grid-cols-1 md:grid-cols-3 gap-4 shadow-xl`}>
               <CustomerAutocomplete
-                value={newRepair.customerName}
-                customers={uniqueCustomers}
-                onChange={value => handleCustomerInput(value, 'repair')}
-                onSelect={customer => handleCustomerPick(customer, 'repair')}
-                placeholder="Customer Full Name (पुरानो ग्राहक खोज्नुहोस्)"
-                inputClassName={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`}
-              />
+                  value={newRepair.customerName}
+                  customers={uniqueCustomers}
+                  placeholder="Customer Full Name (पुरानो customer छान्नुहोस्)"
+                  onChange={(value) => setNewRepair(prev => ({ ...prev, customerName: value }))}
+                  onSelect={(customer) => handleCustomerSelect(customer, 'repair')}
+                  className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`}
+                />
               <input type="text" placeholder="Phone Number (e.g. 98xxxxxxxx)" value={newRepair.phone} onChange={e => setNewRepair({...newRepair, phone: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`} />
               <input type="text" placeholder="Citizenship No. (Optional)" value={newRepair.citizenshipNo} onChange={e => setNewRepair({...newRepair, citizenshipNo: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`} />
 
@@ -723,13 +753,13 @@ export default function App() {
               
               <input type="text" placeholder="Condition / Specs (e.g. Battery 90%, Scratchless)" value={newDevice.condition} onChange={e => setNewDevice({...newDevice, condition: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
               <CustomerAutocomplete
-                value={newDevice.partyName}
-                customers={uniqueCustomers}
-                onChange={value => handleCustomerInput(value, 'device')}
-                onSelect={customer => handleCustomerPick(customer, 'device')}
-                placeholder="Customer / Party Name (पुरानो ग्राहक खोज्नुहोस्)"
-                inputClassName={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}
-              />
+                  value={newDevice.partyName}
+                  customers={uniqueCustomers}
+                  placeholder="Customer / Party Name (पुरानो customer छान्नुहोस्)"
+                  onChange={(value) => setNewDevice(prev => ({ ...prev, partyName: value }))}
+                  onSelect={(customer) => handleCustomerSelect(customer, 'device')}
+                  className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}
+                />
               <input type="text" placeholder="Customer Phone Number" value={newDevice.partyPhone} onChange={e => setNewDevice({...newDevice, partyPhone: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
 
               <input type="number" placeholder="Buy Price / Cost Price (NPR)" value={newDevice.buyPrice} onChange={e => setNewDevice({...newDevice, buyPrice: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
@@ -791,13 +821,13 @@ export default function App() {
             <form onSubmit={handleSavePosBill} className={`${t.cardBg} border ${t.border} p-6 rounded-3xl space-y-4 shadow-xl`}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <CustomerAutocomplete
-                  value={posBill.customerName}
-                  customers={uniqueCustomers}
-                  onChange={value => handleCustomerInput(value, 'pos')}
-                  onSelect={customer => handleCustomerPick(customer, 'pos')}
-                  placeholder="Customer Name (पुरानो ग्राहक खोज्नुहोस्)"
-                  inputClassName={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}
-                />
+                    value={posBill.customerName}
+                    customers={uniqueCustomers}
+                    placeholder="Customer Name (पुरानो customer छान्नुहोस्)"
+                    onChange={(value) => setPosBill(prev => ({ ...prev, customerName: value }))}
+                    onSelect={(customer) => handleCustomerSelect(customer, 'pos')}
+                    className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}
+                  />
                 <input type="text" placeholder="Phone Number (Optional)" value={posBill.phone} onChange={e => setPosBill({...posBill, phone: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
               </div>
 
