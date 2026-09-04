@@ -168,7 +168,7 @@ export default function App() {
         paidAmount: 2000,
         dueAmount: 3000,
         issue: 'iCloud / Network Unlock',
-        warrantyMonths: '30 Days',
+        warrantyMonths: '',
         status: 'In Progress',
         dateTime: '2026-06-10 11:15:20',
         billType: 'Repair',
@@ -233,7 +233,7 @@ export default function App() {
   const [newRepair, setNewRepair] = useState({ 
     customerName: '', phone: '', citizenshipNo: '', 
     customerPhoto: '', citizenshipPhoto: '', 
-    deviceType: 'Mobile (Unlock)', model: '', totalCost: '', paidAmount: '', issue: '', warrantyMonths: '30 Days' 
+    deviceType: 'Mobile (Unlock)', model: '', totalCost: '', paidAmount: '', issue: '', warrantyMonths: '' 
   });
   
   const [posBill, setPosBill] = useState({
@@ -241,7 +241,7 @@ export default function App() {
     phone: '',
     items: [{ name: '', price: '', qty: 1 }],
     paidAmount: '',
-    warrantyMonths: '30 Days'
+    warrantyMonths: ''
   });
 
   const [newDevice, setNewDevice] = useState({
@@ -253,12 +253,12 @@ export default function App() {
     partyPhone: '',
     buyPrice: '',
     sellPrice: '',
-    warrantyMonths: '30 Days'
+    warrantyMonths: ''
   });
 
   const [selectedCategory, setSelectedCategory] = useState(categories[0] || 'Mobile Parts');
   const [newPart, setNewPart] = useState({ name: '', stock: '', costPrice: '', price: '', minStock: '5' });
-  const [newExpense, setNewExpense] = useState({ description: '', amount: '' });
+  const [newExpense, setNewExpense] = useState({ description: '', amount: '', category: 'General' });
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [editingInvoice, setEditingInvoice] = useState(null);
   const [invoiceSearch, setInvoiceSearch] = useState('');
@@ -309,6 +309,19 @@ export default function App() {
   const totalRevenue = repairs.reduce((acc, curr) => acc + Number(curr.totalCost || 0), 0);
   const totalDue = repairs.reduce((acc, curr) => acc + Number(curr.dueAmount || 0), 0);
   const totalExp = expenses.reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
+
+  // Shop finance automation: sales/income, expenses and estimated net.
+  const totalIncome = repairs.reduce((acc, curr) => acc + Number(curr.paidAmount || 0), 0);
+  const totalSalesValue = repairs.reduce((acc, curr) => acc + Number(curr.totalCost || 0), 0);
+  const netCash = totalIncome - totalExp;
+  const todayKey = new Date().toISOString().split('T')[0];
+  const todayIncome = repairs
+    .filter(r => String(r.dateTime || '').startsWith(todayKey))
+    .reduce((acc, curr) => acc + Number(curr.paidAmount || 0), 0);
+  const todayExpense = expenses
+    .filter(e => String(e.date || '') === todayKey)
+    .reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
+  const todayNet = todayIncome - todayExpense;
 
   const exportData = () => {
     const backupData = {
@@ -383,7 +396,7 @@ export default function App() {
       paidAmount: paid,
       dueAmount: total - paid,
       issue: newRepair.issue || 'General Repair / Unlocking',
-      warrantyMonths: newRepair.warrantyMonths || '30 Days',
+      warrantyMonths: newRepair.warrantyMonths || '',
       status: 'Pending',
       dateTime: getCurrentDateTime(),
       billType: 'Repair',
@@ -397,7 +410,7 @@ export default function App() {
       ]
     };
     setRepairs([repairItem, ...repairs]);
-    setNewRepair({ customerName: '', phone: '', citizenshipNo: '', customerPhoto: '', citizenshipPhoto: '', deviceType: 'Mobile (Unlock)', model: '', totalCost: '', paidAmount: '', issue: '', warrantyMonths: '30 Days' });
+    setNewRepair({ customerName: '', phone: '', citizenshipNo: '', customerPhoto: '', citizenshipPhoto: '', deviceType: 'Mobile (Unlock)', model: '', totalCost: '', paidAmount: '', issue: '', warrantyMonths: '' });
     alert('Job Sheet saved successfully!');
   };
 
@@ -435,7 +448,7 @@ export default function App() {
       paidAmount: sellPriceVal,
       dueAmount: 0,
       issue: `${newDevice.deviceCategory} Purchase/Stock Entry`,
-      warrantyMonths: newDevice.warrantyMonths || '30 Days',
+      warrantyMonths: newDevice.warrantyMonths || '',
       status: 'Delivered',
       dateTime: getCurrentDateTime(),
       billType: 'Device Sale',
@@ -459,7 +472,7 @@ export default function App() {
       partyPhone: '',
       buyPrice: '',
       sellPrice: '',
-      warrantyMonths: '30 Days'
+      warrantyMonths: ''
     });
     alert('Device saved successfully!');
   };
@@ -518,7 +531,7 @@ export default function App() {
       paidAmount,
       dueAmount,
       issue: 'Direct Store Sale / Custom Bill',
-      warrantyMonths: posBill.warrantyMonths || '30 Days',
+      warrantyMonths: posBill.warrantyMonths || '',
       status: 'Delivered',
       dateTime: getCurrentDateTime(),
       billType: 'Accessories',
@@ -531,7 +544,7 @@ export default function App() {
     };
 
     setRepairs([newBill, ...repairs]);
-    setPosBill({ customerName: '', phone: '', items: [{ name: '', price: '', qty: 1 }], paidAmount: '', warrantyMonths: '30 Days' });
+    setPosBill({ customerName: '', phone: '', items: [{ name: '', price: '', qty: 1 }], paidAmount: '', warrantyMonths: '' });
     alert('Accessories Bill saved successfully!');
   };
 
@@ -562,12 +575,13 @@ export default function App() {
   const handleAddExpense = (e) => {
     e.preventDefault();
     setExpenses([...expenses, { 
-      description: newExpense.description || 'General Expense', 
+      description: newExpense.description || 'General Expense',
+      category: newExpense.category || 'General', 
       id: Date.now(), 
       amount: Number(newExpense.amount || 0), 
       date: new Date().toISOString().split('T')[0] 
     }]);
-    setNewExpense({ description: '', amount: '' });
+    setNewExpense({ description: '', amount: '', category: 'General' });
   };
 
   const markInvoiceAsPaid = (id) => {
@@ -655,7 +669,7 @@ export default function App() {
     ctx.fillText(`Phone: ${inv.phone}`, 70, 262);
 
     ctx.fillText(`Type: ${inv.deviceType || 'Repair & Sales'}`, 420, 210);
-    ctx.fillText(`Warranty: ${inv.warrantyMonths || '30 Days'}`, 420, 238);
+    ctx.fillText(`Warranty: ${inv.warrantyMonths || '—'}`, 420, 238);
 
     ctx.fillStyle = '#1E293B';
     ctx.fillRect(50, 310, 700, 40);
@@ -788,7 +802,7 @@ export default function App() {
 ----------------------------------------
 🛠️ *Service/Device:* ${inv.model}
 📝 *Details:* ${inv.issue}
-🛡️ *Warranty:* ${inv.warrantyMonths || '30 Days'}
+🛡️ *Warranty:* ${inv.warrantyMonths || '—'}
 ----------------------------------------
 💰 *Total Cost:* NPR ${inv.totalCost}
 💵 *Amount Paid:* NPR ${inv.paidAmount}
@@ -853,21 +867,9 @@ _Thank you for choosing ${shopInfo.name}!_`;
     c => c.name.toLowerCase() === selectedCustomerName.toLowerCase()
   );
 
-  const warrantyAlerts = repairs.filter(r => {
-    const warranty = String(r.warrantyMonths || '').toLowerCase();
-    const match = warranty.match(/(\d+)\s*(day|days|month|months|year|years)/);
-    if (!match || !r.dateTime) return false;
-    const amount = Number(match[1]);
-    const unit = match[2];
-    const start = new Date(String(r.dateTime).replace(' ', 'T'));
-    if (Number.isNaN(start.getTime())) return false;
-    const expiry = new Date(start);
-    if (unit.startsWith('day')) expiry.setDate(expiry.getDate() + amount);
-    else if (unit.startsWith('month')) expiry.setMonth(expiry.getMonth() + amount);
-    else expiry.setFullYear(expiry.getFullYear() + amount);
-    const daysLeft = Math.ceil((expiry.getTime() - Date.now()) / 86400000);
-    return daysLeft >= 0 && daysLeft <= 30;
-  });
+  const warrantyJobs = repairs.filter(r => String(r.warrantyMonths || '').trim());
+  const warrantyActiveCount = warrantyJobs.length;
+
 
   return (
     <div className={`min-h-screen ${t.appBg} font-sans transition-colors duration-200`}>
@@ -952,6 +954,48 @@ _Thank you for choosing ${shopInfo.name}!_`;
               </div>
             </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}>
+                <p className={`text-xs uppercase tracking-wider font-black ${t.textMuted}`}>Total Income Received</p>
+                <p className="text-2xl font-black text-emerald-400 mt-2">NPR {totalIncome}</p>
+                <p className={`text-[11px] ${t.textMuted} mt-1`}>Paid amounts from saved bills</p>
+              </div>
+              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}>
+                <p className={`text-xs uppercase tracking-wider font-black ${t.textMuted}`}>Total Shop Expense</p>
+                <p className="text-2xl font-black text-rose-400 mt-2">NPR {totalExp}</p>
+                <p className={`text-[11px] ${t.textMuted} mt-1`}>All recorded shop expenses</p>
+              </div>
+              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}>
+                <p className={`text-xs uppercase tracking-wider font-black ${t.textMuted}`}>Estimated Net Cash</p>
+                <p className={`text-2xl font-black mt-2 ${netCash >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>NPR {netCash}</p>
+                <p className={`text-[11px] ${t.textMuted} mt-1`}>Income received − expenses</p>
+              </div>
+            </div>
+
+            <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}>
+              <div className="flex items-center justify-between gap-3 mb-4">
+                <div>
+                  <p className={`text-[11px] uppercase tracking-[0.18em] font-black ${t.textMuted}`}>Today</p>
+                  <h3 className={`text-base font-black ${t.textMain}`}>Daily cash snapshot</h3>
+                </div>
+                <DollarSign size={20} className="text-emerald-400" />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className={`${t.cardSecondary} border ${t.border} rounded-2xl p-4`}>
+                  <p className={`text-[11px] ${t.textMuted}`}>Income</p>
+                  <p className="text-lg font-black text-emerald-400 mt-1">NPR {todayIncome}</p>
+                </div>
+                <div className={`${t.cardSecondary} border ${t.border} rounded-2xl p-4`}>
+                  <p className={`text-[11px] ${t.textMuted}`}>Expense</p>
+                  <p className="text-lg font-black text-rose-400 mt-1">NPR {todayExpense}</p>
+                </div>
+                <div className={`${t.cardSecondary} border ${t.border} rounded-2xl p-4`}>
+                  <p className={`text-[11px] ${t.textMuted}`}>Net</p>
+                  <p className={`text-lg font-black mt-1 ${todayNet >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>NPR {todayNet}</p>
+                </div>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
               <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl lg:col-span-2`}>
                 <div className="flex items-center justify-between mb-4">
@@ -979,30 +1023,16 @@ _Thank you for choosing ${shopInfo.name}!_`;
 
               <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}>
                 <div className="flex items-center gap-2 mb-4">
-                  <Bell size={18} className="text-amber-400" />
+                  <ShieldCheck size={18} className="text-amber-400" />
                   <div>
-                    <p className={`text-[11px] uppercase tracking-[0.18em] font-black ${t.textMuted}`}>Warranty Watch</p>
-                    <h3 className={`text-base font-black ${t.textMain}`}>Next 30 days</h3>
+                    <p className={`text-[11px] uppercase tracking-[0.18em] font-black ${t.textMuted}`}>Warranty Control</p>
+                    <h3 className={`text-base font-black ${t.textMain}`}>Owner sets warranty</h3>
                   </div>
                 </div>
-                {warrantyAlerts.length === 0 ? (
-                  <div className={`${t.cardSecondary} border ${t.border} rounded-2xl p-4 text-xs ${t.textMuted}`}>
-                    No warranty expiry alerts right now.
-                  </div>
-                ) : (
-                  <div className="space-y-2 max-h-36 overflow-y-auto">
-                    {warrantyAlerts.slice(0, 4).map(r => (
-                      <button key={r.id} onClick={() => setSelectedInvoice(r)}
-                        className={`w-full ${t.cardSecondary} border ${t.border} rounded-2xl p-3 text-left hover:border-amber-500/50 transition`}>
-                        <div className="flex justify-between gap-3">
-                          <span className={`text-xs font-black ${t.textMain}`}>{r.customerName}</span>
-                          <span className="text-[10px] font-bold text-amber-400">{r.warrantyMonths}</span>
-                        </div>
-                        <p className={`text-[11px] ${t.textMuted} mt-1`}>{r.model || r.deviceType} • {r.id}</p>
-                      </button>
-                    ))}
-                  </div>
-                )}
+                <div className={`${t.cardSecondary} border ${t.border} rounded-2xl p-4`}>
+                  <p className={`text-sm font-bold ${t.textMain}`}>{warrantyActiveCount} bills have a warranty entered.</p>
+                  <p className={`text-[11px] ${t.textMuted} mt-1`}>No automatic 30-day rule or expiry alerts. Enter any warranty you choose on each bill.</p>
+                </div>
               </div>
             </div>
 
@@ -1081,8 +1111,8 @@ _Thank you for choosing ${shopInfo.name}!_`;
                 <p className="text-3xl font-black text-emerald-400 mt-2">{customerRecords.filter(c => c.repairCount > 1).length}</p>
               </div>
               <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}>
-                <p className={`text-xs uppercase tracking-wider font-black ${t.textMuted}`}>Warranty Alerts</p>
-                <p className="text-3xl font-black text-amber-400 mt-2">{warrantyAlerts.length}</p>
+                <p className={`text-xs uppercase tracking-wider font-black ${t.textMuted}`}>Warranty Entered</p>
+                <p className="text-3xl font-black text-amber-400 mt-2">{warrantyActiveCount}</p>
               </div>
             </div>
 
@@ -1460,6 +1490,18 @@ _Thank you for choosing ${shopInfo.name}!_`;
             <h2 className={`text-xl font-bold ${t.textMain}`}>Shop Expenses Tracker</h2>
             <form onSubmit={handleAddExpense} className={`${t.cardBg} border ${t.border} p-6 rounded-3xl grid grid-cols-1 md:grid-cols-3 gap-4 shadow-xl`}>
               <input type="text" placeholder="Expense Description (e.g. Rent, Electricity)" value={newExpense.description} onChange={e => setNewExpense({...newExpense, description: e.target.value})} className={`md:col-span-2 p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
+              <select value={newExpense.category} onChange={e => setNewExpense({...newExpense, category: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}>
+                <option>General</option>
+                <option>Rent</option>
+                <option>Electricity</option>
+                <option>Internet</option>
+                <option>Staff Salary</option>
+                <option>Parts Purchase</option>
+                <option>Transport</option>
+                <option>Tools</option>
+                <option>Marketing</option>
+                <option>Other</option>
+              </select>
               <input type="number" placeholder="Amount (NPR)" value={newExpense.amount} onChange={e => setNewExpense({...newExpense, amount: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
               <button type="submit" className="md:col-span-3 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-rose-600/30">Add Expense Record</button>
             </form>
