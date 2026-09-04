@@ -7,20 +7,96 @@ import {
   Trash2, Printer, ShieldCheck, User, CreditCard, Search, Eye, ChevronRight, Download, Upload, ShoppingBag, MessageSquare, Plus, AlertTriangle, ArrowUpRight, ArrowDownRight, X, CheckCircle2, Image as ImageIcon, Pencil, Smartphone, Laptop, Settings, Sun, Moon, Monitor
 } from 'lucide-react';
 
+
+
+function CustomerAutocomplete({ value, customers, placeholder, className, onChange, onSelect }) {
+  const [open, setOpen] = React.useState(false);
+  const [highlighted, setHighlighted] = React.useState(0);
+
+  const query = String(value || '').trim().toLowerCase();
+  const suggestions = query
+    ? customers.filter(c => c.name.toLowerCase().includes(query)).slice(0, 8)
+    : customers.slice(0, 8);
+
+  const choose = (customer) => {
+    onChange(customer.name);
+    onSelect(customer);
+    setOpen(false);
+    setHighlighted(0);
+  };
+
+  return (
+    <div className="relative">
+      <input
+        type="text"
+        value={value}
+        placeholder={placeholder}
+        autoComplete="off"
+        onFocus={() => setOpen(true)}
+        onChange={(e) => {
+          onChange(e.target.value);
+          setOpen(true);
+          setHighlighted(0);
+        }}
+        onKeyDown={(e) => {
+          if (!open || suggestions.length === 0) return;
+          if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            setHighlighted(i => Math.min(i + 1, suggestions.length - 1));
+          } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            setHighlighted(i => Math.max(i - 1, 0));
+          } else if (e.key === 'Enter') {
+            e.preventDefault();
+            choose(suggestions[highlighted]);
+          } else if (e.key === 'Escape') {
+            setOpen(false);
+          }
+        }}
+        onBlur={() => setTimeout(() => setOpen(false), 180)}
+        className={className}
+      />
+
+      {open && suggestions.length > 0 && (
+        <div className="absolute left-0 right-0 top-full mt-1 z-[60] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+          {suggestions.map((customer, index) => (
+            <button
+              type="button"
+              key={`${customer.name}-${customer.phone}-${index}`}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => choose(customer)}
+              className={`w-full px-4 py-3 text-left border-b border-slate-100 last:border-b-0 hover:bg-blue-50 ${index === highlighted ? 'bg-blue-50' : ''}`}
+            >
+              <div className="font-semibold text-slate-800 text-sm">{customer.name}</div>
+              <div className="text-xs text-slate-500 mt-0.5">📞 {customer.phone || 'No phone saved'}</div>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function App() {
-  // ==========================================
-  // १. सबै useState र useEffect हरू सधैं यहाँ माथि राख्ने
-  // ==========================================
-  const [activeTab, setActiveTab] = useState('invoices');
+  const [activeTab, setActiveTab] = useState('repairs');
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Theme / GUI Variety State (Default to 'dim' for eye comfort)
+  const [shopInfo, setShopInfo] = useState(() => {
+    const saved = localStorage.getItem('gf_shop_info');
+    return saved ? JSON.parse(saved) : {
+      name: 'Genuine Fix',
+      tagline: 'Laptop & Smartphone Repair Center',
+      address: 'Taalchowk, Lekhnath, Pokhara',
+      phone: '9765676982',
+      panNo: '609876543'
+    };
+  });
+
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem('gf_theme') || 'dim';
   });
 
-  // Theme configuration dictionary
   const themes = {
     dim: {
       appBg: 'bg-[#181B22] text-slate-200',
@@ -62,7 +138,6 @@ export default function App() {
 
   const t = themes[theme] || themes.dim;
 
-  // Dynamic Categories State with LocalStorage
   const [categories, setCategories] = useState(() => {
     const saved = localStorage.getItem('gf_categories');
     return saved ? JSON.parse(saved) : [
@@ -71,7 +146,6 @@ export default function App() {
     ];
   });
 
-  // LocalStorage States with Sample Data pre-loaded
   const [repairs, setRepairs] = useState(() => {
     const saved = localStorage.getItem('gf_repairs');
     return saved ? JSON.parse(saved) : [
@@ -88,7 +162,7 @@ export default function App() {
         paidAmount: 2000,
         dueAmount: 3000,
         issue: 'iCloud / Network Unlock',
-        warrantyDays: '30',
+        warrantyMonths: '30 Days',
         status: 'In Progress',
         dateTime: '2026-06-10 11:15:20',
         billType: 'Repair',
@@ -133,11 +207,19 @@ export default function App() {
     ];
   });
 
-  // Form & UI States
+  // Unique Customers List for Autocomplete Suggestions
+  const uniqueCustomers = Array.from(
+    new Map(
+      repairs
+        .filter(r => r.customerName && r.customerName !== 'Walk-in Customer')
+        .map(r => [r.customerName.trim().toLowerCase(), { name: r.customerName, phone: r.phone }])
+    ).values()
+  );
+
   const [newRepair, setNewRepair] = useState({ 
     customerName: '', phone: '', citizenshipNo: '', 
     customerPhoto: '', citizenshipPhoto: '', 
-    deviceType: 'Mobile (Unlock)', model: '', totalCost: '', paidAmount: '', issue: '', warrantyDays: '30' 
+    deviceType: 'Mobile (Unlock)', model: '', totalCost: '', paidAmount: '', issue: '', warrantyMonths: '30 Days' 
   });
   
   const [posBill, setPosBill] = useState({
@@ -145,7 +227,7 @@ export default function App() {
     phone: '',
     items: [{ name: '', price: '', qty: 1 }],
     paidAmount: '',
-    warrantyDays: '7'
+    warrantyMonths: '30 Days'
   });
 
   const [newDevice, setNewDevice] = useState({
@@ -157,18 +239,16 @@ export default function App() {
     partyPhone: '',
     buyPrice: '',
     sellPrice: '',
-    warrantyDays: '30'
+    warrantyMonths: '30 Days'
   });
 
   const [selectedCategory, setSelectedCategory] = useState(categories[0] || 'Mobile Parts');
   const [newPart, setNewPart] = useState({ name: '', stock: '', costPrice: '', price: '', minStock: '5' });
   const [newExpense, setNewExpense] = useState({ description: '', amount: '' });
   const [selectedInvoice, setSelectedInvoice] = useState(null);
-  const [editingInvoice, setEditingInvoice] = useState(null);
   const [invoiceSearch, setInvoiceSearch] = useState('');
   const [invoiceFilterTab, setInvoiceFilterTab] = useState('All');
 
-  // useEffects
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -178,6 +258,7 @@ export default function App() {
   }, []);
 
   useEffect(() => { localStorage.setItem('gf_theme', theme); }, [theme]);
+  useEffect(() => { localStorage.setItem('gf_shop_info', JSON.stringify(shopInfo)); }, [shopInfo]);
   useEffect(() => { localStorage.setItem('gf_categories', JSON.stringify(categories)); }, [categories]);
   useEffect(() => { localStorage.setItem('gf_repairs', JSON.stringify(repairs)); }, [repairs]);
   useEffect(() => { localStorage.setItem('gf_inventory', JSON.stringify(inventory)); }, [inventory]);
@@ -213,13 +294,23 @@ export default function App() {
   const totalDue = repairs.reduce((acc, curr) => acc + Number(curr.dueAmount || 0), 0);
   const totalExp = expenses.reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
 
+  // Customer auto-fill: selecting an existing customer fills the saved phone number.
+  const handleCustomerSelect = (customer, formType) => {
+    const name = customer?.name || '';
+    const phoneVal = customer?.phone || '';
+
+    if (formType === 'repair') {
+      setNewRepair(prev => ({ ...prev, customerName: name, phone: phoneVal }));
+    } else if (formType === 'device') {
+      setNewDevice(prev => ({ ...prev, partyName: name, partyPhone: phoneVal }));
+    } else if (formType === 'pos') {
+      setPosBill(prev => ({ ...prev, customerName: name, phone: phoneVal }));
+    }
+  };
+
   const exportData = () => {
     const backupData = {
-      categories,
-      repairs,
-      inventory,
-      devicesStock,
-      expenses,
+      shopInfo, categories, repairs, inventory, devicesStock, expenses,
       exportDate: getCurrentDateTime()
     };
     const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
@@ -238,6 +329,7 @@ export default function App() {
       try {
         const parsed = JSON.parse(event.target.result);
         if (parsed.repairs && parsed.inventory && parsed.expenses && parsed.categories) {
+          if (parsed.shopInfo) setShopInfo(parsed.shopInfo);
           setCategories(parsed.categories);
           setRepairs(parsed.repairs);
           setInventory(parsed.inventory);
@@ -245,7 +337,7 @@ export default function App() {
           setExpenses(parsed.expenses);
           alert('तपाईको पसलको डाटा सफलतापूर्वक Restore भयो!');
         } else {
-          alert('अमान्य ब्याकअप फाइल (Invalid Backup File format)!');
+          alert('अमान्य ब्याकअप फाइल!');
         }
       } catch (err) {
         alert('फाइल पढ्न असफल भयो!');
@@ -268,6 +360,7 @@ export default function App() {
       paidAmount: paid,
       dueAmount: total - paid,
       issue: newRepair.issue || 'General Repair / Unlocking',
+      warrantyMonths: newRepair.warrantyMonths || '30 Days',
       status: 'Pending',
       dateTime: getCurrentDateTime(),
       billType: 'Repair',
@@ -281,7 +374,7 @@ export default function App() {
       ]
     };
     setRepairs([repairItem, ...repairs]);
-    setNewRepair({ customerName: '', phone: '', citizenshipNo: '', customerPhoto: '', citizenshipPhoto: '', deviceType: 'Mobile (Unlock)', model: '', totalCost: '', paidAmount: '', issue: '', warrantyDays: '30' });
+    setNewRepair({ customerName: '', phone: '', citizenshipNo: '', customerPhoto: '', citizenshipPhoto: '', deviceType: 'Mobile (Unlock)', model: '', totalCost: '', paidAmount: '', issue: '', warrantyMonths: '30 Days' });
     alert('Job Sheet सफलतापूर्वक Save भयो!');
   };
 
@@ -319,7 +412,7 @@ export default function App() {
       paidAmount: sellPriceVal,
       dueAmount: 0,
       issue: `${newDevice.deviceCategory} Purchase/Stock Entry`,
-      warrantyDays: newDevice.warrantyDays,
+      warrantyMonths: newDevice.warrantyMonths || '30 Days',
       status: 'Delivered',
       dateTime: getCurrentDateTime(),
       billType: 'Device Sale',
@@ -343,7 +436,7 @@ export default function App() {
       partyPhone: '',
       buyPrice: '',
       sellPrice: '',
-      warrantyDays: '30'
+      warrantyMonths: '30 Days'
     });
     alert('Device सफलतापूर्वक Save भयो!');
   };
@@ -402,7 +495,7 @@ export default function App() {
       paidAmount,
       dueAmount,
       issue: 'Direct Store Sale / Custom Bill',
-      warrantyDays: posBill.warrantyDays,
+      warrantyMonths: posBill.warrantyMonths || '30 Days',
       status: 'Delivered',
       dateTime: getCurrentDateTime(),
       billType: 'Accessories',
@@ -415,7 +508,7 @@ export default function App() {
     };
 
     setRepairs([newBill, ...repairs]);
-    setPosBill({ customerName: '', phone: '', items: [{ name: '', price: '', qty: 1 }], paidAmount: '', warrantyDays: '7' });
+    setPosBill({ customerName: '', phone: '', items: [{ name: '', price: '', qty: 1 }], paidAmount: '', warrantyMonths: '30 Days' });
     alert('Accessories Bill सफलतापूर्वक Save भयो!');
   };
 
@@ -463,227 +556,6 @@ export default function App() {
     }));
   };
 
-  const handleUpdateInvoice = (e) => {
-    e.preventDefault();
-    const total = Number(editingInvoice.totalCost || 0);
-    const paid = Number(editingInvoice.paidAmount || 0);
-    const updated = {
-      ...editingInvoice,
-      totalCost: total,
-      paidAmount: paid,
-      dueAmount: total - paid
-    };
-    setRepairs(repairs.map(r => r.id === updated.id ? updated : r));
-    setEditingInvoice(null);
-  };
-
-  const generateInvoiceCanvas = (inv) => {
-    const canvas = document.createElement('canvas');
-    canvas.width = 800;
-    canvas.height = 1100;
-    const ctx = canvas.getContext('2d');
-
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    ctx.fillStyle = '#0F172A';
-    ctx.fillRect(0, 0, canvas.width, 160);
-
-    ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'bold 28px sans-serif';
-    ctx.fillText('GENUINE FIX', 50, 55);
-
-    ctx.fillStyle = '#38BDF8';
-    ctx.font = 'bold 13px sans-serif';
-    ctx.fillText('LAPTOP & SMARTPHONE REPAIR ', 50, 80);
-
-    ctx.fillStyle = '#94A3B8';
-    ctx.font = '12px sans-serif';
-    ctx.fillText('Taalchowk, Lekhnath, Pokhara  |  Phone: 9765676982', 50, 105);
-
-    ctx.fillStyle = '#38BDF8';
-    ctx.font = 'bold 16px monospace';
-    ctx.fillText(`INVOICE #${inv.id}`, 560, 55);
-
-    ctx.fillStyle = '#E2E8F0';
-    ctx.font = '12px sans-serif';
-    ctx.fillText(`Date: ${inv.dateTime}`, 560, 85);
-    
-    const isPaid = Number(inv.dueAmount) <= 0;
-    ctx.fillStyle = isPaid ? '#34D399' : '#F87171';
-    ctx.font = 'bold 13px sans-serif';
-    ctx.fillText(`Status: ${isPaid ? 'PAID IN FULL' : 'DUE PENDING'}`, 560, 110);
-
-    ctx.fillStyle = '#F8FAFC';
-    ctx.strokeStyle = '#E2E8F0';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.roundRect(50, 185, 700, 95, 8);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = '#64748B';
-    ctx.font = 'bold 11px sans-serif';
-    ctx.fillText('BILL TO:', 70, 210);
-
-    ctx.fillStyle = '#0F172A';
-    ctx.font = 'bold 16px sans-serif';
-    ctx.fillText(inv.customerName, 70, 238);
-
-    ctx.fillStyle = '#475569';
-    ctx.font = '13px sans-serif';
-    ctx.fillText(`Phone: ${inv.phone}`, 70, 262);
-
-    ctx.fillText(`Type: ${inv.deviceType || 'Repair & Sales'}`, 420, 210);
-    ctx.fillText(`Warranty: ${inv.warrantyDays || '30'} Days`, 420, 238);
-
-    ctx.fillStyle = '#1E293B';
-    ctx.fillRect(50, 310, 700, 40);
-
-    ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'bold 12px sans-serif';
-    ctx.fillText('S.N.', 70, 335);
-    ctx.fillText('ITEM / DESCRIPTION', 120, 335);
-    ctx.fillText('QTY', 480, 335);
-    ctx.fillText('PRICE (NPR)', 560, 335);
-    ctx.fillText('TOTAL', 660, 335);
-
-    const itemsList = inv.items && inv.items.length > 0 ? inv.items : [
-      { name: inv.model || inv.issue, price: inv.totalCost, qty: 1 }
-    ];
-
-    let startY = 375;
-    itemsList.forEach((item, index) => {
-      ctx.fillStyle = index % 2 === 0 ? '#FFFFFF' : '#F8FAFC';
-      ctx.fillRect(50, startY - 20, 700, 36);
-
-      ctx.strokeStyle = '#F1F5F9';
-      ctx.strokeRect(50, startY - 20, 700, 36);
-
-      ctx.fillStyle = '#334155';
-      ctx.font = '13px sans-serif';
-      ctx.fillText(`${index + 1}`, 75, startY + 2);
-      ctx.fillText(item.name || 'Service / Item', 120, startY + 2);
-      ctx.fillText(`${item.qty || 1}`, 490, startY + 2);
-      ctx.fillText(`${item.price || 0}`, 570, startY + 2);
-      ctx.fillText(`${(item.price || 0) * (item.qty || 1)}`, 660, startY + 2);
-
-      startY += 36;
-    });
-
-    const totalsY = Math.max(startY + 30, 520);
-    
-    ctx.fillStyle = '#F8FAFC';
-    ctx.strokeStyle = '#E2E8F0';
-    ctx.beginPath();
-    ctx.roundRect(430, totalsY, 320, 130, 8);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = '#64748B';
-    ctx.font = '13px sans-serif';
-    ctx.fillText('Subtotal:', 460, totalsY + 30);
-    ctx.fillText(`NPR ${inv.totalCost}`, 630, totalsY + 30);
-
-    ctx.fillText('Amount Paid:', 460, totalsY + 65);
-    ctx.fillStyle = '#16A34A';
-    ctx.font = 'bold 13px sans-serif';
-    ctx.fillText(`NPR ${inv.paidAmount}`, 630, totalsY + 65);
-
-    ctx.strokeStyle = '#CBD5E1';
-    ctx.beginPath();
-    ctx.moveTo(450, totalsY + 80);
-    ctx.lineTo(730, totalsY + 80);
-    ctx.stroke();
-
-    ctx.fillStyle = '#0F172A';
-    ctx.font = 'bold 15px sans-serif';
-    ctx.fillText('BALANCE DUE:', 460, totalsY + 110);
-    
-    ctx.fillStyle = Number(inv.dueAmount) > 0 ? '#DC2626' : '#16A34A';
-    ctx.font = 'bold 16px monospace';
-    ctx.fillText(`NPR ${inv.dueAmount}`, 615, totalsY + 110);
-
-    const footerY = totalsY + 160;
-    
-    ctx.fillStyle = '#FEF9C3';
-    ctx.strokeStyle = '#FEF08A';
-    ctx.beginPath();
-    ctx.roundRect(50, footerY, 700, 65, 8);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = '#854D0E';
-    ctx.font = 'bold 11px sans-serif';
-    ctx.fillText('WARRANTY & TRADING TERMS:', 70, footerY + 22);
-
-    ctx.fillStyle = '#713F12';
-    ctx.font = '11px sans-serif';
-    ctx.fillText('Warranty covers devices/parts as specified. Physical or water damage voids all warranty.', 70, footerY + 42);
-    ctx.fillText('Thank you for choosing Genuine Fix! Your trusted tech partner.', 70, footerY + 56);
-
-    ctx.fillStyle = '#0F172A';
-    ctx.font = '12px sans-serif';
-    ctx.fillText('Authorized Signature', 600, footerY + 130);
-    ctx.strokeStyle = '#94A3B8';
-    ctx.beginPath();
-    ctx.moveTo(560, footerY + 105);
-    ctx.lineTo(730, footerY + 105);
-    ctx.stroke();
-
-    return canvas;
-  };
-
-  const downloadInvoiceImage = (inv) => {
-    const canvas = generateInvoiceCanvas(inv);
-    const dataUrl = canvas.toDataURL('image/png');
-    const link = document.createElement('a');
-    link.href = dataUrl;
-    link.download = `Invoice_${inv.id}_${inv.customerName.replace(/\s+/g, '_')}.png`;
-    link.click();
-  };
-
-  const printInvoice = (inv) => {
-    const canvas = generateInvoiceCanvas(inv);
-    const dataUrl = canvas.toDataURL('image/png');
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(`
-      <html>
-        <head><title>Print Invoice #${inv.id}</title></head>
-        <body style="margin:0; display:flex; justify-content:center; align-items:center; height:100vh; background:#fff;">
-          <img src="${dataUrl}" style="max-width:100%; height:auto;" onload="window.print();window.close();" />
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
-  };
-
-  const sendToWhatsApp = (inv) => {
-    const text = `*GENUINE FIX - LAPTOP & MOBILE CENTER*
-📍 Taalchowk, Pokhara | 📞 9765676982
-----------------------------------------
-👤 *Customer:* ${inv.customerName}
-📞 *Phone:* ${inv.phone}
-📅 *Date & Time:* ${inv.dateTime}
-----------------------------------------
-🛠️ *Service/Device:* ${inv.model}
-📝 *Details:* ${inv.issue}
-🛡️ *Warranty:* ${inv.warrantyDays || '30'} Days
-----------------------------------------
-💰 *Total Cost:* NPR ${inv.totalCost}
-💵 *Amount Paid:* NPR ${inv.paidAmount}
-🔴 *Balance Due:* NPR ${inv.dueAmount}
-----------------------------------------
-_Thank you for choosing Genuine Fix!_`;
-
-    let cleanPhone = inv.phone.replace(/\D/g, '');
-    if (cleanPhone.length === 10 && cleanPhone.startsWith('9')) {
-      cleanPhone = '977' + cleanPhone;
-    }
-    const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`;
-    window.open(url, '_blank');
-  };
-
   const deleteRepair = (id) => setRepairs(repairs.filter(r => r.id !== id));
   const deletePart = (id) => setInventory(inventory.filter(i => i.id !== id));
   const deleteDevice = (id) => setDevicesStock(devicesStock.filter(d => d.id !== id));
@@ -712,7 +584,7 @@ _Thank you for choosing Genuine Fix!_`;
               <img src="/logo.jpg" alt="Genuine Fix Logo" className="w-full h-full object-cover" />
             </div>
             <div>
-              <h1 className={`font-extrabold text-lg ${t.textMain} leading-tight tracking-tight`}>Genuine Fix</h1>
+              <h1 className={`font-extrabold text-lg ${t.textMain} leading-tight tracking-tight`}>{shopInfo.name}</h1>
               <p className="text-[10px] text-blue-400 font-bold uppercase tracking-widest">Laptop & Smartphone Repair</p>
             </div>
           </div>
@@ -815,9 +687,16 @@ _Thank you for choosing Genuine Fix!_`;
         {/* REPAIRS / JOB SHEETS TAB */}
         {activeTab === 'repairs' && (
           <div className="space-y-6 animate-in fade-in duration-300">
-            <h2 className={`text-xl font-bold ${t.textMain}`}>Create Repair / Unlocking Job Sheet</h2>
+            <h2 className={`text-xl font-bold ${t.textMain}`}>Create Repair / Unlocking Job Sheet (Auto-Fill Active)</h2>
             <form onSubmit={handleAddRepair} className={`${t.cardBg} border ${t.border} p-6 rounded-3xl grid grid-cols-1 md:grid-cols-3 gap-4 shadow-xl`}>
-              <input type="text" placeholder="Customer Full Name (Optional)" value={newRepair.customerName} onChange={e => setNewRepair({...newRepair, customerName: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`} />
+              <CustomerAutocomplete
+                  value={newRepair.customerName}
+                  customers={uniqueCustomers}
+                  placeholder="Customer Full Name (पुरानो customer छान्नुहोस्)"
+                  onChange={(value) => setNewRepair(prev => ({ ...prev, customerName: value }))}
+                  onSelect={(customer) => handleCustomerSelect(customer, 'repair')}
+                  className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`}
+                />
               <input type="text" placeholder="Phone Number (e.g. 98xxxxxxxx)" value={newRepair.phone} onChange={e => setNewRepair({...newRepair, phone: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`} />
               <input type="text" placeholder="Citizenship No. (Optional)" value={newRepair.citizenshipNo} onChange={e => setNewRepair({...newRepair, citizenshipNo: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`} />
 
@@ -832,7 +711,7 @@ _Thank you for choosing Genuine Fix!_`;
               <input type="text" placeholder="Device Model (Optional)" value={newRepair.model} onChange={e => setNewRepair({...newRepair, model: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
               <input type="number" placeholder="Total Cost (NPR)" value={newRepair.totalCost} onChange={e => setNewRepair({...newRepair, totalCost: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
               <input type="number" placeholder="Paid Amount (NPR)" value={newRepair.paidAmount} onChange={e => setNewRepair({...newRepair, paidAmount: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-              <input type="text" placeholder="Warranty Days (e.g. 30 Days)" value={newRepair.warrantyDays} onChange={e => setNewRepair({...newRepair, warrantyDays: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+              <input type="text" placeholder="Warranty (e.g. 30 Days, 1 Year)" value={newRepair.warrantyMonths} onChange={e => setNewRepair({...newRepair, warrantyMonths: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
               <input type="text" placeholder="Issue / Details (Optional)" value={newRepair.issue} onChange={e => setNewRepair({...newRepair, issue: e.target.value})} className={`md:col-span-2 p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
 
               <div className={`md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-4 ${t.cardSecondary} p-4 rounded-2xl border ${t.border}`}>
@@ -873,12 +752,19 @@ _Thank you for choosing Genuine Fix!_`;
               <input type="text" placeholder="IMEI Number or Serial No." value={newDevice.imeiOrSerial} onChange={e => setNewDevice({...newDevice, imeiOrSerial: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
               
               <input type="text" placeholder="Condition / Specs (e.g. Battery 90%, Scratchless)" value={newDevice.condition} onChange={e => setNewDevice({...newDevice, condition: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-              <input type="text" placeholder="Customer / Party Name" value={newDevice.partyName} onChange={e => setNewDevice({...newDevice, partyName: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+              <CustomerAutocomplete
+                  value={newDevice.partyName}
+                  customers={uniqueCustomers}
+                  placeholder="Customer / Party Name (पुरानो customer छान्नुहोस्)"
+                  onChange={(value) => setNewDevice(prev => ({ ...prev, partyName: value }))}
+                  onSelect={(customer) => handleCustomerSelect(customer, 'device')}
+                  className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}
+                />
               <input type="text" placeholder="Customer Phone Number" value={newDevice.partyPhone} onChange={e => setNewDevice({...newDevice, partyPhone: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
 
               <input type="number" placeholder="Buy Price / Cost Price (NPR)" value={newDevice.buyPrice} onChange={e => setNewDevice({...newDevice, buyPrice: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
               <input type="number" placeholder="Selling Price (NPR)" value={newDevice.sellPrice} onChange={e => setNewDevice({...newDevice, sellPrice: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
-              <input type="text" placeholder="Warranty (e.g. 3 Months / 6 Months)" value={newDevice.warrantyDays} onChange={e => setNewDevice({...newDevice, warrantyDays: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+              <input type="text" placeholder="Warranty (e.g. 3 Months)" value={newDevice.warrantyMonths} onChange={e => setNewDevice({...newDevice, warrantyMonths: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
 
               <button type="submit" className="md:col-span-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-emerald-600/30">Save Device & Generate Bill</button>
             </form>
@@ -934,7 +820,14 @@ _Thank you for choosing Genuine Fix!_`;
 
             <form onSubmit={handleSavePosBill} className={`${t.cardBg} border ${t.border} p-6 rounded-3xl space-y-4 shadow-xl`}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input type="text" placeholder="Customer Name (Optional)" value={posBill.customerName} onChange={e => setPosBill({...posBill, customerName: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                <CustomerAutocomplete
+                    value={posBill.customerName}
+                    customers={uniqueCustomers}
+                    placeholder="Customer Name (पुरानो customer छान्नुहोस्)"
+                    onChange={(value) => setPosBill(prev => ({ ...prev, customerName: value }))}
+                    onSelect={(customer) => handleCustomerSelect(customer, 'pos')}
+                    className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}
+                  />
                 <input type="text" placeholder="Phone Number (Optional)" value={posBill.phone} onChange={e => setPosBill({...posBill, phone: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
               </div>
 
@@ -955,7 +848,7 @@ _Thank you for choosing Genuine Fix!_`;
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                 <input type="number" placeholder="Paid Amount" value={posBill.paidAmount} onChange={e => setPosBill({...posBill, paidAmount: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-                <input type="text" placeholder="Warranty Days (e.g. 7 Days)" value={posBill.warrantyDays} onChange={e => setPosBill({...posBill, warrantyDays: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                <input type="text" placeholder="Warranty (e.g. 30 Days)" value={posBill.warrantyMonths} onChange={e => setPosBill({...posBill, warrantyMonths: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
               </div>
 
               <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-emerald-600/30">Complete Sale & Print Bill</button>
@@ -1011,9 +904,6 @@ _Thank you for choosing Genuine Fix!_`;
                       </td>
                       <td className="p-4 text-right space-x-2">
                         <button onClick={() => setSelectedInvoice(inv)} className="px-3 py-1.5 bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 rounded-xl text-xs font-bold">Preview</button>
-                        <button onClick={() => setEditingInvoice(inv)} className="px-3 py-1.5 bg-amber-600/20 text-amber-400 hover:bg-amber-600/30 rounded-xl text-xs font-bold inline-flex items-center gap-1">
-                          <Pencil size={14}/> Edit
-                        </button>
                         <button onClick={() => { if(window.confirm('के तपाईं यो रेकर्ड डिलेट गर्न चाहनुहुन्छ?')) deleteRepair(inv.id); }} className="p-2 bg-rose-500/10 text-rose-400 rounded-xl hover:bg-rose-500/20 inline-flex items-center align-middle">
                           <Trash2 size={14}/>
                         </button>
@@ -1142,238 +1032,184 @@ _Thank you for choosing Genuine Fix!_`;
           </div>
         )}
 
-        {/* SETTINGS & THEME VARIETIES TAB */}
+        {/* SETTINGS TAB */}
         {activeTab === 'settings' && (
           <div className="space-y-6 animate-in fade-in duration-300 max-w-2xl mx-auto">
             <h2 className={`text-xl font-bold ${t.textMain}`}>Settings & GUI Theme Preferences</h2>
             <div className={`${t.cardBg} border ${t.border} p-8 rounded-3xl space-y-6 shadow-xl`}>
-              <div>
-                <h3 className={`font-bold ${t.textMain} text-lg mb-1`}>🎨 GUI Theme Varieties (आँखालाई आरामदायी बनाउने सेटिङ)</h3>
-                <p className={`text-xs ${t.textMuted} mb-6`}>कलो थिममा धेरै उज्यालो वा कन्ट्रास्ट भएर आँखा दुखेको वा चराएको छ भने यहाँबाट नरम (Soft Dim) वा लाइट (Light) थिम छान्नुहोस्。</p>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <button 
-                    onClick={() => setTheme('dim')}
-                    className={`p-4 rounded-2xl border text-left transition ${theme === 'dim' ? 'border-blue-500 bg-blue-500/10 shadow-md' : `${t.border} ${t.cardSecondary}`}`}
-                  >
-                    <div className="flex items-center gap-2 font-bold text-slate-100 mb-1">
-                      <Monitor size={16} className="text-blue-400"/> Soft Dim
-                    </div>
-                    <div className="text-xs text-slate-400">आँखालाई एकदम आरामदायी (Recommended for Long Hours)</div>
-                  </button>
-
-                  <button 
-                    onClick={() => setTheme('dark')}
-                    className={`p-4 rounded-2xl border text-left transition ${theme === 'dark' ? 'border-blue-500 bg-blue-500/10 shadow-md' : `${t.border} ${t.cardSecondary}`}`}
-                  >
-                    <div className="flex items-center gap-2 font-bold text-white mb-1">
-                      <Moon size={16} className="text-purple-400"/> Pitch Black
-                    </div>
-                    <div className="text-xs text-slate-400">गाढा कालो (OLED Black Mode)</div>
-                  </button>
-
-                  <button 
-                    onClick={() => setTheme('light')}
-                    className={`p-4 rounded-2xl border text-left transition ${theme === 'light' ? 'border-blue-500 bg-blue-500/10 shadow-md' : `${t.border} bg-white text-slate-900`}`}
-                  >
-                    <div className="flex items-center gap-2 font-bold text-slate-900 mb-1">
-                      <Sun size={16} className="text-amber-500"/> Clean Light
-                    </div>
-                    <div className="text-xs text-slate-600">उज्यालो सेतो (Daylight View)</div>
-                  </button>
+              
+              <div className="space-y-4 border-b pb-6 border-slate-700">
+                <h3 className={`font-bold ${t.textMain} text-base`}>🏢 Shop Profile & PAN Details</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className={`text-xs ${t.textMuted} block mb-1`}>Shop Name</label>
+                    <input type="text" value={shopInfo.name} onChange={e => setShopInfo({...shopInfo, name: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                  </div>
+                  <div>
+                    <label className={`text-xs ${t.textMuted} block mb-1`}>PAN / VAT Number</label>
+                    <input type="text" value={shopInfo.panNo} onChange={e => setShopInfo({...shopInfo, panNo: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                  </div>
+                  <div>
+                    <label className={`text-xs ${t.textMuted} block mb-1`}>Phone Number</label>
+                    <input type="text" value={shopInfo.phone} onChange={e => setShopInfo({...shopInfo, phone: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                  </div>
+                  <div>
+                    <label className={`text-xs ${t.textMuted} block mb-1`}>Address</label>
+                    <input type="text" value={shopInfo.address} onChange={e => setShopInfo({...shopInfo, address: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                  </div>
                 </div>
               </div>
+
+              <div className="space-y-4">
+                <h3 className={`font-bold ${t.textMain} text-base`}>🎨 Appearance & Color Theme</h3>
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { id: 'dim', label: 'Dim Tech (Default)', bg: 'bg-[#181B22]' },
+                    { id: 'dark', label: 'Pure Dark', bg: 'bg-[#0B0F17]' },
+                    { id: 'light', label: 'Light Mode', bg: 'bg-slate-100 text-slate-800' }
+                  ].map(thm => (
+                    <button
+                      key={thm.id}
+                      onClick={() => setTheme(thm.id)}
+                      className={`p-4 rounded-2xl border text-xs font-bold transition flex flex-col items-center gap-2 ${thm.bg} ${
+                        theme === thm.id ? 'border-blue-500 ring-2 ring-blue-500/30' : t.border
+                      }`}
+                    >
+                      <span>{thm.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
             </div>
           </div>
         )}
 
       </main>
 
-      {/* INVOICE PREVIEW MODAL - EXACT PRO IMAGE MATCH + PRINT & DOWNLOAD */}
+      {/* INVOICE PREVIEW MODAL */}
       {selectedInvoice && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-start justify-center p-4 overflow-y-auto py-10">
-          <div className="bg-white text-gray-900 rounded-3xl max-w-2xl w-full p-6 space-y-6 shadow-2xl relative my-auto">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white text-slate-900 rounded-3xl max-w-2xl w-full p-6 space-y-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
             
-            {/* Modal Header Controls (Sticky so Close button is always visible) */}
-            <div className="flex items-center justify-between border-b pb-3 sticky top-0 bg-white z-10 pt-2">
-              <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-blue-600">Official Bill Preview</span>
-                <h3 className="text-lg font-extrabold text-gray-900">Invoice #{selectedInvoice.id}</h3>
-              </div>
-              <button onClick={() => setSelectedInvoice(null)} className="p-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition shadow"><X size={18}/></button>
-            </div>
+            <button 
+              onClick={() => setSelectedInvoice(null)} 
+              className="absolute top-4 right-4 p-2 bg-slate-100 hover:bg-slate-200 rounded-full text-slate-750 transition"
+            >
+              <X size={18}/>
+            </button>
 
-            {/* Professional Invoice Sheet Body - Exact Pro Image Style */}
-            <div className="bg-slate-50 border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-              
-              {/* Dark Header Banner */}
-              <div className="bg-[#0F172A] text-white p-6 flex flex-wrap justify-between items-start gap-4">
+            <div className="space-y-6 text-sm">
+              <div className="bg-slate-900 text-white p-6 rounded-2xl flex justify-between items-start">
                 <div>
-                  <h2 className="text-2xl font-black tracking-tight">GENUINE FIX</h2>
-                  <p className="text-xs font-bold text-[#38BDF8] tracking-wide mt-0.5">LAPTOP & SMARTPHONE REPAIR</p>
-                  <p className="text-xs text-[#94A3B8] mt-1">Taalchowk, Lekhnath, Pokhara | Phone: 9765676982</p>
+                  <h2 className="text-xl font-black">{shopInfo.name}</h2>
+                  <p className="text-xs text-sky-400 font-bold uppercase">{shopInfo.tagline}</p>
+                  <p className="text-[11px] text-slate-400 mt-1">{shopInfo.address} | Phone: {shopInfo.phone} | PAN: {shopInfo.panNo}</p>
                 </div>
                 <div className="text-right">
-                  <h3 className="text-base font-extrabold font-mono text-[#38BDF8]">INVOICE #{selectedInvoice.id}</h3>
-                  <p className="text-xs text-[#E2E8F0] mt-1">Date: {selectedInvoice.dateTime}</p>
-                  <p className={`text-xs font-bold mt-1 ${Number(selectedInvoice.dueAmount) <= 0 ? 'text-[#34D399]' : 'text-[#F87171]'}`}>
-                    Status: {Number(selectedInvoice.dueAmount) <= 0 ? 'PAID IN FULL' : 'DUE PENDING'}
-                  </p>
+                  <p className="font-mono text-sky-400 font-bold">INVOICE #{selectedInvoice.id}</p>
+                  <p className="text-xs text-slate-300">Date: {selectedInvoice.dateTime}</p>
+                  <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold mt-1 ${
+                    Number(selectedInvoice.dueAmount) <= 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'
+                  }`}>
+                    {Number(selectedInvoice.dueAmount) <= 0 ? 'PAID IN FULL' : 'DUE PENDING'}
+                  </span>
                 </div>
               </div>
 
-              <div className="p-6 space-y-6">
-                {/* Bill To & Details Card */}
-                <div className="grid grid-cols-2 gap-4 bg-white p-4 rounded-xl border border-slate-200 text-xs">
-                  <div>
-                    <p className="text-slate-400 font-bold uppercase mb-1">BILL TO:</p>
-                    <p className="text-sm font-bold text-slate-900">{selectedInvoice.customerName}</p>
-                    <p className="text-slate-600">Phone: {selectedInvoice.phone}</p>
-                    {selectedInvoice.citizenshipNo && <p className="text-slate-600">Citizenship No: {selectedInvoice.citizenshipNo}</p>}
-                  </div>
-                  <div className="text-right">
-                    <p className="text-slate-400 font-bold uppercase mb-1">Service Details:</p>
-                    <p className="font-semibold text-slate-800">{selectedInvoice.model || selectedInvoice.deviceType}</p>
-                    <p className="text-blue-600 font-bold mt-1">Warranty: {selectedInvoice.warrantyDays || '30'} Days</p>
-                  </div>
+              <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex justify-between">
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase">Bill To:</p>
+                  <p className="font-bold text-base text-slate-900">{selectedInvoice.customerName}</p>
+                  <p className="text-xs text-slate-600">Phone: {selectedInvoice.phone}</p>
                 </div>
+                <div className="text-right">
+                  <p className="text-xs text-slate-600"><strong className="text-slate-400">Type:</strong> {selectedInvoice.deviceType || 'Repair & Sales'}</p>
+                  <p className="text-xs text-slate-600"><strong className="text-slate-400">Warranty:</strong> {selectedInvoice.warrantyMonths || '30 Days'}</p>
+                </div>
+              </div>
 
-                {/* Items Table */}
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs text-left border-collapse">
-                    <thead>
-                      <tr className="bg-[#1E293B] text-white uppercase font-bold">
-                        <th className="p-3 rounded-l-lg w-12">S.N.</th>
-                        <th className="p-3">Item / Description</th>
-                        <th className="p-3 text-center w-16">QTY</th>
-                        <th className="p-3 text-right">Price (NPR)</th>
-                        <th className="p-3 text-right rounded-r-lg">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-200">
-                      {selectedInvoice.items && selectedInvoice.items.length > 0 ? (
-                        selectedInvoice.items.map((item, idx) => (
-                          <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-[#F8FAFC]'}>
-                            <td className="p-3 font-medium text-slate-600">{idx + 1}</td>
-                            <td className="p-3 font-medium text-slate-900">{item.name}</td>
-                            <td className="p-3 text-center text-slate-700">{item.qty || 1}</td>
-                            <td className="p-3 text-right text-slate-800">{item.price || 0}</td>
-                            <td className="p-3 text-right font-bold text-slate-900">{(item.price || 0) * (item.qty || 1)}</td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr className="bg-white">
-                          <td className="p-3 font-medium text-slate-600">1</td>
-                          <td className="p-3 font-medium text-slate-900">{selectedInvoice.model || selectedInvoice.issue}</td>
-                          <td className="p-3 text-center text-slate-700">1</td>
-                          <td className="p-3 text-right text-slate-800">{selectedInvoice.totalCost}</td>
-                          <td className="p-3 text-right font-bold text-slate-900">{selectedInvoice.totalCost}</td>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-900 text-white font-bold uppercase">
+                    <tr>
+                      <th className="p-3">S.N.</th>
+                      <th className="p-3">Item / Description</th>
+                      <th className="p-3">Qty</th>
+                      <th className="p-3">Price</th>
+                      <th className="p-3 text-right">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200">
+                    {selectedInvoice.items && selectedInvoice.items.length > 0 ? (
+                      selectedInvoice.items.map((item, idx) => (
+                        <tr key={idx}>
+                          <td className="p-3">{idx + 1}</td>
+                          <td className="p-3 font-medium">{item.name}</td>
+                          <td className="p-3">{item.qty || 1}</td>
+                          <td className="p-3">NPR {item.price}</td>
+                          <td className="p-3 text-right font-bold">NPR {(item.price || 0) * (item.qty || 1)}</td>
                         </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Totals Section */}
-                <div className="flex justify-end pt-2">
-                  <div className="w-64 space-y-2 text-xs bg-[#F8FAFC] p-4 rounded-xl border border-slate-200">
-                    <div className="flex justify-between text-slate-600">
-                      <span>Subtotal:</span>
-                      <span className="font-bold text-slate-900">NPR {selectedInvoice.totalCost}</span>
-                    </div>
-                    <div className="flex justify-between text-slate-600">
-                      <span>Amount Paid:</span>
-                      <span className="font-bold text-emerald-600">NPR {selectedInvoice.paidAmount}</span>
-                    </div>
-                    <div className="border-t border-slate-300 pt-2 flex justify-between text-sm font-bold">
-                      <span className="text-slate-800">BALANCE DUE:</span>
-                      <span className={Number(selectedInvoice.dueAmount) > 0 ? 'text-rose-600 font-mono text-base' : 'text-emerald-600 font-mono text-base'}>
-                        NPR {selectedInvoice.dueAmount}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Warranty & Terms box */}
-                <div className="bg-[#FEF9C3] border border-[#FEF08A] p-4 rounded-xl text-xs space-y-1">
-                  <p className="font-bold text-[#854D0E] uppercase text-[11px]">Warranty & Trading Terms:</p>
-                  <p className="text-[#713F12]">Warranty covers devices/parts as specified. Physical or water damage voids all warranty.</p>
-                  <p className="text-[#713F12] font-medium">Thank you for choosing Genuine Fix! Your trusted tech partner.</p>
-                </div>
-
-                {/* Signature line */}
-                <div className="flex justify-end pt-6">
-                  <div className="text-center w-48">
-                    <div className="border-b border-slate-400 mb-1"></div>
-                    <p className="text-xs font-bold text-slate-800">Authorized Signature</p>
-                  </div>
-                </div>
-
+                      ))
+                    ) : (
+                      <tr>
+                        <td className="p-3">1</td>
+                        <td className="p-3 font-medium">{selectedInvoice.model || selectedInvoice.issue}</td>
+                        <td className="p-3">1</td>
+                        <td className="p-3">NPR {selectedInvoice.totalCost}</td>
+                        <td className="p-3 text-right font-bold">NPR {selectedInvoice.totalCost}</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
+
+              <div className="flex justify-end pt-4">
+                <div className="bg-white p-4 rounded-xl border border-slate-200 w-72 space-y-2 text-xs">
+                  <div className="flex justify-between text-slate-600">
+                    <span>Subtotal:</span>
+                    <span>NPR {selectedInvoice.totalCost}</span>
+                  </div>
+                  <div className="flex justify-between text-slate-600">
+                    <span>Amount Paid:</span>
+                    <span className="font-bold text-emerald-600">NPR {selectedInvoice.paidAmount}</span>
+                  </div>
+                  <hr className="border-slate-200" />
+                  <div className="flex justify-between text-sm font-extrabold text-slate-900">
+                    <span>BALANCE DUE:</span>
+                    <span className={Number(selectedInvoice.dueAmount) > 0 ? 'text-red-600' : 'text-emerald-600'}>
+                      NPR {selectedInvoice.dueAmount}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl text-xs space-y-1">
+                <p className="font-bold text-amber-800 uppercase">WARRANTY & TRADING TERMS:</p>
+                <p className="text-amber-900">Warranty covers devices/parts as specified. Physical or water damage voids all warranty.</p>
+                <p className="text-amber-900 font-medium">Thank you for choosing {shopInfo.name}! Your trusted tech partner.</p>
+              </div>
+
+              <div className="pt-8 flex justify-end">
+                <div className="text-center">
+                  <div className="w-48 border-b border-slate-400 mb-1"></div>
+                  <p className="text-xs font-bold text-slate-800">Authorized Signature</p>
+                </div>
+              </div>
+
             </div>
 
-            {/* Action Buttons (Download, Print, WhatsApp) */}
-            <div className="flex flex-wrap items-center gap-3 pt-2">
-              <button onClick={() => downloadInvoiceImage(selectedInvoice)} className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl transition flex items-center justify-center gap-2 text-xs shadow-lg shadow-blue-600/35">
-                <Download size={16}/> Download Pro Image
-              </button>
-              <button onClick={() => printInvoice(selectedInvoice)} className="flex-1 py-3 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-2xl transition flex items-center justify-center gap-2 text-xs shadow-lg shadow-amber-600/35">
-                <Printer size={16}/> Print Bill
-              </button>
-              <button onClick={() => sendToWhatsApp(selectedInvoice)} className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl transition flex items-center justify-center gap-2 text-xs shadow-lg shadow-emerald-600/35">
-                <MessageSquare size={16}/> Send WhatsApp
+            <div className="flex flex-wrap items-center justify-end gap-3 pt-2">
+              <button 
+                onClick={() => setSelectedInvoice(null)}
+                className="px-4 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold rounded-xl text-xs transition"
+              >
+                Close
               </button>
             </div>
           </div>
         </div>
       )}
-
-      {/* EDIT INVOICE MODAL */}
-      {editingInvoice && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className={`${t.cardBg} border ${t.border} rounded-3xl max-w-xl w-full p-6 space-y-6 shadow-2xl animate-in zoom-in-95 duration-200`}>
-            <div className={`flex items-center justify-between border-b ${t.border} pb-4`}>
-              <h3 className={`text-lg font-bold ${t.textMain}`}>Edit Invoice / Record #{editingInvoice.id}</h3>
-              <button onClick={() => setEditingInvoice(null)} className={`p-2 ${t.cardSecondary} ${t.textMuted} hover:text-white rounded-xl`}><X size={18}/></button>
-            </div>
-
-            <form onSubmit={handleUpdateInvoice} className="space-y-4">
-              <div>
-                <label className={`text-xs ${t.textMuted} block mb-1`}>Customer Name</label>
-                <input type="text" value={editingInvoice.customerName} onChange={e => setEditingInvoice({...editingInvoice, customerName: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`} />
-              </div>
-              <div>
-                <label className={`text-xs ${t.textMuted} block mb-1`}>Phone Number</label>
-                <input type="text" value={editingInvoice.phone} onChange={e => setEditingInvoice({...editingInvoice, phone: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`} />
-              </div>
-              <div>
-                <label className={`text-xs ${t.textMuted} block mb-1`}>Model / Description</label>
-                <input type="text" value={editingInvoice.model} onChange={e => setEditingInvoice({...editingInvoice, model: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`} />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className={`text-xs ${t.textMuted} block mb-1`}>Total Cost (NPR)</label>
-                  <input type="number" value={editingInvoice.totalCost} onChange={e => setEditingInvoice({...editingInvoice, totalCost: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`} />
-                </div>
-                <div>
-                  <label className={`text-xs ${t.textMuted} block mb-1`}>Paid Amount (NPR)</label>
-                  <input type="number" value={editingInvoice.paidAmount} onChange={e => setEditingInvoice({...editingInvoice, paidAmount: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`} />
-                </div>
-              </div>
-              <div>
-                <label className={`text-xs ${t.textMuted} block mb-1`}>Warranty Days</label>
-                <input type="text" value={editingInvoice.warrantyDays} onChange={e => setEditingInvoice({...editingInvoice, warrantyDays: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`} />
-              </div>
-
-              <div className="flex justify-end gap-3 pt-4">
-                <button type="button" onClick={() => setEditingInvoice(null)} className={`px-5 py-2.5 ${t.cardSecondary} ${t.textMuted} font-bold rounded-xl text-sm`}>Cancel</button>
-                <button type="submit" className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-sm shadow-lg shadow-blue-600/30">Save Changes</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
     </div>
   );
 }
