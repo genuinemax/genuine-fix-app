@@ -7,6 +7,46 @@ import {
   Trash2, Printer, ShieldCheck, User, CreditCard, Search, Eye, ChevronRight, Download, Upload, ShoppingBag, MessageSquare, Plus, AlertTriangle, ArrowUpRight, ArrowDownRight, X, CheckCircle2, Image as ImageIcon, Pencil, Smartphone, Laptop, Settings, Sun, Moon, Monitor
 } from 'lucide-react';
 
+
+function CustomerAutocomplete({ value, customers, onChange, onSelect, placeholder, inputClassName }) {
+  const [open, setOpen] = React.useState(false);
+  const query = (value || '').trim().toLowerCase();
+  const suggestions = query
+    ? customers.filter(c => c.name.toLowerCase().includes(query)).slice(0, 8)
+    : customers.slice(0, 8);
+
+  return (
+    <div className="relative w-full">
+      <input
+        type="text"
+        autoComplete="off"
+        placeholder={placeholder}
+        value={value}
+        onFocus={() => setOpen(true)}
+        onChange={e => { onChange(e.target.value); setOpen(true); }}
+        onBlur={() => setTimeout(() => setOpen(false), 180)}
+        className={inputClassName}
+      />
+      {open && suggestions.length > 0 && (
+        <div className="absolute left-0 right-0 top-full mt-1 z-[100] max-h-56 overflow-y-auto rounded-2xl border border-slate-300 bg-white shadow-2xl">
+          {suggestions.map((customer, idx) => (
+            <button
+              type="button"
+              key={`${customer.name}-${customer.phone}-${idx}`}
+              onMouseDown={e => e.preventDefault()}
+              onClick={() => { onSelect(customer); setOpen(false); }}
+              className="w-full px-4 py-3 text-left hover:bg-blue-50 border-b last:border-b-0 border-slate-100"
+            >
+              <div className="font-semibold text-slate-800">{customer.name}</div>
+              <div className="text-xs text-slate-500">{customer.phone || 'No phone saved'}</div>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function App() {
   const [activeTab, setActiveTab] = useState('repairs');
   const [user, setUser] = useState(null);
@@ -224,21 +264,18 @@ export default function App() {
   const totalDue = repairs.reduce((acc, curr) => acc + Number(curr.dueAmount || 0), 0);
   const totalExp = expenses.reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
 
-  // Customer Auto-Fill: selecting an existing customer fills the saved phone number.
-  const handleCustomerSelect = (name, formType) => {
-    const cleanName = name.trim();
-    const found = uniqueCustomers.find(
-      c => c.name.trim().toLowerCase() === cleanName.toLowerCase()
-    );
-    const phoneVal = found?.phone || '';
+  const handleCustomerInput = (name, formType) => {
+    const cleanName = name.trim().toLowerCase();
+    const found = uniqueCustomers.find(c => c.name.trim().toLowerCase() === cleanName);
+    if (formType === 'repair') setNewRepair(prev => ({ ...prev, customerName: name, phone: found ? found.phone : prev.phone }));
+    if (formType === 'device') setNewDevice(prev => ({ ...prev, partyName: name, partyPhone: found ? found.phone : prev.partyPhone }));
+    if (formType === 'pos') setPosBill(prev => ({ ...prev, customerName: name, phone: found ? found.phone : prev.phone }));
+  };
 
-    if (formType === 'repair') {
-      setNewRepair(prev => ({ ...prev, customerName: name, phone: phoneVal }));
-    } else if (formType === 'device') {
-      setNewDevice(prev => ({ ...prev, partyName: name, partyPhone: phoneVal }));
-    } else if (formType === 'pos') {
-      setPosBill(prev => ({ ...prev, customerName: name, phone: phoneVal }));
-    }
+  const handleCustomerPick = (customer, formType) => {
+    if (formType === 'repair') setNewRepair(prev => ({ ...prev, customerName: customer.name, phone: customer.phone || '' }));
+    if (formType === 'device') setNewDevice(prev => ({ ...prev, partyName: customer.name, partyPhone: customer.phone || '' }));
+    if (formType === 'pos') setPosBill(prev => ({ ...prev, customerName: customer.name, phone: customer.phone || '' }));
   };
 
   const exportData = () => {
@@ -509,14 +546,7 @@ export default function App() {
 
   return (
     <div className={`min-h-screen ${t.appBg} font-sans transition-colors duration-200`}>
-      {/* Global Datalist for Customer Name Autocomplete */}
-      <datalist id="customer-list">
-        {uniqueCustomers.map((c, idx) => (
-          <option key={idx} value={c.name} data-phone={c.phone} />
-        ))}
-      </datalist>
-
-      {/* Top Navigation Bar */}
+{/* Top Navigation Bar */}
       <nav className={`border-b ${t.border} ${t.navBg} backdrop-blur-xl sticky top-0 z-30 shadow-lg`}>
         <div className="max-w-7xl mx-auto px-6 py-4 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -629,13 +659,13 @@ export default function App() {
           <div className="space-y-6 animate-in fade-in duration-300">
             <h2 className={`text-xl font-bold ${t.textMain}`}>Create Repair / Unlocking Job Sheet (Auto-Fill Active)</h2>
             <form onSubmit={handleAddRepair} className={`${t.cardBg} border ${t.border} p-6 rounded-3xl grid grid-cols-1 md:grid-cols-3 gap-4 shadow-xl`}>
-              <input 
-                type="text" 
-                list="customer-list"
-                placeholder="Customer Full Name (पुराना नाम छान्दा फोन नम्बर आफैं बस्छ)" 
-                value={newRepair.customerName} 
-                onChange={(e) => handleCustomerSelect(e.target.value, 'repair')}
-                className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`} 
+              <CustomerAutocomplete
+                value={newRepair.customerName}
+                customers={uniqueCustomers}
+                onChange={value => handleCustomerInput(value, 'repair')}
+                onSelect={customer => handleCustomerPick(customer, 'repair')}
+                placeholder="Customer Full Name (पुरानो ग्राहक खोज्नुहोस्)"
+                inputClassName={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`}
               />
               <input type="text" placeholder="Phone Number (e.g. 98xxxxxxxx)" value={newRepair.phone} onChange={e => setNewRepair({...newRepair, phone: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`} />
               <input type="text" placeholder="Citizenship No. (Optional)" value={newRepair.citizenshipNo} onChange={e => setNewRepair({...newRepair, citizenshipNo: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`} />
@@ -692,13 +722,13 @@ export default function App() {
               <input type="text" placeholder="IMEI Number or Serial No." value={newDevice.imeiOrSerial} onChange={e => setNewDevice({...newDevice, imeiOrSerial: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
               
               <input type="text" placeholder="Condition / Specs (e.g. Battery 90%, Scratchless)" value={newDevice.condition} onChange={e => setNewDevice({...newDevice, condition: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-              <input 
-                type="text" 
-                list="customer-list"
-                placeholder="Customer / Party Name (नाम छान्दा फोन नम्बर स्वतः आउँछ)" 
-                value={newDevice.partyName} 
-                onChange={e => handleCustomerSelect(e.target.value, 'device')}
-                className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} 
+              <CustomerAutocomplete
+                value={newDevice.partyName}
+                customers={uniqueCustomers}
+                onChange={value => handleCustomerInput(value, 'device')}
+                onSelect={customer => handleCustomerPick(customer, 'device')}
+                placeholder="Customer / Party Name (पुरानो ग्राहक खोज्नुहोस्)"
+                inputClassName={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}
               />
               <input type="text" placeholder="Customer Phone Number" value={newDevice.partyPhone} onChange={e => setNewDevice({...newDevice, partyPhone: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
 
@@ -760,13 +790,13 @@ export default function App() {
 
             <form onSubmit={handleSavePosBill} className={`${t.cardBg} border ${t.border} p-6 rounded-3xl space-y-4 shadow-xl`}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input 
-                  type="text" 
-                  list="customer-list"
-                  placeholder="Customer Name (नाम छान्दा फोन नम्बर स्वतः बस्छ)" 
-                  value={posBill.customerName} 
-                  onChange={e => handleCustomerSelect(e.target.value, 'pos')}
-                  className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} 
+                <CustomerAutocomplete
+                  value={posBill.customerName}
+                  customers={uniqueCustomers}
+                  onChange={value => handleCustomerInput(value, 'pos')}
+                  onSelect={customer => handleCustomerPick(customer, 'pos')}
+                  placeholder="Customer Name (पुरानो ग्राहक खोज्नुहोस्)"
+                  inputClassName={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}
                 />
                 <input type="text" placeholder="Phone Number (Optional)" value={posBill.phone} onChange={e => setPosBill({...posBill, phone: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
               </div>
