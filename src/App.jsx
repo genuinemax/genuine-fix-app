@@ -213,6 +213,11 @@ export default function App() {
     ];
   });
 
+  const [stockPurchases, setStockPurchases] = useState(() => {
+    const saved = localStorage.getItem('gf_stock_purchases');
+    return saved ? JSON.parse(saved) : [];
+  });
+
   // Unique Customers List (Auto-extracted from repairs and device trading for smart customer lookup)
   const uniqueCustomers = Array.from(
     new Map(
@@ -249,6 +254,7 @@ export default function App() {
     deviceCategory: 'Second-Hand Phone',
     brandModel: '',
     imeiOrSerial: '',
+    imeiList: [''],
     condition: 'Good / Fresh',
     partyName: '',
     partyPhone: '',
@@ -258,10 +264,14 @@ export default function App() {
   });
   const [deviceTradeTab, setDeviceTradeTab] = useState('buy');
   const [selectedPurchaseId, setSelectedPurchaseId] = useState('');
+  const [editingDeviceId, setEditingDeviceId] = useState(null);
 
   const [selectedCategory, setSelectedCategory] = useState(categories[0] || 'Mobile Parts');
-  const [newPart, setNewPart] = useState({ name: '', stock: '', costPrice: '', price: '', minStock: '5' });
-  const [newExpense, setNewExpense] = useState({ description: '', amount: '', category: 'General' });
+  const [newPart, setNewPart] = useState({ name: '', stock: '', costPrice: '', price: '', minStock: '5', supplierName: '', supplierPhone: '', purchaseDate: new Date().toISOString().split('T')[0] });
+  const [editingPartId, setEditingPartId] = useState(null);
+  const [newStockPurchase, setNewStockPurchase] = useState({ partId: '', partName: '', category: categories[0] || 'Mobile Parts', supplierName: '', supplierPhone: '', qty: '', unitCost: '', date: new Date().toISOString().split('T')[0], invoiceNo: '', notes: '' });
+  const [newExpense, setNewExpense] = useState({ description: '', amount: '', category: 'General', itemName: '', quantity: '', unitCost: '', supplierName: '', supplierPhone: '', invoiceNo: '', paymentMethod: 'Cash', notes: '', date: new Date().toISOString().split('T')[0] });
+  const [editingExpenseId, setEditingExpenseId] = useState(null);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [editingInvoice, setEditingInvoice] = useState(null);
   const [invoiceSearch, setInvoiceSearch] = useState('');
@@ -283,6 +293,7 @@ export default function App() {
   useEffect(() => { localStorage.setItem('gf_inventory', JSON.stringify(inventory)); }, [inventory]);
   useEffect(() => { localStorage.setItem('gf_devices_stock', JSON.stringify(devicesStock)); }, [devicesStock]);
   useEffect(() => { localStorage.setItem('gf_expenses', JSON.stringify(expenses)); }, [expenses]);
+  useEffect(() => { localStorage.setItem('gf_stock_purchases', JSON.stringify(stockPurchases)); }, [stockPurchases]);
 
   if (loading) {
     return <div style={{ color: '#fff', textAlign: 'center', marginTop: '100px', fontSize: '18px' }}>Loading...</div>;
@@ -313,11 +324,17 @@ export default function App() {
   const totalDue = repairs.reduce((acc, curr) => acc + Number(curr.dueAmount || 0), 0);
   const totalExp = expenses.reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
 
+  const totalDevicePurchase = devicesStock.filter(d => (d.tradeType || 'buy') === 'buy').reduce((sum, d) => sum + Number(d.buyPrice || 0), 0);
+  const totalDeviceSales = devicesStock.filter(d => d.tradeType === 'sell').reduce((sum, d) => sum + Number(d.sellPrice || 0), 0);
+  const totalDeviceProfit = devicesStock.filter(d => d.tradeType === 'sell').reduce((sum, d) => sum + Number(d.profit || 0), 0);
+  const totalPartsPurchase = stockPurchases.reduce((sum, p) => sum + Number(p.total || 0), 0);
+
   // Shop finance automation: sales/income, expenses and estimated net.
   const totalIncome = repairs.reduce((acc, curr) => acc + Number(curr.paidAmount || 0), 0);
   const totalSalesValue = repairs.reduce((acc, curr) => acc + Number(curr.totalCost || 0), 0);
   const netCash = totalIncome - totalExp;
   const todayKey = new Date().toISOString().split('T')[0];
+  const todayPartsPurchase = stockPurchases.filter(p => String(p.date || '') === todayKey).reduce((sum, p) => sum + Number(p.total || 0), 0);
   const todayIncome = repairs
     .filter(r => String(r.dateTime || '').startsWith(todayKey))
     .reduce((acc, curr) => acc + Number(curr.paidAmount || 0), 0);
@@ -334,6 +351,7 @@ export default function App() {
       inventory,
       devicesStock,
       expenses,
+      stockPurchases,
       exportDate: getCurrentDateTime()
     };
     const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
@@ -358,6 +376,7 @@ export default function App() {
           setInventory(parsed.inventory);
           if (parsed.devicesStock) setDevicesStock(parsed.devicesStock);
           setExpenses(parsed.expenses);
+          if (parsed.stockPurchases) setStockPurchases(parsed.stockPurchases);
           alert('Shop data restored successfully!');
         } else {
           alert('Invalid backup file format!');
@@ -417,20 +436,119 @@ export default function App() {
     alert('Job Sheet saved successfully!');
   };
 
+  const getDeviceImeis = (device) => {
+    if (Array.isArray(device?.imeis) && device.imeis.length) return device.imeis.filter(Boolean);
+    if (Array.isArray(device?.imeiList) && device.imeiList.length) return device.imeiList.filter(Boolean);
+    return [device?.imeiOrSerial || 'N/A'];
+  };
+
+  const normalizeImeis = (list, fallback = '') => {
+    const cleaned = (Array.isArray(list) ? list : []).map(v => String(v || '').trim()).filter(Boolean);
+    return cleaned.length ? cleaned : [String(fallback || '').trim() || 'N/A'];
+  };
+
+  const addDeviceImeiField = () => {
+    setNewDevice(prev => ({ ...prev, imeiList: [...(prev.imeiList?.length ? prev.imeiList : [prev.imeiOrSerial || '']), ''] }));
+  };
+
+  const removeDeviceImeiField = (index) => {
+    setNewDevice(prev => {
+      const list = [...(prev.imeiList?.length ? prev.imeiList : [prev.imeiOrSerial || ''])];
+      if (list.length <= 1) return prev;
+      list.splice(index, 1);
+      return { ...prev, imeiList: list, imeiOrSerial: list[0] || '' };
+    });
+  };
+
+  const updateDeviceImeiField = (index, value) => {
+    setNewDevice(prev => {
+      const list = [...(prev.imeiList?.length ? prev.imeiList : [''])];
+      list[index] = value;
+      return { ...prev, imeiList: list, imeiOrSerial: list[0] || '' };
+    });
+  };
+
+  const resetDeviceForm = (tradeType = 'buy') => {
+    setNewDevice({ tradeType, deviceCategory: 'Second-Hand Phone', brandModel: '', imeiOrSerial: '', imeiList: [''], condition: 'Good / Fresh', partyName: '', partyPhone: '', buyPrice: '', sellPrice: '', warrantyMonths: '' });
+    setSelectedPurchaseId('');
+    setEditingDeviceId(null);
+  };
+
   const handleAddDevice = (e) => {
     e.preventDefault();
     const isBuy = newDevice.tradeType !== 'sell';
     const today = new Date().toISOString().split('T')[0];
 
+    if (editingDeviceId) {
+      const current = devicesStock.find(d => d.id === editingDeviceId);
+      if (!current) return;
+
+      if (isBuy) {
+        const imeis = normalizeImeis(newDevice.imeiList, newDevice.imeiOrSerial);
+        const updated = {
+          ...current,
+          deviceCategory: newDevice.deviceCategory,
+          brandModel: newDevice.brandModel || current.brandModel,
+          imeiOrSerial: imeis[0],
+          imeis,
+          imeiList: imeis,
+          condition: newDevice.condition,
+          partyName: newDevice.partyName || current.partyName,
+          partyPhone: newDevice.partyPhone || current.partyPhone,
+          buyPrice: Number(newDevice.buyPrice || 0),
+          sellPrice: Number(newDevice.sellPrice || 0),
+          warrantyMonths: newDevice.warrantyMonths || ''
+        };
+        setDevicesStock(devicesStock.map(d => d.id === editingDeviceId ? updated : d));
+        resetDeviceForm('buy');
+        alert('Purchase record updated successfully!');
+        return;
+      }
+
+      const salePriceVal = Number(newDevice.sellPrice || 0);
+      const purchasePriceVal = Number(current.buyPrice || 0);
+      const updatedSale = { ...current, partyName: newDevice.partyName || current.partyName, partyPhone: newDevice.partyPhone || current.partyPhone, sellPrice: salePriceVal, profit: salePriceVal - purchasePriceVal, warrantyMonths: newDevice.warrantyMonths || current.warrantyMonths || '' };
+      setDevicesStock(devicesStock.map(d => d.id === editingDeviceId ? updatedSale : d));
+      setRepairs(repairs.map(r => r.linkedPurchaseId === updatedSale.linkedPurchaseId && r.billType === 'Device Sale'
+        ? { ...r, customerName: updatedSale.partyName, phone: updatedSale.partyPhone, totalCost: salePriceVal, paidAmount: salePriceVal, dueAmount: 0, warrantyMonths: updatedSale.warrantyMonths,
+            model: `${updatedSale.brandModel} (IMEI/S: ${updatedSale.imeiOrSerial})`,
+            items: [{ name: `${updatedSale.deviceCategory} - ${updatedSale.brandModel} [IMEI: ${updatedSale.imeiOrSerial}]`, price: salePriceVal, qty: 1, remarks: `Condition: ${updatedSale.condition}; Purchase: NPR ${purchasePriceVal}; Profit: NPR ${updatedSale.profit}` }] }
+        : r));
+      resetDeviceForm('sell');
+      alert('Sales record updated successfully!');
+      return;
+    }
+
     if (isBuy) {
       const buyPriceVal = Number(newDevice.buyPrice || 0);
       const sellPriceVal = Number(newDevice.sellPrice || 0);
-      const deviceItem = {
-        id: `DEV-${Math.floor(1000 + Math.random() * 9000)}`,
+      if (buyPriceVal <= 0) {
+        alert('Please enter a valid purchase price per unit.');
+        return;
+      }
+
+      const imeis = normalizeImeis(newDevice.imeiList, newDevice.imeiOrSerial);
+      const duplicateImeis = imeis.filter((imei, idx) => imeis.indexOf(imei) !== idx);
+      if (duplicateImeis.length) {
+        alert('Duplicate IMEI/Serial found in this entry. Please use a unique IMEI for each phone.');
+        return;
+      }
+      const existingImeis = new Set(devicesStock.flatMap(d => getDeviceImeis(d).map(x => String(x))));
+      const alreadyUsed = imeis.filter(imei => existingImeis.has(String(imei)));
+      if (alreadyUsed.length) {
+        alert(`These IMEI/Serial numbers already exist: ${alreadyUsed.join(', ')}`);
+        return;
+      }
+
+      const batchId = `BATCH-${Date.now()}`;
+      const deviceItems = imeis.map((imei, index) => ({
+        id: `DEV-${Date.now()}-${index + 1}`,
         tradeType: 'buy',
         deviceCategory: newDevice.deviceCategory,
         brandModel: newDevice.brandModel || 'Unknown Device',
-        imeiOrSerial: newDevice.imeiOrSerial || 'N/A',
+        imeiOrSerial: imei,
+        imeis: [imei],
+        imeiList: [imei],
         condition: newDevice.condition,
         partyName: newDevice.partyName || 'Walk-in Seller',
         partyPhone: newDevice.partyPhone || 'N/A',
@@ -439,24 +557,34 @@ export default function App() {
         status: 'In Stock',
         purchaseDate: today,
         date: today,
-        warrantyMonths: newDevice.warrantyMonths || ''
-      };
+        warrantyMonths: newDevice.warrantyMonths || '',
+        quantityGroup: imeis.length,
+        batchId
+      }));
 
-      setDevicesStock([deviceItem, ...devicesStock]);
-      setNewDevice({
-        tradeType: 'buy',
-        deviceCategory: 'Second-Hand Phone',
-        brandModel: '',
-        imeiOrSerial: '',
-        condition: 'Good / Fresh',
-        partyName: '',
-        partyPhone: '',
-        buyPrice: '',
-        sellPrice: '',
-        warrantyMonths: ''
-      });
+      setDevicesStock([...deviceItems.reverse(), ...devicesStock]);
+
+      const totalPurchaseCost = buyPriceVal * deviceItems.length;
+      setExpenses([{
+        id: `EXP-DEV-${Date.now()}`,
+        description: `Device Purchase - ${newDevice.brandModel || 'Unknown Device'} (${deviceItems.length} unit${deviceItems.length > 1 ? 's' : ''})`,
+        category: 'Device Purchase',
+        amount: totalPurchaseCost,
+        quantity: deviceItems.length,
+        unitCost: buyPriceVal,
+        itemName: newDevice.brandModel || 'Unknown Device',
+        supplierName: newDevice.partyName || 'Walk-in Seller',
+        supplierPhone: newDevice.partyPhone || 'N/A',
+        invoiceNo: '',
+        paymentMethod: 'Cash',
+        notes: `IMEI/SN: ${imeis.join(', ')}`,
+        date: today,
+        linkedDeviceIds: deviceItems.map(d => d.id)
+      }, ...expenses]);
+
+      resetDeviceForm('buy');
       setDeviceTradeTab('buy');
-      alert('Purchase record saved successfully!');
+      alert(`${deviceItems.length} purchase record${deviceItems.length > 1 ? 's' : ''} saved. Total purchase: NPR ${totalPurchaseCost}`);
       return;
     }
 
@@ -464,7 +592,6 @@ export default function App() {
       alert('Please select a purchased device to sell.');
       return;
     }
-
     const purchase = devicesStock.find(d => d.id === selectedPurchaseId);
     if (!purchase || (purchase.tradeType || 'buy') !== 'buy') {
       alert('Selected purchase record was not found.');
@@ -477,82 +604,43 @@ export default function App() {
 
     const salePriceVal = Number(newDevice.sellPrice || purchase.sellPrice || 0);
     const purchasePriceVal = Number(purchase.buyPrice || 0);
-    const saleId = `SALE-${Math.floor(1000 + Math.random() * 9000)}`;
+    if (salePriceVal <= 0) {
+      alert('Please enter a valid selling price.');
+      return;
+    }
 
+    const saleId = `SALE-${Math.floor(1000 + Math.random() * 9000)}`;
+    const imeis = getDeviceImeis(purchase);
     const soldRecord = {
-      id: saleId,
-      tradeType: 'sell',
-      linkedPurchaseId: purchase.id,
-      purchaseDate: purchase.purchaseDate || purchase.date || '',
-      saleDate: today,
-      deviceCategory: purchase.deviceCategory,
-      brandModel: purchase.brandModel,
-      imeiOrSerial: purchase.imeiOrSerial,
+      id: saleId, tradeType: 'sell', linkedPurchaseId: purchase.id,
+      purchaseDate: purchase.purchaseDate || purchase.date || '', saleDate: today,
+      deviceCategory: purchase.deviceCategory, brandModel: purchase.brandModel,
+      imeiOrSerial: purchase.imeiOrSerial, imeis, imeiList: imeis,
       condition: purchase.condition,
-      partyName: newDevice.partyName || 'Walk-in Customer',
-      partyPhone: newDevice.partyPhone || 'N/A',
-      sellerName: purchase.partyName || 'Walk-in Seller',
-      sellerPhone: purchase.partyPhone || 'N/A',
-      buyPrice: purchasePriceVal,
-      sellPrice: salePriceVal,
-      profit: salePriceVal - purchasePriceVal,
-      status: 'Sold',
-      warrantyMonths: newDevice.warrantyMonths || purchase.warrantyMonths || '',
-      date: today
+      partyName: newDevice.partyName || 'Walk-in Customer', partyPhone: newDevice.partyPhone || 'N/A',
+      sellerName: purchase.partyName || 'Walk-in Seller', sellerPhone: purchase.partyPhone || 'N/A',
+      buyPrice: purchasePriceVal, sellPrice: salePriceVal, profit: salePriceVal - purchasePriceVal,
+      status: 'Sold', warrantyMonths: newDevice.warrantyMonths || purchase.warrantyMonths || '', date: today
     };
 
-    // Keep the original purchase record and mark it sold, while adding a linked sales record.
-    const updatedStock = devicesStock.map(d =>
-      d.id === purchase.id
-        ? { ...d, status: 'Sold', soldDate: today, soldRecordId: saleId }
-        : d
-    );
+    const updatedStock = devicesStock.map(d => d.id === purchase.id ? { ...d, status: 'Sold', soldDate: today, soldRecordId: saleId } : d);
     setDevicesStock([soldRecord, ...updatedStock]);
 
     const deviceInvoice = {
       id: `DVB-${Math.floor(1000 + Math.random() * 9000)}`,
-      customerName: soldRecord.partyName,
-      phone: soldRecord.partyPhone,
-      citizenshipNo: '',
-      customerPhoto: '',
-      citizenshipPhoto: '',
-      deviceType: soldRecord.deviceCategory,
+      customerName: soldRecord.partyName, phone: soldRecord.partyPhone, citizenshipNo: '',
+      customerPhoto: '', citizenshipPhoto: '', deviceType: soldRecord.deviceCategory,
       model: `${soldRecord.brandModel} (IMEI/S: ${soldRecord.imeiOrSerial})`,
-      totalCost: salePriceVal,
-      paidAmount: salePriceVal,
-      dueAmount: 0,
-      issue: `${soldRecord.deviceCategory} Sale`,
-      warrantyMonths: soldRecord.warrantyMonths,
-      status: 'Delivered',
-      dateTime: getCurrentDateTime(),
-      billType: 'Device Sale',
-      linkedPurchaseId: purchase.id,
-      purchasePrice: purchasePriceVal,
-      profit: soldRecord.profit,
-      items: [
-        {
-          name: `${soldRecord.deviceCategory} - ${soldRecord.brandModel} [IMEI: ${soldRecord.imeiOrSerial}]`,
-          price: salePriceVal,
-          qty: 1,
-          remarks: `Condition: ${soldRecord.condition}; Purchase: NPR ${purchasePriceVal}; Profit: NPR ${soldRecord.profit}`
-        }
-      ]
+      totalCost: salePriceVal, paidAmount: salePriceVal, dueAmount: 0,
+      issue: `${soldRecord.deviceCategory} Sale`, warrantyMonths: soldRecord.warrantyMonths,
+      status: 'Delivered', dateTime: getCurrentDateTime(), billType: 'Device Sale',
+      linkedPurchaseId: purchase.id, purchasePrice: purchasePriceVal, profit: soldRecord.profit,
+      items: [{ name: `${soldRecord.deviceCategory} - ${soldRecord.brandModel} [IMEI: ${soldRecord.imeiOrSerial}]`,
+        price: salePriceVal, qty: 1,
+        remarks: `Condition: ${soldRecord.condition}; Purchase: NPR ${purchasePriceVal}; Profit: NPR ${soldRecord.profit}` }]
     };
     setRepairs([deviceInvoice, ...repairs]);
-
-    setNewDevice({
-      tradeType: 'sell',
-      deviceCategory: 'Second-Hand Phone',
-      brandModel: '',
-      imeiOrSerial: '',
-      condition: 'Good / Fresh',
-      partyName: '',
-      partyPhone: '',
-      buyPrice: '',
-      sellPrice: '',
-      warrantyMonths: ''
-    });
-    setSelectedPurchaseId('');
+    resetDeviceForm('sell');
     setDeviceTradeTab('sell');
     alert(`Sale saved. Purchase: NPR ${purchasePriceVal} | Sale: NPR ${salePriceVal} | Profit: NPR ${soldRecord.profit}`);
   };
@@ -630,38 +718,58 @@ export default function App() {
 
   const handleAddPart = (e) => {
     e.preventDefault();
-    setInventory([...inventory, { 
-      id: Date.now(), 
-      category: selectedCategory, 
-      name: newPart.name || 'Unnamed Part', 
-      stock: Number(newPart.stock || 0), 
-      costPrice: Number(newPart.costPrice || 0),
-      price: Number(newPart.price || 0),
-      minStock: Number(newPart.minStock || 5)
-    }]);
-    setNewPart({ name: '', stock: '', costPrice: '', price: '', minStock: '5' });
+    const qty = Number(newPart.stock || 0), cost = Number(newPart.costPrice || 0);
+    if (editingPartId) {
+      setInventory(inventory.map(item => item.id === editingPartId ? { ...item, category: selectedCategory, name: newPart.name || item.name, stock: qty, costPrice: cost, price: Number(newPart.price || 0), minStock: Number(newPart.minStock || 5), supplierName: newPart.supplierName || '', supplierPhone: newPart.supplierPhone || '', lastPurchaseDate: newPart.purchaseDate || todayKey } : item));
+      setEditingPartId(null);
+      setNewPart({ name: '', stock: '', costPrice: '', price: '', minStock: '5', supplierName: '', supplierPhone: '', purchaseDate: todayKey });
+      alert('Stock item updated successfully!'); return;
+    }
+    const id = Date.now();
+    const itemName = newPart.name || 'Unnamed Part';
+    setInventory([...inventory, { id, category: selectedCategory, name: itemName, stock: qty, costPrice: cost, price: Number(newPart.price || 0), minStock: Number(newPart.minStock || 5), supplierName: newPart.supplierName || '', supplierPhone: newPart.supplierPhone || '', lastPurchaseDate: newPart.purchaseDate || todayKey }]);
+    if (qty > 0 && cost > 0) setStockPurchases([{ id: `SP-${Date.now()}`, partId: id, partName: itemName, supplierName: newPart.supplierName || 'N/A', supplierPhone: newPart.supplierPhone || '', qty, unitCost: cost, total: qty * cost, date: newPart.purchaseDate || todayKey, invoiceNo: '', notes: 'Initial stock entry' }, ...stockPurchases]);
+    setNewPart({ name: '', stock: '', costPrice: '', price: '', minStock: '5', supplierName: '', supplierPhone: '', purchaseDate: todayKey });
   };
 
-  const adjustStock = (id, amount) => {
-    setInventory(inventory.map(item => {
-      if (item.id === id) {
-        const newStock = Math.max(0, Number(item.stock) + amount);
-        return { ...item, stock: newStock };
-      }
-      return item;
-    }));
+  const handleAddStockPurchase = (e) => {
+    e.preventDefault();
+    const qty = Number(newStockPurchase.qty || 0), unitCost = Number(newStockPurchase.unitCost || 0);
+    if (qty <= 0 || unitCost < 0) { alert('Enter valid quantity and cost.'); return; }
+    let part = inventory.find(i => String(i.id) === String(newStockPurchase.partId));
+    let partId = part?.id;
+    if (!part) {
+      if (!newStockPurchase.partName.trim()) { alert('Select a part or enter a new part name.'); return; }
+      partId = Date.now();
+      part = { id: partId, name: newStockPurchase.partName.trim(), category: newStockPurchase.category, stock: 0, costPrice: unitCost, price: unitCost, minStock: 5, supplierName: '', supplierPhone: '' };
+    }
+    const oldStock = Number(part.stock || 0), oldCost = Number(part.costPrice || 0), newStock = oldStock + qty;
+    const weightedCost = newStock ? ((oldStock * oldCost) + (qty * unitCost)) / newStock : unitCost;
+    const updatedPart = { ...part, stock: newStock, costPrice: Math.round(weightedCost * 100) / 100, supplierName: newStockPurchase.supplierName || part.supplierName || '', supplierPhone: newStockPurchase.supplierPhone || part.supplierPhone || '', lastPurchaseDate: newStockPurchase.date };
+    const purchaseId = `SP-${Date.now()}`;
+    const purchaseTotal = qty * unitCost;
+    setInventory(inventory.some(i => i.id === partId) ? inventory.map(i => i.id === partId ? updatedPart : i) : [updatedPart, ...inventory]);
+    setStockPurchases([{ id: purchaseId, partId, partName: updatedPart.name, supplierName: newStockPurchase.supplierName || 'N/A', supplierPhone: newStockPurchase.supplierPhone || '', qty, unitCost, total: purchaseTotal, date: newStockPurchase.date, invoiceNo: newStockPurchase.invoiceNo, notes: newStockPurchase.notes }, ...stockPurchases]);
+    setExpenses([{ id: `EXP-${purchaseId}`, description: `Parts Purchase - ${updatedPart.name}`, category: 'Parts Purchase', amount: purchaseTotal, quantity: qty, unitCost, itemName: updatedPart.name, supplierName: newStockPurchase.supplierName || 'N/A', supplierPhone: newStockPurchase.supplierPhone || '', invoiceNo: newStockPurchase.invoiceNo || '', paymentMethod: 'Cash', notes: newStockPurchase.notes || '', date: newStockPurchase.date, linkedStockPurchaseId: purchaseId }, ...expenses]);
+    setNewStockPurchase({ partId: '', partName: '', category: categories[0] || 'Mobile Parts', supplierName: '', supplierPhone: '', qty: '', unitCost: '', date: todayKey, invoiceNo: '', notes: '' });
+    alert(`Stock purchase saved. Total: NPR ${qty * unitCost}`);
   };
+
+  const adjustStock = (id, amount) => setInventory(inventory.map(item => item.id === id ? { ...item, stock: Math.max(0, Number(item.stock) + amount) } : item));
 
   const handleAddExpense = (e) => {
     e.preventDefault();
-    setExpenses([...expenses, { 
-      description: newExpense.description || 'General Expense',
-      category: newExpense.category || 'General', 
-      id: Date.now(), 
-      amount: Number(newExpense.amount || 0), 
-      date: new Date().toISOString().split('T')[0] 
-    }]);
-    setNewExpense({ description: '', amount: '', category: 'General' });
+    const qty = Number(newExpense.quantity || 0), unitCost = Number(newExpense.unitCost || 0);
+    const calculatedAmount = newExpense.category === 'Parts Purchase' && qty > 0 && unitCost > 0 ? qty * unitCost : Number(newExpense.amount || 0);
+    if (editingExpenseId) {
+      setExpenses(expenses.map(exp => exp.id === editingExpenseId ? { ...exp, ...newExpense, amount: calculatedAmount, quantity: qty || '', unitCost: unitCost || '', date: newExpense.date || exp.date } : exp));
+      setEditingExpenseId(null);
+      setNewExpense({ description: '', amount: '', category: 'General', itemName: '', quantity: '', unitCost: '', supplierName: '', supplierPhone: '', invoiceNo: '', paymentMethod: 'Cash', notes: '', date: todayKey });
+      alert('Expense updated successfully!'); return;
+    }
+    const expense = { id: Date.now(), description: newExpense.description || (newExpense.itemName ? `Parts Purchase - ${newExpense.itemName}` : 'General Expense'), category: newExpense.category || 'General', amount: calculatedAmount, quantity: qty || '', unitCost: unitCost || '', itemName: newExpense.itemName || '', supplierName: newExpense.supplierName || '', supplierPhone: newExpense.supplierPhone || '', invoiceNo: newExpense.invoiceNo || '', paymentMethod: newExpense.paymentMethod || 'Cash', notes: newExpense.notes || '', date: newExpense.date || todayKey };
+    setExpenses([expense, ...expenses]);
+    setNewExpense({ description: '', amount: '', category: 'General', itemName: '', quantity: '', unitCost: '', supplierName: '', supplierPhone: '', invoiceNo: '', paymentMethod: 'Cash', notes: '', date: todayKey });
   };
 
   const markInvoiceAsPaid = (id) => {
@@ -899,8 +1007,12 @@ _Thank you for choosing ${shopInfo.name}!_`;
   };
 
   const deleteRepair = (id) => setRepairs(repairs.filter(r => r.id !== id));
-  const deletePart = (id) => setInventory(inventory.filter(i => i.id !== id));
-  const deleteDevice = (id) => setDevicesStock(devicesStock.filter(d => d.id !== id));
+  const deletePart = (id) => { setInventory(inventory.filter(i => i.id !== id)); setStockPurchases(stockPurchases.filter(p => p.partId !== id)); };
+  const deleteDevice = (id) => {
+    const device = devicesStock.find(d => d.id === id);
+    if (device?.tradeType === 'sell' && device.linkedPurchaseId) setDevicesStock(devicesStock.filter(d => d.id !== id).map(d => d.id === device.linkedPurchaseId ? { ...d, status: 'In Stock', soldDate: '', soldRecordId: '' } : d));
+    else setDevicesStock(devicesStock.filter(d => d.id !== id));
+  };
   const deleteExpense = (id) => setExpenses(expenses.filter(e => e.id !== id));
 
   const filteredInvoices = repairs.filter(r => {
@@ -1137,6 +1249,13 @@ _Thank you for choosing ${shopInfo.name}!_`;
               </div>
             </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
+              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}><p className={`text-sm uppercase tracking-wider font-black ${t.textMuted}`}>Device Purchase</p><p className="text-2xl font-black text-amber-400 mt-2">NPR {totalDevicePurchase}</p><p className={`text-sm ${t.textMuted} mt-1`}>Total buy cost recorded</p></div>
+              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}><p className={`text-sm uppercase tracking-wider font-black ${t.textMuted}`}>Device Sales</p><p className="text-2xl font-black text-emerald-400 mt-2">NPR {totalDeviceSales}</p><p className={`text-sm ${t.textMuted} mt-1`}>Total sales value</p></div>
+              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}><p className={`text-sm uppercase tracking-wider font-black ${t.textMuted}`}>Device Profit</p><p className={`text-2xl font-black mt-2 ${totalDeviceProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>NPR {totalDeviceProfit}</p><p className={`text-sm ${t.textMuted} mt-1`}>Sales − purchase cost</p></div>
+              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}><p className={`text-sm uppercase tracking-wider font-black ${t.textMuted}`}>Parts Purchase</p><p className="text-2xl font-black text-blue-400 mt-2">NPR {totalPartsPurchase}</p><p className={`text-sm ${t.textMuted} mt-1`}>Stock purchases recorded</p></div>
+            </div>
+
             <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}>
               <div className="flex items-center justify-between gap-3 mb-4">
                 <div>
@@ -1324,7 +1443,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
           <div className="space-y-6 animate-in fade-in duration-300">
             <div>
               <h2 className={`text-xl font-bold ${t.textMain}`}>📱 Second-Hand & New Phone / Laptop Trading</h2>
-              <p className={`text-sm ${t.textMuted} mt-0.5`}>Purchase and sales records are linked by IMEI/Serial. Selling a purchased device keeps the original purchase record and adds a linked sales record with profit.</p>
+              <p className={`text-sm ${t.textMuted} mt-0.5`}>Buy multiple identical phones from the same party by adding a separate IMEI/Serial for each physical device. Edit records anytime; sales keep purchase price, seller, buyer and profit linked.</p>
             </div>
 
             <form onSubmit={handleAddDevice} className={`${t.cardBg} border ${t.border} p-6 rounded-3xl grid grid-cols-1 md:grid-cols-3 gap-4 shadow-xl`}>
@@ -1366,7 +1485,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
                 >
                   <option value="">Select purchased device...</option>
                   {devicesStock
-                    .filter(d => (d.tradeType || 'buy') === 'buy' && d.status !== 'Sold')
+                    .filter(d => (d.tradeType || 'buy') === 'buy' && (d.status !== 'Sold' || d.id === selectedPurchaseId))
                     .map(d => (
                       <option key={d.id} value={d.id}>
                         {d.brandModel} — IMEI/SN {d.imeiOrSerial} — Buy NPR {d.buyPrice}
@@ -1383,7 +1502,32 @@ _Thank you for choosing ${shopInfo.name}!_`;
               )}
 
               <input type="text" placeholder="Brand & Model (e.g. iPhone 13 / Dell Inspiron)" value={newDevice.brandModel} onChange={e => setNewDevice({...newDevice, brandModel: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required readOnly={newDevice.tradeType === 'sell'} />
-              <input type="text" placeholder="IMEI Number or Serial No." value={newDevice.imeiOrSerial} onChange={e => setNewDevice({...newDevice, imeiOrSerial: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required readOnly={newDevice.tradeType === 'sell'} />
+
+              {newDevice.tradeType === 'buy' ? (
+                <div className={`md:col-span-2 ${t.cardSecondary} border ${t.border} rounded-2xl p-3`}>
+                  <div className="flex items-center justify-between gap-3 mb-2">
+                    <div>
+                      <p className={`text-sm font-black ${t.textMain}`}>IMEI / Serial Numbers</p>
+                      <p className={`text-xs ${t.textMuted}`}>Same model + same seller: add one IMEI for each physical phone.</p>
+                    </div>
+                    <button type="button" onClick={addDeviceImeiField} className="px-3 py-2 bg-blue-600/20 text-blue-400 rounded-xl text-xs font-black">+ Add IMEI</button>
+                  </div>
+                  <div className="space-y-2">
+                    {(newDevice.imeiList?.length ? newDevice.imeiList : [newDevice.imeiOrSerial || '']).map((imei, idx) => (
+                      <div key={idx} className="flex gap-2">
+                        <input type="text" placeholder={`IMEI / Serial No. ${idx + 1}`} value={imei}
+                          onChange={e => updateDeviceImeiField(idx, e.target.value)}
+                          className={`flex-1 p-3 ${t.inputBg} border rounded-xl text-sm font-mono focus:outline-none`} required />
+                        {(newDevice.imeiList?.length || 1) > 1 && (
+                          <button type="button" onClick={() => removeDeviceImeiField(idx)} className="p-3 bg-rose-500/10 text-rose-400 rounded-xl"><X size={16}/></button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <input type="text" placeholder="IMEI / Serial No." value={newDevice.imeiOrSerial} className={`p-3 ${t.inputBg} border rounded-2xl text-sm font-mono focus:outline-none`} required readOnly />
+              )}
 
               <input type="text" placeholder="Condition / Specs (e.g. Battery 90%, Scratchless)" value={newDevice.condition} onChange={e => setNewDevice({...newDevice, condition: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} readOnly={newDevice.tradeType === 'sell'} />
               <CustomerAutocomplete
@@ -1400,7 +1544,15 @@ _Thank you for choosing ${shopInfo.name}!_`;
               <input type="number" placeholder={newDevice.tradeType === 'buy' ? 'Expected Selling Price (NPR)' : 'Selling Price (NPR)'} value={newDevice.sellPrice} onChange={e => setNewDevice({...newDevice, sellPrice: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
               <input type="text" placeholder="Warranty (optional — enter your own)" value={newDevice.warrantyMonths} onChange={e => setNewDevice({...newDevice, warrantyMonths: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
 
-              <button type="submit" className="md:col-span-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-emerald-600/30">{newDevice.tradeType === 'sell' ? 'Save Sale & Generate Bill' : 'Save Purchase Record'}</button>
+              {newDevice.tradeType === 'buy' && (
+                <div className={`md:col-span-3 flex flex-wrap items-center justify-between gap-3 ${t.cardSecondary} border ${t.border} rounded-2xl p-3`}>
+                  <span className={`text-sm font-bold ${t.textMuted}`}>Units: {(newDevice.imeiList?.filter(v => String(v || '').trim()).length || 1)}</span>
+                  <span className={`text-sm font-black ${t.textMain}`}>Total Purchase: NPR {(newDevice.imeiList?.filter(v => String(v || '').trim()).length || 1) * Number(newDevice.buyPrice || 0)}</span>
+                </div>
+              )}
+
+              <button type="submit" className="md:col-span-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-emerald-600/30">{editingDeviceId ? 'Update Device Record' : (newDevice.tradeType === 'sell' ? 'Save Sale & Generate Bill' : 'Save Purchase Record')}</button>
+              {editingDeviceId && <button type="button" onClick={() => resetDeviceForm(newDevice.tradeType || 'buy')} className="md:col-span-3 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-2xl p-3.5 transition">Cancel Edit</button>}
             </form>
 
             <div className={`${t.cardBg} border ${t.border} rounded-3xl overflow-hidden shadow-xl`}>
@@ -1435,7 +1587,8 @@ _Thank you for choosing ${shopInfo.name}!_`;
                           {dev.linkedPurchaseId && <p className="text-xs text-violet-400 mt-1">Purchase: {dev.linkedPurchaseId}</p>}
                         </td>
                         <td className="p-4">
-                          <p className="font-mono text-sm text-blue-400">{dev.imeiOrSerial}</p>
+                          <p className="font-mono text-sm text-blue-400">{getDeviceImeis(dev).join(', ')}</p>
+                          {getDeviceImeis(dev).length > 1 && <p className={`text-xs ${t.textMuted}`}>{getDeviceImeis(dev).length} IMEI records</p>}
                           <p className={`text-sm ${t.textMuted}`}>{dev.condition}</p>
                         </td>
                         <td className="p-4">
@@ -1459,8 +1612,15 @@ _Thank you for choosing ${shopInfo.name}!_`;
                           <p className={`text-sm ${t.textMuted}`}>{deviceTradeTab === 'sell' ? (dev.saleDate || dev.date) : (dev.purchaseDate || dev.date)}</p>
                           <span className={`text-sm font-bold ${dev.status === 'Sold' ? 'text-emerald-400' : 'text-blue-400'}`}>{dev.status}</span>
                         </td>
-                        <td className="p-4 text-right">
-                          <button onClick={() => deleteDevice(dev.id)} className="p-2 bg-rose-500/10 text-rose-400 rounded-xl hover:bg-rose-500/20"><Trash2 size={14}/></button>
+                        <td className="p-4 text-right space-x-2">
+                          <button onClick={() => {
+                            setEditingDeviceId(dev.id);
+                            setNewDevice({ tradeType: dev.tradeType || 'buy', deviceCategory: dev.deviceCategory || 'Second-Hand Phone', brandModel: dev.brandModel || '', imeiOrSerial: dev.imeiOrSerial || '', imeiList: getDeviceImeis(dev), condition: dev.condition || '', partyName: dev.partyName || '', partyPhone: dev.partyPhone || '', buyPrice: String(dev.buyPrice ?? ''), sellPrice: String(dev.sellPrice ?? ''), warrantyMonths: dev.warrantyMonths || '' });
+                            setSelectedPurchaseId(dev.linkedPurchaseId || '');
+                            setDeviceTradeTab(dev.tradeType || 'buy');
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                          }} className="p-2 bg-amber-500/10 text-amber-400 rounded-xl hover:bg-amber-500/20"><Pencil size={14}/></button>
+                          <button onClick={() => { if(window.confirm('Delete this device record?')) deleteDevice(dev.id); }} className="p-2 bg-rose-500/10 text-rose-400 rounded-xl hover:bg-rose-500/20"><Trash2 size={14}/></button>
                         </td>
                       </tr>
                     ))}
@@ -1598,48 +1758,79 @@ _Thank you for choosing ${shopInfo.name}!_`;
         {/* INVENTORY / PARTS STOCK TAB */}
         {activeTab === 'inventory' && (
           <div className="space-y-6 animate-in fade-in duration-300">
-            <div className="flex items-center justify-between">
+            <div>
               <h2 className={`text-xl font-bold ${t.textMain}`}>Parts & Accessories Inventory</h2>
+              <p className={`text-sm ${t.textMuted} mt-1`}>Track stock quantity, supplier/party, purchase cost and every daily parts purchase.</p>
             </div>
 
             <form onSubmit={handleAddPart} className={`${t.cardBg} border ${t.border} p-6 rounded-3xl grid grid-cols-1 md:grid-cols-4 gap-4 shadow-xl`}>
               <select value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}>
                 {categories.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
-              <input type="text" placeholder="Part Name" value={newPart.name} onChange={e => setNewPart({...newPart, name: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
-              <input type="number" placeholder="Stock Quantity" value={newPart.stock} onChange={e => setNewPart({...newPart, stock: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
-              <input type="number" placeholder="Cost Price (NPR)" value={newPart.costPrice} onChange={e => setNewPart({...newPart, costPrice: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-              <input type="number" placeholder="Selling Price (NPR)" value={newPart.price} onChange={e => setNewPart({...newPart, price: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
-              <button type="submit" className="md:col-span-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-blue-600/30">Add New Part to Stock</button>
+              <input type="text" placeholder="Part Name" value={newPart.name} onChange={e => setNewPart({...newPart, name: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm`} required />
+              <input type="number" placeholder="Stock Quantity" value={newPart.stock} onChange={e => setNewPart({...newPart, stock: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm`} required />
+              <input type="number" placeholder="Cost Price (NPR)" value={newPart.costPrice} onChange={e => setNewPart({...newPart, costPrice: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm`} />
+              <input type="number" placeholder="Selling Price (NPR)" value={newPart.price} onChange={e => setNewPart({...newPart, price: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm`} required />
+              <input type="text" placeholder="Supplier / Party Name" value={newPart.supplierName} onChange={e => setNewPart({...newPart, supplierName: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm`} />
+              <input type="text" placeholder="Supplier Phone" value={newPart.supplierPhone} onChange={e => setNewPart({...newPart, supplierPhone: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm`} />
+              <input type="date" value={newPart.purchaseDate} onChange={e => setNewPart({...newPart, purchaseDate: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm`} />
+              <input type="number" placeholder="Minimum Stock" value={newPart.minStock} onChange={e => setNewPart({...newPart, minStock: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm`} />
+              <button type="submit" className="md:col-span-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl p-3.5 transition">{editingPartId ? 'Update Stock Item' : 'Add New Part to Stock'}</button>
+              {editingPartId && <button type="button" onClick={() => { setEditingPartId(null); setNewPart({ name: '', stock: '', costPrice: '', price: '', minStock: '5', supplierName: '', supplierPhone: '', purchaseDate: todayKey }); }} className="bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-2xl p-3.5">Cancel Edit</button>}
+            </form>
+
+            <datalist id="gf-supplier-list">
+              {Array.from(new Set([...inventory.map(i => i.supplierName), ...stockPurchases.map(p => p.supplierName), ...expenses.map(e => e.supplierName)].filter(Boolean))).map(name => <option key={name} value={name} />)}
+            </datalist>
+
+            <form onSubmit={handleAddStockPurchase} className={`${t.cardBg} border ${t.border} p-6 rounded-3xl grid grid-cols-1 md:grid-cols-4 gap-4 shadow-xl`}>
+              <div className="md:col-span-4">
+                <h3 className={`font-black ${t.textMain}`}>Daily Parts Purchase / Stock In</h3>
+                <p className={`text-sm ${t.textMuted}`}>Select an existing part or enter a new one. Stock and average cost update automatically.</p>
+              </div>
+              <select value={newStockPurchase.partId} onChange={e => { const part = inventory.find(i => String(i.id) === e.target.value); setNewStockPurchase({...newStockPurchase, partId: e.target.value, partName: part?.name || '', category: part?.category || newStockPurchase.category}); }} className={`p-3 ${t.inputBg} border rounded-2xl text-sm`}>
+                <option value="">Select existing part...</option>
+                {inventory.map(item => <option key={item.id} value={item.id}>{item.name} — Stock {item.stock}</option>)}
+              </select>
+              <input type="text" placeholder="New Part Name (if not listed)" value={newStockPurchase.partName} onChange={e => setNewStockPurchase({...newStockPurchase, partName: e.target.value, partId: ''})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm`} />
+              <select value={newStockPurchase.category} onChange={e => setNewStockPurchase({...newStockPurchase, category: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm`}>
+                {categories.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+              <input type="text" placeholder="Supplier / Party Name" list="gf-supplier-list" value={newStockPurchase.supplierName} onChange={e => setNewStockPurchase({...newStockPurchase, supplierName: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm`} required />
+              <input type="text" placeholder="Supplier Phone" value={newStockPurchase.supplierPhone} onChange={e => setNewStockPurchase({...newStockPurchase, supplierPhone: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm`} />
+              <input type="number" placeholder="Quantity" value={newStockPurchase.qty} onChange={e => setNewStockPurchase({...newStockPurchase, qty: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm`} required />
+              <input type="number" placeholder="Unit Cost (NPR)" value={newStockPurchase.unitCost} onChange={e => setNewStockPurchase({...newStockPurchase, unitCost: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm`} required />
+              <input type="date" value={newStockPurchase.date} onChange={e => setNewStockPurchase({...newStockPurchase, date: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm`} />
+              <input type="text" placeholder="Supplier Invoice / Bill No." value={newStockPurchase.invoiceNo} onChange={e => setNewStockPurchase({...newStockPurchase, invoiceNo: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm`} />
+              <input type="text" placeholder="Notes" value={newStockPurchase.notes} onChange={e => setNewStockPurchase({...newStockPurchase, notes: e.target.value})} className={`md:col-span-2 p-3 ${t.inputBg} border rounded-2xl text-sm`} />
+              <div className={`p-3 ${t.cardSecondary} border ${t.border} rounded-2xl font-black ${t.textMain}`}>Total: NPR {Number(newStockPurchase.qty || 0) * Number(newStockPurchase.unitCost || 0)}</div>
+              <button type="submit" className="md:col-span-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl p-3.5 transition">Save Parts Purchase & Update Stock</button>
             </form>
 
             <div className={`${t.cardBg} border ${t.border} rounded-3xl overflow-hidden shadow-xl`}>
-              <table className="w-full text-left text-sm">
-                <thead className={`${t.tableHeader} text-sm uppercase border-b`}>
-                  <tr>
-                    <th className="p-4">Part Name</th>
-                    <th className="p-4">Category</th>
-                    <th className="p-4">Stock</th>
-                    <th className="p-4">Price (Cost / Sell)</th>
-                    <th className="p-4 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className={`divide-y ${t.tableDivide}`}>
-                  {inventory.map(item => (
-                    <tr key={item.id}>
-                      <td className={`p-4 font-bold ${t.textMain}`}>{item.name}</td>
-                      <td className={`p-4 ${t.textMuted}`}>{item.category}</td>
-                      <td className="p-4 font-bold text-blue-400">{item.stock} units</td>
+              <div className={`p-4 border-b ${t.border} flex flex-wrap items-center justify-between gap-3`}>
+                <div><h3 className={`font-black ${t.textMain}`}>Current Stock</h3><p className={`text-sm ${t.textMuted}`}>Total parts purchase: NPR {totalPartsPurchase} • Current stock value: NPR {inventory.reduce((sum, i) => sum + (Number(i.stock || 0) * Number(i.costPrice || 0)), 0)}</p></div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className={`${t.tableHeader} uppercase border-b`}><tr><th className="p-4">Part</th><th className="p-4">Category</th><th className="p-4">Stock</th><th className="p-4">Cost / Sell</th><th className="p-4">Supplier</th><th className="p-4">Last Purchase</th><th className="p-4 text-right">Actions</th></tr></thead>
+                  <tbody className={`divide-y ${t.tableDivide}`}>
+                    {inventory.map(item => <tr key={item.id}>
+                      <td className={`p-4 font-bold ${t.textMain}`}>{item.name}</td><td className={`p-4 ${t.textMuted}`}>{item.category}</td>
+                      <td className={`p-4 font-bold ${Number(item.stock) <= Number(item.minStock || 0) ? 'text-rose-400' : 'text-blue-400'}`}>{item.stock} units</td>
                       <td className={`p-4 ${t.textMuted}`}>NPR {item.costPrice} / <span className="text-emerald-400 font-bold">NPR {item.price}</span></td>
-                      <td className="p-4 text-right space-x-2">
-                        <button onClick={() => adjustStock(item.id, 1)} className="px-2.5 py-1 bg-emerald-500/10 text-emerald-400 rounded-lg text-sm font-bold">+</button>
-                        <button onClick={() => adjustStock(item.id, -1)} className="px-2.5 py-1 bg-rose-500/10 text-rose-400 rounded-lg text-sm font-bold">-</button>
-                        <button onClick={() => deletePart(item.id)} className="p-1.5 bg-rose-500/10 text-rose-400 rounded-lg"><Trash2 size={14}/></button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      <td className="p-4"><p className={`font-bold ${t.textMain}`}>{item.supplierName || '—'}</p><p className={`text-xs ${t.textMuted}`}>{item.supplierPhone || ''}</p></td>
+                      <td className={`p-4 ${t.textMuted}`}>{item.lastPurchaseDate || '—'}</td>
+                      <td className="p-4 text-right space-x-2"><button onClick={() => adjustStock(item.id, 1)} className="px-2.5 py-1 bg-emerald-500/10 text-emerald-400 rounded-lg font-bold">+</button><button onClick={() => adjustStock(item.id, -1)} className="px-2.5 py-1 bg-rose-500/10 text-rose-400 rounded-lg font-bold">-</button><button onClick={() => { setEditingPartId(item.id); setSelectedCategory(item.category); setNewPart({ name: item.name, stock: String(item.stock), costPrice: String(item.costPrice ?? ''), price: String(item.price ?? ''), minStock: String(item.minStock ?? 5), supplierName: item.supplierName || '', supplierPhone: item.supplierPhone || '', purchaseDate: item.lastPurchaseDate || todayKey }); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="p-2 bg-amber-500/10 text-amber-400 rounded-xl"><Pencil size={14}/></button><button onClick={() => { if(window.confirm('Delete this stock item?')) deletePart(item.id); }} className="p-2 bg-rose-500/10 text-rose-400 rounded-xl"><Trash2 size={14}/></button></td>
+                    </tr>)}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className={`${t.cardBg} border ${t.border} rounded-3xl overflow-hidden shadow-xl`}>
+              <div className="p-4"><h3 className={`font-black ${t.textMain}`}>Purchase History</h3></div>
+              <div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead className={`${t.tableHeader} uppercase border-b`}><tr><th className="p-4">Date</th><th className="p-4">Part</th><th className="p-4">Supplier / Party</th><th className="p-4">Qty</th><th className="p-4">Unit Cost</th><th className="p-4">Total</th><th className="p-4">Bill No.</th></tr></thead><tbody className={`divide-y ${t.tableDivide}`}>{stockPurchases.map(pur => <tr key={pur.id}><td className={`p-4 ${t.textMuted}`}>{pur.date}</td><td className={`p-4 font-bold ${t.textMain}`}>{pur.partName}</td><td className="p-4"><p className={`font-bold ${t.textMain}`}>{pur.supplierName}</p><p className={`text-xs ${t.textMuted}`}>{pur.supplierPhone}</p></td><td className={`p-4 ${t.textMuted}`}>{pur.qty}</td><td className={`p-4 ${t.textMuted}`}>NPR {pur.unitCost}</td><td className="p-4 font-black text-rose-400">NPR {pur.total}</td><td className={`p-4 ${t.textMuted}`}>{pur.invoiceNo || '—'}</td></tr>)}</tbody></table></div>
             </div>
           </div>
         )}
@@ -1647,48 +1838,39 @@ _Thank you for choosing ${shopInfo.name}!_`;
         {/* EXPENSES TAB */}
         {activeTab === 'expenses' && (
           <div className="space-y-6 animate-in fade-in duration-300">
-            <h2 className={`text-xl font-bold ${t.textMain}`}>Shop Expenses Tracker</h2>
-            <form onSubmit={handleAddExpense} className={`${t.cardBg} border ${t.border} p-6 rounded-3xl grid grid-cols-1 md:grid-cols-3 gap-4 shadow-xl`}>
-              <input type="text" placeholder="Expense Description (e.g. Rent, Electricity)" value={newExpense.description} onChange={e => setNewExpense({...newExpense, description: e.target.value})} className={`md:col-span-2 p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
-              <select value={newExpense.category} onChange={e => setNewExpense({...newExpense, category: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}>
-                <option>General</option>
-                <option>Rent</option>
-                <option>Electricity</option>
-                <option>Internet</option>
-                <option>Staff Salary</option>
-                <option>Parts Purchase</option>
-                <option>Transport</option>
-                <option>Tools</option>
-                <option>Marketing</option>
-                <option>Other</option>
+            <div><h2 className={`text-xl font-bold ${t.textMain}`}>Shop Expenses & Daily Parts Purchases</h2><p className={`text-sm ${t.textMuted} mt-1`}>Record rent, bills, tools and daily expenses. Quantity × unit cost calculates automatically, and supplier/party details are stored for each purchase.</p></div>
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5`}><p className={`text-sm ${t.textMuted}`}>Total Expenses</p><p className="text-2xl font-black text-rose-400 mt-1">NPR {totalExp}</p></div>
+              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5`}><p className={`text-sm ${t.textMuted}`}>Parts Purchases</p><p className="text-2xl font-black text-amber-400 mt-1">NPR {totalPartsPurchase}</p></div>
+              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5`}><p className={`text-sm ${t.textMuted}`}>Today's Parts Buy</p><p className="text-2xl font-black text-blue-400 mt-1">NPR {todayPartsPurchase}</p></div>
+              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5`}><p className={`text-sm ${t.textMuted}`}>Today's Total Expense</p><p className="text-2xl font-black text-rose-400 mt-1">NPR {todayExpense}</p></div>
+              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5`}><p className={`text-sm ${t.textMuted}`}>Net Cash</p><p className={`text-2xl font-black mt-1 ${netCash >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>NPR {netCash}</p></div>
+            </div>
+
+            <form onSubmit={handleAddExpense} className={`${t.cardBg} border ${t.border} p-6 rounded-3xl grid grid-cols-1 md:grid-cols-4 gap-4 shadow-xl`}>
+              <input type="date" value={newExpense.date || todayKey} onChange={e => setNewExpense({...newExpense, date: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm`} />
+              <select value={newExpense.category} onChange={e => setNewExpense({...newExpense, category: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm`}>
+                <option>General</option><option>Rent</option><option>Electricity</option><option>Internet</option><option>Staff Salary</option><option>Parts Purchase</option><option>Transport</option><option>Tools</option><option>Marketing</option><option>Other</option>
               </select>
-              <input type="number" placeholder="Amount (NPR)" value={newExpense.amount} onChange={e => setNewExpense({...newExpense, amount: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
-              <button type="submit" className="md:col-span-3 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-rose-600/30">Add Expense Record</button>
+              <input type="text" placeholder="Description / Expense Name" value={newExpense.description} onChange={e => setNewExpense({...newExpense, description: e.target.value})} className={`md:col-span-2 p-3 ${t.inputBg} border rounded-2xl text-sm`} required />
+              <input type="text" placeholder="Part / Item Name" value={newExpense.itemName} onChange={e => setNewExpense({...newExpense, itemName: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm`} />
+              <input type="number" placeholder="Quantity" value={newExpense.quantity} onChange={e => setNewExpense({...newExpense, quantity: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm`} />
+              <input type="number" placeholder="Unit Cost (NPR)" value={newExpense.unitCost} onChange={e => setNewExpense({...newExpense, unitCost: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm`} />
+              <input type="number" placeholder="Amount (NPR)" value={newExpense.amount} onChange={e => setNewExpense({...newExpense, amount: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm`} required={newExpense.category !== 'Parts Purchase'} />
+              <input type="text" placeholder="Supplier / Party Name" list="gf-supplier-list" value={newExpense.supplierName} onChange={e => setNewExpense({...newExpense, supplierName: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm`} />
+              <input type="text" placeholder="Supplier Phone" value={newExpense.supplierPhone} onChange={e => setNewExpense({...newExpense, supplierPhone: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm`} />
+              <input type="text" placeholder="Invoice / Bill No." value={newExpense.invoiceNo} onChange={e => setNewExpense({...newExpense, invoiceNo: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm`} />
+              <select value={newExpense.paymentMethod} onChange={e => setNewExpense({...newExpense, paymentMethod: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm`}><option>Cash</option><option>Bank</option><option>eSewa</option><option>Khalti</option><option>Credit</option></select>
+              <input type="text" placeholder="Notes" value={newExpense.notes} onChange={e => setNewExpense({...newExpense, notes: e.target.value})} className={`md:col-span-2 p-3 ${t.inputBg} border rounded-2xl text-sm`} />
+              <div className={`p-3 ${t.cardSecondary} border ${t.border} rounded-2xl font-black ${t.textMain}`}>Calculated: NPR {newExpense.category === 'Parts Purchase' ? Number(newExpense.quantity || 0) * Number(newExpense.unitCost || 0) : Number(newExpense.amount || 0)}</div>
+              <button type="submit" className="md:col-span-3 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-2xl p-3.5 transition">{editingExpenseId ? 'Update Expense Record' : 'Add Expense Record'}</button>
+              {editingExpenseId && <button type="button" onClick={() => { setEditingExpenseId(null); setNewExpense({ description: '', amount: '', category: 'General', itemName: '', quantity: '', unitCost: '', supplierName: '', supplierPhone: '', invoiceNo: '', paymentMethod: 'Cash', notes: '', date: todayKey }); }} className="bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-2xl p-3.5">Cancel Edit</button>}
             </form>
 
             <div className={`${t.cardBg} border ${t.border} rounded-3xl overflow-hidden shadow-xl`}>
-              <table className="w-full text-left text-sm">
-                <thead className={`${t.tableHeader} text-sm uppercase border-b`}>
-                  <tr>
-                    <th className="p-4">Date</th>
-                    <th className="p-4">Description</th>
-                    <th className="p-4">Amount</th>
-                    <th className="p-4 text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody className={`divide-y ${t.tableDivide}`}>
-                  {expenses.map(exp => (
-                    <tr key={exp.id}>
-                      <td className={`p-4 ${t.textMuted}`}>{exp.date}</td>
-                      <td className={`p-4 font-bold ${t.textMain}`}>{exp.description}</td>
-                      <td className="p-4 font-bold text-rose-400">NPR {exp.amount}</td>
-                      <td className="p-4 text-right">
-                        <button onClick={() => deleteExpense(exp.id)} className="p-2 bg-rose-500/10 text-rose-400 rounded-xl hover:bg-rose-500/20"><Trash2 size={15}/></button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead className={`${t.tableHeader} uppercase border-b`}><tr><th className="p-4">Date</th><th className="p-4">Category / Description</th><th className="p-4">Item / Qty × Cost</th><th className="p-4">Supplier</th><th className="p-4">Payment</th><th className="p-4">Amount</th><th className="p-4 text-right">Action</th></tr></thead>
+                <tbody className={`divide-y ${t.tableDivide}`}>{expenses.map(exp => <tr key={exp.id}><td className={`p-4 ${t.textMuted}`}>{exp.date}</td><td className="p-4"><p className={`font-bold ${t.textMain}`}>{exp.description}</p><p className={`text-xs ${t.textMuted}`}>{exp.category}</p>{exp.invoiceNo && <p className={`text-xs ${t.textMuted}`}>Bill: {exp.invoiceNo}</p>}</td><td className={`p-4 ${t.textMuted}`}>{exp.itemName || '—'}{exp.quantity ? <div>{exp.quantity} × NPR {exp.unitCost}</div> : null}</td><td className="p-4"><p className={`font-bold ${t.textMain}`}>{exp.supplierName || '—'}</p><p className={`text-xs ${t.textMuted}`}>{exp.supplierPhone || ''}</p></td><td className={`p-4 ${t.textMuted}`}>{exp.paymentMethod || 'Cash'}</td><td className="p-4 font-black text-rose-400">NPR {exp.amount}</td><td className="p-4 text-right space-x-2"><button onClick={() => { setEditingExpenseId(exp.id); setNewExpense({ description: exp.description || '', amount: String(exp.amount ?? ''), category: exp.category || 'General', itemName: exp.itemName || '', quantity: String(exp.quantity ?? ''), unitCost: String(exp.unitCost ?? ''), supplierName: exp.supplierName || '', supplierPhone: exp.supplierPhone || '', invoiceNo: exp.invoiceNo || '', paymentMethod: exp.paymentMethod || 'Cash', notes: exp.notes || '', date: exp.date || todayKey }); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="p-2 bg-amber-500/10 text-amber-400 rounded-xl"><Pencil size={14}/></button><button onClick={() => { if(window.confirm('Delete this expense record?')) deleteExpense(exp.id); }} className="p-2 bg-rose-500/10 text-rose-400 rounded-xl"><Trash2 size={14}/></button></td></tr>)}</tbody>
+              </table></div>
             </div>
           </div>
         )}
