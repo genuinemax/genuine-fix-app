@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "node scripts/gf-device-time-patch.cjs && vite build",
+    "build": "node scripts/gf-device-time-patch.cjs && node scripts/gf-pro-ui-patch.cjs && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
