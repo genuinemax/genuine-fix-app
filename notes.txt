@@ -2,3 +2,12 @@ git add .
 git commit -m "Updating"
 git push
 vercel --prod
+Genuine Fix V3 enhancements
+- Device Buy/Sell: Edit action retained; purchase/sale linked by device ID and IMEI.
+- Device purchases support multiple identical phones in one entry with a separate IMEI/Serial per physical unit.
+- Duplicate IMEI/Serial numbers are rejected.
+- Device purchase expense records use quantity x unit purchase price automatically.
+- Parts Stock stores supplier/party name and phone, purchase date, invoice and daily stock-in history.
+- Expenses support a selected date, item, quantity, unit cost, supplier, invoice, payment method and automatic calculations.
+- Dashboard/expenses show total expenses, parts purchases, today's parts buy, today's total expense and net cash.
+- Existing inventory/expense/device Edit actions are retained.
