@@ -77,18 +77,18 @@ const newHandler = `  const handleAddDevice = (e) => {
         customerPhoto: '',
         citizenshipPhoto: '',
         deviceType: newDevice.deviceCategory,
-        model: \`${newDevice.brandModel} (IMEI/S: \${newDevice.imeiOrSerial})\`,
+        model: \`\${newDevice.brandModel} (IMEI/S: \${newDevice.imeiOrSerial})\`,
         totalCost: sellPriceVal,
         paidAmount: sellPriceVal,
         dueAmount: 0,
-        issue: \`${newDevice.deviceCategory} Sale\`,
+        issue: \`\${newDevice.deviceCategory} Sale\`,
         warrantyMonths: newDevice.warrantyMonths || '',
         status: 'Delivered',
         dateTime: getCurrentDateTime(),
         billType: 'Device Sale',
         items: [
           {
-            name: \`${newDevice.deviceCategory} - \${newDevice.brandModel} [IMEI: \${newDevice.imeiOrSerial}]\`,
+            name: \`\${newDevice.deviceCategory} - \${newDevice.brandModel} [IMEI: \${newDevice.imeiOrSerial}]\`,
             price: sellPriceVal,
             qty: 1,
             remarks: \`Condition: \${newDevice.condition}\`
