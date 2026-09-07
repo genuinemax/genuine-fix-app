@@ -9,6 +9,14 @@ import {
 } from 'lucide-react';
 
 
+const getLocalDateKey = () => {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
 function CustomerAutocomplete({ value, onChange, onSelect, customers, placeholder, className }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState(value || '');
@@ -82,6 +90,7 @@ export default function App() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [clockTick, setClockTick] = useState(Date.now());
 
   // Shop Settings / Business Rules State (PAN/VAT, Name, etc.)
   const [shopInfo, setShopInfo] = useState(() => {
@@ -258,6 +267,8 @@ export default function App() {
     condition: 'Good / Fresh',
     partyName: '',
     partyPhone: '',
+    citizenshipNo: '',
+    citizenshipPhoto: '',
     buyPrice: '',
     sellPrice: '',
     warrantyMonths: ''
@@ -267,10 +278,10 @@ export default function App() {
   const [editingDeviceId, setEditingDeviceId] = useState(null);
 
   const [selectedCategory, setSelectedCategory] = useState(categories[0] || 'Mobile Parts');
-  const [newPart, setNewPart] = useState({ name: '', stock: '', costPrice: '', price: '', minStock: '5', supplierName: '', supplierPhone: '', purchaseDate: new Date().toISOString().split('T')[0] });
+  const [newPart, setNewPart] = useState({ name: '', stock: '', costPrice: '', price: '', minStock: '5', supplierName: '', supplierPhone: '', purchaseDate: getLocalDateKey() });
   const [editingPartId, setEditingPartId] = useState(null);
-  const [newStockPurchase, setNewStockPurchase] = useState({ partId: '', partName: '', category: categories[0] || 'Mobile Parts', supplierName: '', supplierPhone: '', qty: '', unitCost: '', date: new Date().toISOString().split('T')[0], invoiceNo: '', notes: '' });
-  const [newExpense, setNewExpense] = useState({ description: '', amount: '', category: 'General', itemName: '', quantity: '', unitCost: '', supplierName: '', supplierPhone: '', invoiceNo: '', paymentMethod: 'Cash', notes: '', date: new Date().toISOString().split('T')[0] });
+  const [newStockPurchase, setNewStockPurchase] = useState({ partId: '', partName: '', category: categories[0] || 'Mobile Parts', supplierName: '', supplierPhone: '', qty: '', unitCost: '', date: getLocalDateKey(), invoiceNo: '', notes: '' });
+  const [newExpense, setNewExpense] = useState({ description: '', amount: '', category: 'General', itemName: '', quantity: '', unitCost: '', supplierName: '', supplierPhone: '', invoiceNo: '', paymentMethod: 'Cash', notes: '', date: getLocalDateKey() });
   const [editingExpenseId, setEditingExpenseId] = useState(null);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [editingInvoice, setEditingInvoice] = useState(null);
@@ -286,6 +297,11 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
+  useEffect(() => {
+    const timer = setInterval(() => setClockTick(Date.now()), 30000);
+    return () => clearInterval(timer);
+  }, []);
+
   useEffect(() => { localStorage.setItem('gf_theme', theme); }, [theme]);
   useEffect(() => { localStorage.setItem('gf_shop_info', JSON.stringify(shopInfo)); }, [shopInfo]);
   useEffect(() => { localStorage.setItem('gf_categories', JSON.stringify(categories)); }, [categories]);
@@ -294,6 +310,21 @@ export default function App() {
   useEffect(() => { localStorage.setItem('gf_devices_stock', JSON.stringify(devicesStock)); }, [devicesStock]);
   useEffect(() => { localStorage.setItem('gf_expenses', JSON.stringify(expenses)); }, [expenses]);
   useEffect(() => { localStorage.setItem('gf_stock_purchases', JSON.stringify(stockPurchases)); }, [stockPurchases]);
+
+  // One-time data integrity repair: a purchase cannot be marked Sold unless a linked sale record exists.
+  // This also fixes legacy/test records that were accidentally left as Sold.
+  useEffect(() => {
+    if (localStorage.getItem('gf_device_integrity_v2')) return;
+    const salePurchaseIds = new Set(devicesStock.filter(d => d.tradeType === 'sell' && d.linkedPurchaseId).map(d => d.linkedPurchaseId));
+    const repaired = devicesStock.map(d => {
+      if ((d.tradeType || 'buy') === 'buy' && d.status === 'Sold' && !salePurchaseIds.has(d.id)) {
+        return { ...d, status: 'In Stock', soldDate: '', soldRecordId: '' };
+      }
+      return d;
+    });
+    if (JSON.stringify(repaired) !== JSON.stringify(devicesStock)) setDevicesStock(repaired);
+    localStorage.setItem('gf_device_integrity_v2', '1');
+  }, []);
 
   if (loading) {
     return <div style={{ color: '#fff', textAlign: 'center', marginTop: '100px', fontSize: '18px' }}>Loading...</div>;
@@ -305,7 +336,7 @@ export default function App() {
 
   const getCurrentDateTime = () => {
     const now = new Date();
-    const date = now.toISOString().split('T')[0];
+    const date = getLocalDateKey();
     const time = now.toTimeString().split(' ')[0];
     return `${date} ${time}`;
   };
@@ -320,7 +351,18 @@ export default function App() {
     reader.readAsDataURL(file);
   };
 
-  const totalRevenue = repairs.reduce((acc, curr) => acc + Number(curr.totalCost || 0), 0);
+  const handleDeviceImageUpload = (e, field) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { alert('Please select an image file.'); return; }
+    if (file.size > 2 * 1024 * 1024) { alert('Please keep the citizenship photo under 2 MB.'); return; }
+    const reader = new FileReader();
+    reader.onloadend = () => setNewDevice(prev => ({ ...prev, [field]: reader.result }));
+    reader.readAsDataURL(file);
+  };
+
+  const salesBills = repairs.filter(r => !['Device Purchase', 'Parts Purchase'].includes(r.billType));
+  const totalRevenue = salesBills.reduce((acc, curr) => acc + Number(curr.totalCost || 0), 0);
   const totalDue = repairs.reduce((acc, curr) => acc + Number(curr.dueAmount || 0), 0);
   const totalExp = expenses.reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
 
@@ -330,18 +372,26 @@ export default function App() {
   const totalPartsPurchase = stockPurchases.reduce((sum, p) => sum + Number(p.total || 0), 0);
 
   // Shop finance automation: sales/income, expenses and estimated net.
-  const totalIncome = repairs.reduce((acc, curr) => acc + Number(curr.paidAmount || 0), 0);
-  const totalSalesValue = repairs.reduce((acc, curr) => acc + Number(curr.totalCost || 0), 0);
+  const totalIncome = salesBills.reduce((acc, curr) => acc + Number(curr.paidAmount || 0), 0);
+  const totalSalesValue = salesBills.reduce((acc, curr) => acc + Number(curr.totalCost || 0), 0);
   const netCash = totalIncome - totalExp;
-  const todayKey = new Date().toISOString().split('T')[0];
+  const todayKey = getLocalDateKey();
   const todayPartsPurchase = stockPurchases.filter(p => String(p.date || '') === todayKey).reduce((sum, p) => sum + Number(p.total || 0), 0);
   const todayIncome = repairs
-    .filter(r => String(r.dateTime || '').startsWith(todayKey))
+    .filter(r => String(r.dateTime || '').startsWith(todayKey) && !['Device Purchase', 'Parts Purchase'].includes(r.billType))
     .reduce((acc, curr) => acc + Number(curr.paidAmount || 0), 0);
   const todayExpense = expenses
     .filter(e => String(e.date || '') === todayKey)
     .reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
   const todayNet = todayIncome - todayExpense;
+
+  const supplierExpenseSummary = Object.values(expenses.reduce((acc, exp) => {
+    const name = String(exp.supplierName || 'Unassigned / General').trim() || 'Unassigned / General';
+    if (!acc[name]) acc[name] = { name, total: 0, count: 0 };
+    acc[name].total += Number(exp.amount || 0);
+    acc[name].count += 1;
+    return acc;
+  }, {})).sort((a, b) => b.total - a.total);
 
   const exportData = () => {
     const backupData = {
@@ -358,7 +408,7 @@ export default function App() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `GenuineFix_Backup_${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `GenuineFix_Backup_${getLocalDateKey()}.json`;
     a.click();
   };
 
@@ -469,7 +519,7 @@ export default function App() {
   };
 
   const resetDeviceForm = (tradeType = 'buy') => {
-    setNewDevice({ tradeType, deviceCategory: 'Second-Hand Phone', brandModel: '', imeiOrSerial: '', imeiList: [''], condition: 'Good / Fresh', partyName: '', partyPhone: '', buyPrice: '', sellPrice: '', warrantyMonths: '' });
+    setNewDevice({ tradeType, deviceCategory: 'Second-Hand Phone', brandModel: '', imeiOrSerial: '', imeiList: [''], condition: 'Good / Fresh', partyName: '', partyPhone: '', citizenshipNo: '', citizenshipPhoto: '', buyPrice: '', sellPrice: '', warrantyMonths: '' });
     setSelectedPurchaseId('');
     setEditingDeviceId(null);
   };
@@ -477,7 +527,7 @@ export default function App() {
   const handleAddDevice = (e) => {
     e.preventDefault();
     const isBuy = newDevice.tradeType !== 'sell';
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateKey();
 
     if (editingDeviceId) {
       const current = devicesStock.find(d => d.id === editingDeviceId);
@@ -497,7 +547,9 @@ export default function App() {
           partyPhone: newDevice.partyPhone || current.partyPhone,
           buyPrice: Number(newDevice.buyPrice || 0),
           sellPrice: Number(newDevice.sellPrice || 0),
-          warrantyMonths: newDevice.warrantyMonths || ''
+          warrantyMonths: newDevice.warrantyMonths || current.warrantyMonths || '',
+          citizenshipNo: newDevice.citizenshipNo || current.citizenshipNo || '',
+          citizenshipPhoto: newDevice.citizenshipPhoto || current.citizenshipPhoto || ''
         };
         setDevicesStock(devicesStock.map(d => d.id === editingDeviceId ? updated : d));
         resetDeviceForm('buy');
@@ -634,7 +686,7 @@ export default function App() {
       totalCost: salePriceVal, paidAmount: salePriceVal, dueAmount: 0,
       issue: `${soldRecord.deviceCategory} Sale`, warrantyMonths: soldRecord.warrantyMonths,
       status: 'Delivered', dateTime: getCurrentDateTime(), billType: 'Device Sale',
-      linkedPurchaseId: purchase.id, purchasePrice: purchasePriceVal, profit: soldRecord.profit,
+      linkedPurchaseId: purchase.id, purchasePrice: purchasePriceVal, profit: soldRecord.profit, stockStatusAfterSale: 'Sold',
       items: [{ name: `${soldRecord.deviceCategory} - ${soldRecord.brandModel} [IMEI: ${soldRecord.imeiOrSerial}]`,
         price: salePriceVal, qty: 1,
         remarks: `Condition: ${soldRecord.condition}; Purchase: NPR ${purchasePriceVal}; Profit: NPR ${soldRecord.profit}` }]
@@ -643,6 +695,42 @@ export default function App() {
     resetDeviceForm('sell');
     setDeviceTradeTab('sell');
     alert(`Sale saved. Purchase: NPR ${purchasePriceVal} | Sale: NPR ${salePriceVal} | Profit: NPR ${soldRecord.profit}`);
+  };
+
+  const generateDevicePurchaseBill = (dev) => {
+    const bill = {
+      id: `PUR-${Math.floor(1000 + Math.random() * 9000)}`,
+      customerName: dev.partyName || 'Seller / Party',
+      phone: dev.partyPhone || 'N/A',
+      citizenshipNo: dev.citizenshipNo || '',
+      customerPhoto: '',
+      citizenshipPhoto: dev.citizenshipPhoto || '',
+      deviceType: dev.deviceCategory || 'Device Purchase',
+      model: `${dev.brandModel || 'Device'} (IMEI/S: ${dev.imeiOrSerial || 'N/A'})`,
+      totalCost: Number(dev.buyPrice || 0),
+      paidAmount: Number(dev.buyPrice || 0),
+      dueAmount: 0,
+      issue: 'Purchase / Buy Record',
+      warrantyMonths: dev.warrantyMonths || '',
+      status: 'Paid',
+      dateTime: getCurrentDateTime(),
+      billType: 'Device Purchase',
+      linkedPurchaseId: dev.id,
+      purchasePrice: Number(dev.buyPrice || 0),
+      items: [{ name: `${dev.deviceCategory || 'Device'} - ${dev.brandModel || ''} [IMEI: ${dev.imeiOrSerial || 'N/A'}]`, price: Number(dev.buyPrice || 0), qty: 1, remarks: `Purchased from: ${dev.partyName || 'N/A'}; Condition: ${dev.condition || 'N/A'}` }]
+    };
+    setRepairs([bill, ...repairs]);
+    setSelectedInvoice(bill);
+  };
+
+  const restoreDeviceSale = (saleId) => {
+    const sale = devicesStock.find(d => d.id === saleId);
+    if (!sale || sale.tradeType !== 'sell' || !sale.linkedPurchaseId) return;
+    if (!window.confirm(`Restore ${sale.brandModel || 'this device'} to In Stock? This will remove the sale record and its sale bill.`)) return;
+    setDevicesStock(devicesStock.filter(d => d.id !== saleId).map(d => d.id === sale.linkedPurchaseId ? { ...d, status: 'In Stock', soldDate: '', soldRecordId: '' } : d));
+    setRepairs(repairs.filter(r => !(r.billType === 'Device Sale' && r.linkedPurchaseId === sale.linkedPurchaseId)));
+    setDeviceTradeTab('buy');
+    alert('Sale restored. Device is back In Stock.');
   };
 
   const handleAddPosItem = () => {
@@ -677,12 +765,19 @@ export default function App() {
     const dueAmount = totalCost - paidAmount;
     const itemDescriptions = posBill.items.map(i => `${i.name} (x${i.qty})`).join(', ');
 
+    const requested = {};
+    posBill.items.forEach(item => {
+      const key = String(item.name || '').trim().toLowerCase();
+      if (key) requested[key] = (requested[key] || 0) + Number(item.qty || 1);
+    });
+    for (const [key, qty] of Object.entries(requested)) {
+      const inv = inventory.find(i => String(i.name || '').trim().toLowerCase() === key);
+      if (!inv) { alert(`Stock item not found: ${key}`); return; }
+      if (Number(inv.stock || 0) < qty) { alert(`Insufficient stock for ${inv.name}. Available: ${inv.stock}, requested: ${qty}`); return; }
+    }
     const updatedInventory = inventory.map(inv => {
-      const soldItem = posBill.items.find(i => i.name.toLowerCase() === inv.name.toLowerCase());
-      if (soldItem) {
-        return { ...inv, stock: Math.max(0, inv.stock - Number(soldItem.qty || 1)) };
-      }
-      return inv;
+      const key = String(inv.name || '').trim().toLowerCase();
+      return requested[key] ? { ...inv, stock: Number(inv.stock || 0) - requested[key] } : inv;
     });
     setInventory(updatedInventory);
 
@@ -753,6 +848,22 @@ export default function App() {
     setExpenses([{ id: `EXP-${purchaseId}`, description: `Parts Purchase - ${updatedPart.name}`, category: 'Parts Purchase', amount: purchaseTotal, quantity: qty, unitCost, itemName: updatedPart.name, supplierName: newStockPurchase.supplierName || 'N/A', supplierPhone: newStockPurchase.supplierPhone || '', invoiceNo: newStockPurchase.invoiceNo || '', paymentMethod: 'Cash', notes: newStockPurchase.notes || '', date: newStockPurchase.date, linkedStockPurchaseId: purchaseId }, ...expenses]);
     setNewStockPurchase({ partId: '', partName: '', category: categories[0] || 'Mobile Parts', supplierName: '', supplierPhone: '', qty: '', unitCost: '', date: todayKey, invoiceNo: '', notes: '' });
     alert(`Stock purchase saved. Total: NPR ${qty * unitCost}`);
+  };
+
+  const generatePartsPurchaseBill = (pur) => {
+    const bill = {
+      id: `SPB-${Math.floor(1000 + Math.random() * 9000)}`,
+      customerName: pur.supplierName || 'Supplier / Party',
+      phone: pur.supplierPhone || 'N/A',
+      citizenshipNo: '', customerPhoto: '', citizenshipPhoto: '',
+      deviceType: 'Parts Purchase', model: pur.partName || 'Parts / Stock',
+      totalCost: Number(pur.total || 0), paidAmount: Number(pur.total || 0), dueAmount: 0,
+      issue: 'Parts / Stock Purchase', warrantyMonths: '', status: 'Paid', dateTime: getCurrentDateTime(),
+      billType: 'Parts Purchase', linkedStockPurchaseId: pur.id,
+      items: [{ name: pur.partName || 'Part', price: Number(pur.unitCost || 0), qty: Number(pur.qty || 1), remarks: `Purchased from: ${pur.supplierName || 'N/A'}${pur.invoiceNo ? `; Supplier Bill: ${pur.invoiceNo}` : ''}` }]
+    };
+    setRepairs([bill, ...repairs]);
+    setSelectedInvoice(bill);
   };
 
   const adjustStock = (id, amount) => setInventory(inventory.map(item => item.id === id ? { ...item, stock: Math.max(0, Number(item.stock) + amount) } : item));
@@ -1020,9 +1131,9 @@ _Thank you for choosing ${shopInfo.name}!_`;
       r.id.toLowerCase().includes(invoiceSearch.toLowerCase()) ||
       r.phone.includes(invoiceSearch);
     
-    if (invoiceFilterTab === 'Repair') return matchesSearch && r.billType !== 'Accessories' && r.billType !== 'Device Sale';
+    if (invoiceFilterTab === 'Repair') return matchesSearch && r.billType !== 'Accessories' && r.billType !== 'Device Sale' && r.billType !== 'Device Purchase';
     if (invoiceFilterTab === 'Accessories') return matchesSearch && r.billType === 'Accessories';
-    if (invoiceFilterTab === 'Devices') return matchesSearch && r.billType === 'Device Sale';
+    if (invoiceFilterTab === 'Devices') return matchesSearch && (r.billType === 'Device Sale' || r.billType === 'Device Purchase');
     if (invoiceFilterTab === 'Due') return matchesSearch && Number(r.dueAmount) > 0;
     if (invoiceFilterTab === 'Paid') return matchesSearch && Number(r.dueAmount) === 0;
     return matchesSearch;
@@ -1117,7 +1228,8 @@ _Thank you for choosing ${shopInfo.name}!_`;
             <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
               <div>
                 <p className={`text-sm uppercase tracking-[0.22em] font-black ${t.textMuted}`}>Genuine Fix • Shop Control Center</p>
-                <h2 className={`text-2xl sm:text-3xl font-black tracking-tight ${t.textMain}`}>Good morning, manage the shop faster.</h2>
+                <h2 className={`text-2xl sm:text-3xl font-black tracking-tight ${t.textMain}`}>{(() => { const h = new Date(clockTick).getHours(); const greeting = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : h < 21 ? 'Good evening' : 'Good night'; return `${greeting}, manage the shop faster.`; })()}</h2>
+                 <p className={`text-sm ${t.textMuted} mt-1`}>{new Date(clockTick).toLocaleString('en-NP', { dateStyle: 'full', timeStyle: 'medium' })}</p>
               </div>
               <div className={`inline-flex items-center gap-2 ${t.cardSecondary} border ${t.border} rounded-2xl px-3 py-2 text-sm font-bold ${t.textMuted}`}>
                 <Clock3 size={15} className="text-blue-400" /> Live shop overview
@@ -1136,7 +1248,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
               </div>
               <div className={`bg-gradient-to-br from-amber-500/10 to-transparent border ${t.border} p-6 rounded-3xl shadow-xl`}>
                 <p className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">Today's Jobs</p>
-                <h3 className="text-3xl font-black text-amber-400">{repairs.filter(r => String(r.dateTime || '').startsWith(new Date().toISOString().split('T')[0])).length}</h3>
+                <h3 className="text-3xl font-black text-amber-400">{repairs.filter(r => String(r.dateTime || '').startsWith(getLocalDateKey())).length}</h3>
                 <p className={`text-sm mt-2 ${t.textMuted}`}>Jobs & bills created today</p>
               </div>
               <div className={`bg-gradient-to-br from-rose-500/10 to-transparent border ${t.border} p-6 rounded-3xl shadow-xl`}>
@@ -1540,6 +1652,19 @@ _Thank you for choosing ${shopInfo.name}!_`;
               />
               <input type="text" placeholder={newDevice.tradeType === 'buy' ? 'Seller Phone Number' : 'Customer Phone Number'} value={newDevice.partyPhone} onChange={e => setNewDevice({...newDevice, partyPhone: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
 
+              {newDevice.tradeType === 'buy' && newDevice.deviceCategory.startsWith('Second-Hand') && (
+                <div className={`md:col-span-3 ${t.cardSecondary} border ${t.border} rounded-2xl p-4`}>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+                    <input type="text" placeholder="Citizenship / Nagarikta No. (optional)" value={newDevice.citizenshipNo || ''} onChange={e => setNewDevice({...newDevice, citizenshipNo: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm`} />
+                    <div>
+                      <label className={`text-sm font-bold ${t.textMuted} block mb-2`}>Seller Nagarikta Photo (optional)</label><p className={`text-xs ${t.textMuted} mb-2`}>Stored with this browser backup. Keep sensitive citizenship images protected.</p>
+                      <input type="file" accept="image/*" onChange={e => handleDeviceImageUpload(e, 'citizenshipPhoto')} className={`w-full p-2 ${t.inputBg} border rounded-2xl text-sm`} />
+                      {newDevice.citizenshipPhoto && <div className="mt-2 flex items-center gap-3"><img src={newDevice.citizenshipPhoto} alt="Citizenship preview" className="h-16 w-24 object-cover rounded-lg border" /><button type="button" onClick={() => setNewDevice(prev => ({...prev, citizenshipPhoto: ''}))} className="text-xs text-rose-400 font-bold">Remove</button></div>}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <input type="number" placeholder={newDevice.tradeType === 'buy' ? 'Purchase / Buy Price (NPR)' : 'Original Purchase Price (NPR)'} value={newDevice.buyPrice} onChange={e => setNewDevice({...newDevice, buyPrice: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} readOnly={newDevice.tradeType === 'sell'} />
               <input type="number" placeholder={newDevice.tradeType === 'buy' ? 'Expected Selling Price (NPR)' : 'Selling Price (NPR)'} value={newDevice.sellPrice} onChange={e => setNewDevice({...newDevice, sellPrice: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
               <input type="text" placeholder="Warranty (optional — enter your own)" value={newDevice.warrantyMonths} onChange={e => setNewDevice({...newDevice, warrantyMonths: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
@@ -1552,6 +1677,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
               )}
 
               <button type="submit" className="md:col-span-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-emerald-600/30">{editingDeviceId ? 'Update Device Record' : (newDevice.tradeType === 'sell' ? 'Save Sale & Generate Bill' : 'Save Purchase Record')}</button>
+              {editingDeviceId && newDevice.tradeType === 'sell' && <button type="button" onClick={() => restoreDeviceSale(editingDeviceId)} className="md:col-span-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl p-3.5 transition inline-flex items-center justify-center gap-2"><History size={17}/> Restore Sale / Return To Stock</button>}
               {editingDeviceId && <button type="button" onClick={() => resetDeviceForm(newDevice.tradeType || 'buy')} className="md:col-span-3 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-2xl p-3.5 transition">Cancel Edit</button>}
             </form>
 
@@ -1610,16 +1736,18 @@ _Thank you for choosing ${shopInfo.name}!_`;
                         <td className="p-4">
                           {deviceTradeTab === 'sell' && <p className={`text-xs ${t.textMuted}`}>Bought: {dev.purchaseDate || 'N/A'}</p>}
                           <p className={`text-sm ${t.textMuted}`}>{deviceTradeTab === 'sell' ? (dev.saleDate || dev.date) : (dev.purchaseDate || dev.date)}</p>
-                          <span className={`text-sm font-bold ${dev.status === 'Sold' ? 'text-emerald-400' : 'text-blue-400'}`}>{dev.status}</span>
+                          <span className={`text-sm font-bold ${dev.status === 'Sold' ? 'text-rose-400' : 'text-blue-400'}`}>{dev.status || 'In Stock'}</span>
                         </td>
                         <td className="p-4 text-right space-x-2">
                           <button onClick={() => {
                             setEditingDeviceId(dev.id);
-                            setNewDevice({ tradeType: dev.tradeType || 'buy', deviceCategory: dev.deviceCategory || 'Second-Hand Phone', brandModel: dev.brandModel || '', imeiOrSerial: dev.imeiOrSerial || '', imeiList: getDeviceImeis(dev), condition: dev.condition || '', partyName: dev.partyName || '', partyPhone: dev.partyPhone || '', buyPrice: String(dev.buyPrice ?? ''), sellPrice: String(dev.sellPrice ?? ''), warrantyMonths: dev.warrantyMonths || '' });
+                            setNewDevice({ tradeType: dev.tradeType || 'buy', deviceCategory: dev.deviceCategory || 'Second-Hand Phone', brandModel: dev.brandModel || '', imeiOrSerial: dev.imeiOrSerial || '', imeiList: getDeviceImeis(dev), condition: dev.condition || '', partyName: dev.partyName || '', partyPhone: dev.partyPhone || '', buyPrice: String(dev.buyPrice ?? ''), sellPrice: String(dev.sellPrice ?? ''), warrantyMonths: dev.warrantyMonths || '', citizenshipNo: dev.citizenshipNo || '', citizenshipPhoto: dev.citizenshipPhoto || '' });
                             setSelectedPurchaseId(dev.linkedPurchaseId || '');
                             setDeviceTradeTab(dev.tradeType || 'buy');
                             window.scrollTo({ top: 0, behavior: 'smooth' });
                           }} className="p-2 bg-amber-500/10 text-amber-400 rounded-xl hover:bg-amber-500/20"><Pencil size={14}/></button>
+                          {deviceTradeTab === 'sell' && <button onClick={() => restoreDeviceSale(dev.id)} title="Restore sale / return to stock" className="p-2 bg-blue-500/10 text-blue-400 rounded-xl hover:bg-blue-500/20"><History size={14}/></button>}
+                          {deviceTradeTab === 'buy' && <button onClick={() => generateDevicePurchaseBill(dev)} title="Generate purchase bill" className="p-2 bg-emerald-500/10 text-emerald-400 rounded-xl hover:bg-emerald-500/20"><Printer size={14}/></button>}
                           <button onClick={() => { if(window.confirm('Delete this device record?')) deleteDevice(dev.id); }} className="p-2 bg-rose-500/10 text-rose-400 rounded-xl hover:bg-rose-500/20"><Trash2 size={14}/></button>
                         </td>
                       </tr>
@@ -1659,7 +1787,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
                 <label className="text-sm font-bold uppercase text-slate-400">Items List</label>
                 {posBill.items.map((item, idx) => (
                   <div key={idx} className={`flex flex-wrap items-center gap-3 ${t.cardSecondary} p-3 rounded-2xl border ${t.border}`}>
-                    <input type="text" placeholder="Item Name" value={item.name} onChange={e => handlePosItemChange(idx, 'name', e.target.value)} className={`flex-1 min-w-[200px] p-2.5 ${t.inputBg} border rounded-xl text-sm focus:outline-none`} />
+                    <div className="flex-1 min-w-[200px]"><input type="text" placeholder="Item Name" value={item.name} onChange={e => handlePosItemChange(idx, 'name', e.target.value)} className={`w-full p-2.5 ${t.inputBg} border rounded-xl text-sm focus:outline-none`} />{(() => { const st = inventory.find(inv => inv.name.toLowerCase() === String(item.name || '').trim().toLowerCase()); return st ? <p className={`text-xs ${Number(st.stock) > 0 ? 'text-emerald-400' : 'text-rose-400'} mt-1`}>Available stock: {st.stock}</p> : null; })()}</div>
                     <input type="number" placeholder="Price" value={item.price} onChange={e => handlePosItemChange(idx, 'price', e.target.value)} className={`w-28 p-2.5 ${t.inputBg} border rounded-xl text-sm focus:outline-none`} />
                     <input type="number" placeholder="Qty" value={item.qty} onChange={e => handlePosItemChange(idx, 'qty', e.target.value)} className={`w-20 p-2.5 ${t.inputBg} border rounded-xl text-sm focus:outline-none`} />
                     {posBill.items.length > 1 && (
@@ -1830,7 +1958,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
 
             <div className={`${t.cardBg} border ${t.border} rounded-3xl overflow-hidden shadow-xl`}>
               <div className="p-4"><h3 className={`font-black ${t.textMain}`}>Purchase History</h3></div>
-              <div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead className={`${t.tableHeader} uppercase border-b`}><tr><th className="p-4">Date</th><th className="p-4">Part</th><th className="p-4">Supplier / Party</th><th className="p-4">Qty</th><th className="p-4">Unit Cost</th><th className="p-4">Total</th><th className="p-4">Bill No.</th></tr></thead><tbody className={`divide-y ${t.tableDivide}`}>{stockPurchases.map(pur => <tr key={pur.id}><td className={`p-4 ${t.textMuted}`}>{pur.date}</td><td className={`p-4 font-bold ${t.textMain}`}>{pur.partName}</td><td className="p-4"><p className={`font-bold ${t.textMain}`}>{pur.supplierName}</p><p className={`text-xs ${t.textMuted}`}>{pur.supplierPhone}</p></td><td className={`p-4 ${t.textMuted}`}>{pur.qty}</td><td className={`p-4 ${t.textMuted}`}>NPR {pur.unitCost}</td><td className="p-4 font-black text-rose-400">NPR {pur.total}</td><td className={`p-4 ${t.textMuted}`}>{pur.invoiceNo || '—'}</td></tr>)}</tbody></table></div>
+              <div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead className={`${t.tableHeader} uppercase border-b`}><tr><th className="p-4">Date</th><th className="p-4">Part</th><th className="p-4">Supplier / Party</th><th className="p-4">Qty</th><th className="p-4">Unit Cost</th><th className="p-4">Total</th><th className="p-4">Bill No.</th><th className="p-4 text-right">Bill</th></tr></thead><tbody className={`divide-y ${t.tableDivide}`}>{stockPurchases.map(pur => <tr key={pur.id}><td className={`p-4 ${t.textMuted}`}>{pur.date}</td><td className={`p-4 font-bold ${t.textMain}`}>{pur.partName}</td><td className="p-4"><p className={`font-bold ${t.textMain}`}>{pur.supplierName}</p><p className={`text-xs ${t.textMuted}`}>{pur.supplierPhone}</p></td><td className={`p-4 ${t.textMuted}`}>{pur.qty}</td><td className={`p-4 ${t.textMuted}`}>NPR {pur.unitCost}</td><td className="p-4 font-black text-rose-400">NPR {pur.total}</td><td className={`p-4 ${t.textMuted}`}>{pur.invoiceNo || '—'}</td><td className="p-4 text-right"><button onClick={() => generatePartsPurchaseBill(pur)} className="p-2 bg-emerald-500/10 text-emerald-400 rounded-xl" title="Generate purchase bill"><Printer size={14}/></button></td></tr>)}</tbody></table></div>
             </div>
           </div>
         )}
@@ -1866,6 +1994,14 @@ _Thank you for choosing ${shopInfo.name}!_`;
               <button type="submit" className="md:col-span-3 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-2xl p-3.5 transition">{editingExpenseId ? 'Update Expense Record' : 'Add Expense Record'}</button>
               {editingExpenseId && <button type="button" onClick={() => { setEditingExpenseId(null); setNewExpense({ description: '', amount: '', category: 'General', itemName: '', quantity: '', unitCost: '', supplierName: '', supplierPhone: '', invoiceNo: '', paymentMethod: 'Cash', notes: '', date: todayKey }); }} className="bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-2xl p-3.5">Cancel Edit</button>}
             </form>
+
+            <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}>
+              <div className="flex items-center justify-between mb-4"><div><p className={`text-sm uppercase tracking-wider font-black ${t.textMuted}`}>Party-wise हिसाब</p><h3 className={`text-lg font-black ${t.textMain}`}>Same Person / Supplier Total</h3></div><DollarSign size={20} className="text-rose-400"/></div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {supplierExpenseSummary.map(sup => <div key={sup.name} className={`${t.cardSecondary} border ${t.border} rounded-2xl p-4`}><p className={`font-bold ${t.textMain}`}>{sup.name}</p><p className="text-xl font-black text-rose-400 mt-1">NPR {sup.total}</p><p className={`text-xs ${t.textMuted}`}>{sup.count} record{sup.count === 1 ? '' : 's'}</p></div>)}
+                {supplierExpenseSummary.length === 0 && <p className={`text-sm ${t.textMuted}`}>No supplier/person expense records yet.</p>}
+              </div>
+            </div>
 
             <div className={`${t.cardBg} border ${t.border} rounded-3xl overflow-hidden shadow-xl`}>
               <div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead className={`${t.tableHeader} uppercase border-b`}><tr><th className="p-4">Date</th><th className="p-4">Category / Description</th><th className="p-4">Item / Qty × Cost</th><th className="p-4">Supplier</th><th className="p-4">Payment</th><th className="p-4">Amount</th><th className="p-4 text-right">Action</th></tr></thead>
