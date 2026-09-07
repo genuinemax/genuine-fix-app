@@ -245,6 +245,7 @@ export default function App() {
   });
 
   const [newDevice, setNewDevice] = useState({
+    tradeType: 'buy',
     deviceCategory: 'Second-Hand Phone',
     brandModel: '',
     imeiOrSerial: '',
@@ -255,6 +256,8 @@ export default function App() {
     sellPrice: '',
     warrantyMonths: ''
   });
+  const [deviceTradeTab, setDeviceTradeTab] = useState('buy');
+  const [selectedPurchaseId, setSelectedPurchaseId] = useState('');
 
   const [selectedCategory, setSelectedCategory] = useState(categories[0] || 'Mobile Parts');
   const [newPart, setNewPart] = useState({ name: '', stock: '', costPrice: '', price: '', minStock: '5' });
@@ -416,54 +419,129 @@ export default function App() {
 
   const handleAddDevice = (e) => {
     e.preventDefault();
-    const sellPriceVal = Number(newDevice.sellPrice || 0);
-    const buyPriceVal = Number(newDevice.buyPrice || 0);
+    const isBuy = newDevice.tradeType !== 'sell';
+    const today = new Date().toISOString().split('T')[0];
 
-    const deviceItem = {
-      id: `DEV-${Math.floor(1000 + Math.random() * 9000)}`,
-      deviceCategory: newDevice.deviceCategory,
-      brandModel: newDevice.brandModel || 'Unknown Device',
-      imeiOrSerial: newDevice.imeiOrSerial || 'N/A',
-      condition: newDevice.condition,
-      partyName: newDevice.partyName || 'Walk-in Party',
+    if (isBuy) {
+      const buyPriceVal = Number(newDevice.buyPrice || 0);
+      const sellPriceVal = Number(newDevice.sellPrice || 0);
+      const deviceItem = {
+        id: `DEV-${Math.floor(1000 + Math.random() * 9000)}`,
+        tradeType: 'buy',
+        deviceCategory: newDevice.deviceCategory,
+        brandModel: newDevice.brandModel || 'Unknown Device',
+        imeiOrSerial: newDevice.imeiOrSerial || 'N/A',
+        condition: newDevice.condition,
+        partyName: newDevice.partyName || 'Walk-in Seller',
+        partyPhone: newDevice.partyPhone || 'N/A',
+        buyPrice: buyPriceVal,
+        sellPrice: sellPriceVal,
+        status: 'In Stock',
+        purchaseDate: today,
+        date: today,
+        warrantyMonths: newDevice.warrantyMonths || ''
+      };
+
+      setDevicesStock([deviceItem, ...devicesStock]);
+      setNewDevice({
+        tradeType: 'buy',
+        deviceCategory: 'Second-Hand Phone',
+        brandModel: '',
+        imeiOrSerial: '',
+        condition: 'Good / Fresh',
+        partyName: '',
+        partyPhone: '',
+        buyPrice: '',
+        sellPrice: '',
+        warrantyMonths: ''
+      });
+      setDeviceTradeTab('buy');
+      alert('Purchase record saved successfully!');
+      return;
+    }
+
+    if (!selectedPurchaseId) {
+      alert('Please select a purchased device to sell.');
+      return;
+    }
+
+    const purchase = devicesStock.find(d => d.id === selectedPurchaseId);
+    if (!purchase || (purchase.tradeType || 'buy') !== 'buy') {
+      alert('Selected purchase record was not found.');
+      return;
+    }
+    if (purchase.status === 'Sold') {
+      alert('This device has already been sold.');
+      return;
+    }
+
+    const salePriceVal = Number(newDevice.sellPrice || purchase.sellPrice || 0);
+    const purchasePriceVal = Number(purchase.buyPrice || 0);
+    const saleId = `SALE-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    const soldRecord = {
+      id: saleId,
+      tradeType: 'sell',
+      linkedPurchaseId: purchase.id,
+      purchaseDate: purchase.purchaseDate || purchase.date || '',
+      saleDate: today,
+      deviceCategory: purchase.deviceCategory,
+      brandModel: purchase.brandModel,
+      imeiOrSerial: purchase.imeiOrSerial,
+      condition: purchase.condition,
+      partyName: newDevice.partyName || 'Walk-in Customer',
       partyPhone: newDevice.partyPhone || 'N/A',
-      buyPrice: buyPriceVal,
-      sellPrice: sellPriceVal,
-      status: 'In Stock',
-      date: new Date().toISOString().split('T')[0]
+      sellerName: purchase.partyName || 'Walk-in Seller',
+      sellerPhone: purchase.partyPhone || 'N/A',
+      buyPrice: purchasePriceVal,
+      sellPrice: salePriceVal,
+      profit: salePriceVal - purchasePriceVal,
+      status: 'Sold',
+      warrantyMonths: newDevice.warrantyMonths || purchase.warrantyMonths || '',
+      date: today
     };
 
-    setDevicesStock([deviceItem, ...devicesStock]);
+    // Keep the original purchase record and mark it sold, while adding a linked sales record.
+    const updatedStock = devicesStock.map(d =>
+      d.id === purchase.id
+        ? { ...d, status: 'Sold', soldDate: today, soldRecordId: saleId }
+        : d
+    );
+    setDevicesStock([soldRecord, ...updatedStock]);
 
     const deviceInvoice = {
       id: `DVB-${Math.floor(1000 + Math.random() * 9000)}`,
-      customerName: newDevice.partyName || 'Walk-in Customer',
-      phone: newDevice.partyPhone || 'N/A',
+      customerName: soldRecord.partyName,
+      phone: soldRecord.partyPhone,
       citizenshipNo: '',
       customerPhoto: '',
       citizenshipPhoto: '',
-      deviceType: newDevice.deviceCategory,
-      model: `${newDevice.brandModel} (IMEI/S: ${newDevice.imeiOrSerial})`,
-      totalCost: sellPriceVal,
-      paidAmount: sellPriceVal,
+      deviceType: soldRecord.deviceCategory,
+      model: `${soldRecord.brandModel} (IMEI/S: ${soldRecord.imeiOrSerial})`,
+      totalCost: salePriceVal,
+      paidAmount: salePriceVal,
       dueAmount: 0,
-      issue: `${newDevice.deviceCategory} Purchase/Stock Entry`,
-      warrantyMonths: newDevice.warrantyMonths || '',
+      issue: `${soldRecord.deviceCategory} Sale`,
+      warrantyMonths: soldRecord.warrantyMonths,
       status: 'Delivered',
       dateTime: getCurrentDateTime(),
       billType: 'Device Sale',
+      linkedPurchaseId: purchase.id,
+      purchasePrice: purchasePriceVal,
+      profit: soldRecord.profit,
       items: [
         {
-          name: `${newDevice.deviceCategory} - ${newDevice.brandModel} [IMEI: ${newDevice.imeiOrSerial}]`,
-          price: sellPriceVal,
+          name: `${soldRecord.deviceCategory} - ${soldRecord.brandModel} [IMEI: ${soldRecord.imeiOrSerial}]`,
+          price: salePriceVal,
           qty: 1,
-          remarks: `Condition: ${newDevice.condition}`
+          remarks: `Condition: ${soldRecord.condition}; Purchase: NPR ${purchasePriceVal}; Profit: NPR ${soldRecord.profit}`
         }
       ]
     };
-
     setRepairs([deviceInvoice, ...repairs]);
+
     setNewDevice({
+      tradeType: 'sell',
       deviceCategory: 'Second-Hand Phone',
       brandModel: '',
       imeiOrSerial: '',
@@ -474,7 +552,9 @@ export default function App() {
       sellPrice: '',
       warrantyMonths: ''
     });
-    alert('Device saved successfully!');
+    setSelectedPurchaseId('');
+    setDeviceTradeTab('sell');
+    alert(`Sale saved. Purchase: NPR ${purchasePriceVal} | Sale: NPR ${salePriceVal} | Profit: NPR ${soldRecord.profit}`);
   };
 
   const handleAddPosItem = () => {
@@ -1244,75 +1324,152 @@ _Thank you for choosing ${shopInfo.name}!_`;
           <div className="space-y-6 animate-in fade-in duration-300">
             <div>
               <h2 className={`text-xl font-bold ${t.textMain}`}>📱 Second-Hand & New Phone / Laptop Trading</h2>
-              <p className={`text-sm ${t.textMuted} mt-0.5`}>Record 2nd-hand phone/laptop buybacks, trade-ins, or new device sales with IMEI & customer details.</p>
+              <p className={`text-sm ${t.textMuted} mt-0.5`}>Purchase and sales records are linked by IMEI/Serial. Selling a purchased device keeps the original purchase record and adds a linked sales record with profit.</p>
             </div>
 
             <form onSubmit={handleAddDevice} className={`${t.cardBg} border ${t.border} p-6 rounded-3xl grid grid-cols-1 md:grid-cols-3 gap-4 shadow-xl`}>
-              <select value={newDevice.deviceCategory} onChange={e => setNewDevice({...newDevice, deviceCategory: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}>
-                <option value="Second-Hand Phone">Second-Hand Phone</option>
-                <option value="Second-Hand Laptop">Second-Hand Laptop</option>
-                <option value="New Phone">New Phone (Brand New)</option>
-                <option value="New Laptop">New Laptop (Brand New)</option>
+              <select
+                value={newDevice.tradeType || 'buy'}
+                onChange={e => {
+                  const tradeType = e.target.value;
+                  setNewDevice(prev => ({ ...prev, tradeType }));
+                  setDeviceTradeTab(tradeType);
+                  setSelectedPurchaseId('');
+                }}
+                className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}
+              >
+                <option value="buy">BUY / PURCHASE RECORD</option>
+                <option value="sell">SELL / SALES RECORD</option>
               </select>
 
-              <input type="text" placeholder="Brand & Model (e.g. iPhone 13 / Dell Inspiron)" value={newDevice.brandModel} onChange={e => setNewDevice({...newDevice, brandModel: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
-              <input type="text" placeholder="IMEI Number or Serial No." value={newDevice.imeiOrSerial} onChange={e => setNewDevice({...newDevice, imeiOrSerial: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
-              
-              <input type="text" placeholder="Condition / Specs (e.g. Battery 90%, Scratchless)" value={newDevice.condition} onChange={e => setNewDevice({...newDevice, condition: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+              {newDevice.tradeType === 'sell' ? (
+                <select
+                  value={selectedPurchaseId}
+                  onChange={e => {
+                    const id = e.target.value;
+                    setSelectedPurchaseId(id);
+                    const purchase = devicesStock.find(d => d.id === id);
+                    if (purchase) {
+                      setNewDevice(prev => ({
+                        ...prev,
+                        deviceCategory: purchase.deviceCategory,
+                        brandModel: purchase.brandModel,
+                        imeiOrSerial: purchase.imeiOrSerial,
+                        condition: purchase.condition,
+                        buyPrice: String(purchase.buyPrice ?? ''),
+                        warrantyMonths: purchase.warrantyMonths || ''
+                      }));
+                    }
+                  }}
+                  className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}
+                  required
+                >
+                  <option value="">Select purchased device...</option>
+                  {devicesStock
+                    .filter(d => (d.tradeType || 'buy') === 'buy' && d.status !== 'Sold')
+                    .map(d => (
+                      <option key={d.id} value={d.id}>
+                        {d.brandModel} — IMEI/SN {d.imeiOrSerial} — Buy NPR {d.buyPrice}
+                      </option>
+                    ))}
+                </select>
+              ) : (
+                <select value={newDevice.deviceCategory} onChange={e => setNewDevice({...newDevice, deviceCategory: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}>
+                  <option value="Second-Hand Phone">Second-Hand Phone</option>
+                  <option value="Second-Hand Laptop">Second-Hand Laptop</option>
+                  <option value="New Phone">New Phone (Brand New)</option>
+                  <option value="New Laptop">New Laptop (Brand New)</option>
+                </select>
+              )}
+
+              <input type="text" placeholder="Brand & Model (e.g. iPhone 13 / Dell Inspiron)" value={newDevice.brandModel} onChange={e => setNewDevice({...newDevice, brandModel: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required readOnly={newDevice.tradeType === 'sell'} />
+              <input type="text" placeholder="IMEI Number or Serial No." value={newDevice.imeiOrSerial} onChange={e => setNewDevice({...newDevice, imeiOrSerial: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required readOnly={newDevice.tradeType === 'sell'} />
+
+              <input type="text" placeholder="Condition / Specs (e.g. Battery 90%, Scratchless)" value={newDevice.condition} onChange={e => setNewDevice({...newDevice, condition: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} readOnly={newDevice.tradeType === 'sell'} />
               <CustomerAutocomplete
                 value={newDevice.partyName}
-                placeholder="Customer / Party Name"
+                placeholder={newDevice.tradeType === 'buy' ? 'Seller / Party Name' : 'Buyer / Customer Name'}
                 customers={uniqueCustomers}
                 onChange={value => setNewDevice(prev => ({ ...prev, partyName: value }))}
                 onSelect={customer => handleCustomerSelect(customer, 'device')}
                 className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}
               />
-              <input type="text" placeholder="Customer Phone Number" value={newDevice.partyPhone} onChange={e => setNewDevice({...newDevice, partyPhone: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+              <input type="text" placeholder={newDevice.tradeType === 'buy' ? 'Seller Phone Number' : 'Customer Phone Number'} value={newDevice.partyPhone} onChange={e => setNewDevice({...newDevice, partyPhone: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
 
-              <input type="number" placeholder="Buy Price / Cost Price (NPR)" value={newDevice.buyPrice} onChange={e => setNewDevice({...newDevice, buyPrice: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-              <input type="number" placeholder="Selling Price (NPR)" value={newDevice.sellPrice} onChange={e => setNewDevice({...newDevice, sellPrice: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
-              <input type="text" placeholder="Warranty (e.g. 3 Months)" value={newDevice.warrantyMonths} onChange={e => setNewDevice({...newDevice, warrantyMonths: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+              <input type="number" placeholder={newDevice.tradeType === 'buy' ? 'Purchase / Buy Price (NPR)' : 'Original Purchase Price (NPR)'} value={newDevice.buyPrice} onChange={e => setNewDevice({...newDevice, buyPrice: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} readOnly={newDevice.tradeType === 'sell'} />
+              <input type="number" placeholder={newDevice.tradeType === 'buy' ? 'Expected Selling Price (NPR)' : 'Selling Price (NPR)'} value={newDevice.sellPrice} onChange={e => setNewDevice({...newDevice, sellPrice: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
+              <input type="text" placeholder="Warranty (optional — enter your own)" value={newDevice.warrantyMonths} onChange={e => setNewDevice({...newDevice, warrantyMonths: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
 
-              <button type="submit" className="md:col-span-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-emerald-600/30">Save Device & Generate Bill</button>
+              <button type="submit" className="md:col-span-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-emerald-600/30">{newDevice.tradeType === 'sell' ? 'Save Sale & Generate Bill' : 'Save Purchase Record'}</button>
             </form>
 
             <div className={`${t.cardBg} border ${t.border} rounded-3xl overflow-hidden shadow-xl`}>
-              <table className="w-full text-left text-sm">
-                <thead className={`${t.tableHeader} text-sm uppercase border-b`}>
-                  <tr>
-                    <th className="p-4">Device & Category</th>
-                    <th className="p-4">IMEI / S.N. & Condition</th>
-                    <th className="p-4">Party / Seller</th>
-                    <th className="p-4">Buy / Sell Price</th>
-                    <th className="p-4 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className={`divide-y ${t.tableDivide}`}>
-                  {devicesStock.map(dev => (
-                    <tr key={dev.id}>
-                      <td className="p-4">
-                        <p className={`font-bold ${t.textMain}`}>{dev.brandModel}</p>
-                        <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 text-sm font-bold">{dev.deviceCategory}</span>
-                      </td>
-                      <td className="p-4">
-                        <p className="font-mono text-sm text-blue-400">{dev.imeiOrSerial}</p>
-                        <p className={`text-sm ${t.textMuted}`}>{dev.condition}</p>
-                      </td>
-                      <td className="p-4">
-                        <p className={`font-bold ${t.textMain}`}>{dev.partyName}</p>
-                        <p className={`text-sm ${t.textMuted}`}>{dev.partyPhone}</p>
-                      </td>
-                      <td className="p-4">
-                        <p className="text-sm text-rose-400">Buy: NPR {dev.buyPrice}</p>
-                        <p className="text-sm font-bold text-emerald-400">Sell: NPR {dev.sellPrice}</p>
-                      </td>
-                      <td className="p-4 text-right space-x-2">
-                        <button onClick={() => deleteDevice(dev.id)} className="p-2 bg-rose-500/10 text-rose-400 rounded-xl hover:bg-rose-500/20"><Trash2 size={14}/></button>
-                      </td>
+              <div className={`p-4 border-b ${t.border} flex flex-wrap gap-2 items-center justify-between`}>
+                <div className={`${t.cardSecondary} p-1 rounded-xl border ${t.border} flex`}>
+                  <button type="button" onClick={() => setDeviceTradeTab('buy')} className={`px-4 py-2 rounded-lg text-sm font-black transition ${deviceTradeTab === 'buy' ? 'bg-blue-600 text-white' : t.textMuted}`}>Bought / Purchased</button>
+                  <button type="button" onClick={() => setDeviceTradeTab('sell')} className={`px-4 py-2 rounded-lg text-sm font-black transition ${deviceTradeTab === 'sell' ? 'bg-emerald-600 text-white' : t.textMuted}`}>Sold / Sales</button>
+                </div>
+                <div className={`text-sm ${t.textMuted}`}>
+                  Bought: {devicesStock.filter(d => (d.tradeType || 'buy') === 'buy').length} • Sold: {devicesStock.filter(d => d.tradeType === 'sell').length}
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className={`${t.tableHeader} text-sm uppercase border-b`}>
+                    <tr>
+                      <th className="p-4">Device & Category</th>
+                      <th className="p-4">IMEI / S.N. & Condition</th>
+                      <th className="p-4">{deviceTradeTab === 'buy' ? 'Seller / Party' : 'Buyer / Customer'}</th>
+                      <th className="p-4">{deviceTradeTab === 'buy' ? 'Purchase Price' : 'Purchase → Sale / Profit'}</th>
+                      <th className="p-4">Date / Status</th>
+                      <th className="p-4 text-right">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className={`divide-y ${t.tableDivide}`}>
+                    {devicesStock.filter(dev => (dev.tradeType || 'buy') === deviceTradeTab).map(dev => (
+                      <tr key={dev.id}>
+                        <td className="p-4">
+                          <p className={`font-bold ${t.textMain}`}>{dev.brandModel}</p>
+                          <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 text-sm font-bold">{dev.deviceCategory}</span>
+                          {dev.linkedPurchaseId && <p className="text-xs text-violet-400 mt-1">Purchase: {dev.linkedPurchaseId}</p>}
+                        </td>
+                        <td className="p-4">
+                          <p className="font-mono text-sm text-blue-400">{dev.imeiOrSerial}</p>
+                          <p className={`text-sm ${t.textMuted}`}>{dev.condition}</p>
+                        </td>
+                        <td className="p-4">
+                          <p className={`font-bold ${t.textMain}`}>{dev.partyName}</p>
+                          <p className={`text-sm ${t.textMuted}`}>{dev.partyPhone}</p>
+                          {deviceTradeTab === 'sell' && <p className={`text-xs ${t.textMuted} mt-1`}>Bought from: {dev.sellerName || 'N/A'}</p>}
+                        </td>
+                        <td className="p-4">
+                          {deviceTradeTab === 'buy' ? (
+                            <p className="text-sm font-bold text-rose-400">NPR {dev.buyPrice}</p>
+                          ) : (
+                            <>
+                              <p className="text-sm text-rose-400">Buy: NPR {dev.buyPrice}</p>
+                              <p className="text-sm font-bold text-emerald-400">Sale: NPR {dev.sellPrice}</p>
+                              <p className={`text-sm font-black ${Number(dev.profit) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>Profit: NPR {dev.profit}</p>
+                            </>
+                          )}
+                        </td>
+                        <td className="p-4">
+                          {deviceTradeTab === 'sell' && <p className={`text-xs ${t.textMuted}`}>Bought: {dev.purchaseDate || 'N/A'}</p>}
+                          <p className={`text-sm ${t.textMuted}`}>{deviceTradeTab === 'sell' ? (dev.saleDate || dev.date) : (dev.purchaseDate || dev.date)}</p>
+                          <span className={`text-sm font-bold ${dev.status === 'Sold' ? 'text-emerald-400' : 'text-blue-400'}`}>{dev.status}</span>
+                        </td>
+                        <td className="p-4 text-right">
+                          <button onClick={() => deleteDevice(dev.id)} className="p-2 bg-rose-500/10 text-rose-400 rounded-xl hover:bg-rose-500/20"><Trash2 size={14}/></button>
+                        </td>
+                      </tr>
+                    ))}
+                    {devicesStock.filter(dev => (dev.tradeType || 'buy') === deviceTradeTab).length === 0 && (
+                      <tr><td colSpan="6" className={`p-8 text-center ${t.textMuted}`}>No {deviceTradeTab === 'buy' ? 'purchase' : 'sales'} records yet.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}
