@@ -1864,7 +1864,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
                     <p className={`text-xs uppercase tracking-wider ${t.textMuted}`}>Total Bill Amount</p>
                     <p className="text-2xl font-black text-emerald-400">NPR {posBill.items.reduce((sum, item) => sum + (Number(item.price || 0) * Number(item.qty || 1)), 0)}</p>
                   </div>
-                  <button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-8 py-3.5 rounded-2xl shadow-lg shadow-blue-600/30">Complete Sale</button>
+                  <button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-6 py-3.5 rounded-2xl transition shadow-lg shadow-blue-600/30">Save & Print Bill</button>
                 </div>
               </div>
             </form>
@@ -1876,392 +1876,86 @@ _Thank you for choosing ${shopInfo.name}!_`;
           <div className="space-y-6 animate-in fade-in duration-300">
             <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
               <div>
-                <h2 className={`text-xl font-bold ${t.textMain}`}>Saved Invoices & Bills History</h2>
-                <p className={`text-sm ${t.textMuted} mt-0.5`}>View, print, download or share bills directly via WhatsApp.</p>
+                <h2 className={`text-xl font-bold ${t.textMain}`}>📄 Invoices & Job Sheets Archive</h2>
+                <p className={`text-sm ${t.textMuted} mt-0.5`}>View, search, download, print or send invoices via WhatsApp.</p>
               </div>
               <div className={`flex items-center gap-2 ${t.inputBg} border ${t.border} rounded-2xl px-3 py-2.5 w-full lg:w-80`}>
                 <Search size={16} className={t.textMuted} />
-                <input value={invoiceSearch} onChange={e => setInvoiceSearch(e.target.value)} placeholder="Search customer, ID or phone..." className="bg-transparent outline-none text-sm w-full" />
+                <input
+                  type="text"
+                  placeholder="Search invoice ID, customer, phone..."
+                  value={invoiceSearch}
+                  onChange={e => setInvoiceSearch(e.target.value)}
+                  className="bg-transparent outline-none text-sm w-full"
+                />
               </div>
             </div>
 
             <div className={`${t.cardBg} border ${t.border} rounded-3xl overflow-hidden shadow-xl`}>
-              <div className={`p-4 border-b ${t.border} flex flex-wrap items-center justify-between gap-3`}>
+              <div className={`p-4 border-b ${t.border} flex flex-wrap gap-2 items-center justify-between`}>
                 <div className={`${t.cardSecondary} p-1 rounded-xl border ${t.border} flex flex-wrap gap-1`}>
                   {['All', 'Repair', 'Accessories', 'Devices', 'Due', 'Paid'].map(tab => (
-                    <button key={tab} onClick={() => setInvoiceFilterTab(tab)} className={`px-3 py-1.5 rounded-lg text-sm font-bold transition ${invoiceFilterTab === tab ? 'bg-blue-600 text-white' : t.textMuted}`}>{tab}</button>
+                    <button
+                      key={tab}
+                      onClick={() => setInvoiceFilterTab(tab)}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-bold transition ${invoiceFilterTab === tab ? 'bg-blue-600 text-white' : `${t.textMuted} hover:text-white`}`}
+                    >
+                      {tab}
+                    </button>
                   ))}
                 </div>
-                <p className={`text-sm ${t.textMuted}`}>Showing {filteredInvoices.length} invoices</p>
+                <p className={`text-sm ${t.textMuted}`}>{filteredInvoices.length} invoices found</p>
               </div>
 
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
                   <thead className={`${t.tableHeader} text-sm uppercase border-b`}>
                     <tr>
-                      <th className="p-4">Bill ID</th>
-                      <th className="p-4">Customer Name & Phone</th>
-                      <th className="p-4">Service / Model</th>
-                      <th className="p-4">Amount / Due</th>
-                      <th className="p-4">Date & Status</th>
+                      <th className="p-4">Invoice ID & Date</th>
+                      <th className="p-4">Customer & Phone</th>
+                      <th className="p-4">Model / Description</th>
+                      <th className="p-4">Total & Due</th>
+                      <th className="p-4">Status</th>
                       <th className="p-4 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className={`divide-y ${t.tableDivide}`}>
-                    {filteredInvoices.map(inv => (
-                      <tr key={inv.id}>
-                        <td className="p-4 font-mono font-bold text-blue-400">{inv.id}</td>
-                        <td className="p-4">
-                          <p className={`font-bold ${t.textMain}`}>{inv.customerName}</p>
-                          <p className={`text-sm ${t.textMuted}`}>{inv.phone}</p>
-                        </td>
-                        <td className="p-4">
-                          <p className={`font-bold ${t.textMain}`}>{inv.model || inv.deviceType}</p>
-                          <p className={`text-sm ${t.textMuted}`}>{inv.issue}</p>
-                          {inv.warrantyMonths && <span className="inline-block mt-1 px-2 py-0.5 bg-amber-500/10 text-amber-400 text-xs font-bold rounded">Warranty: {inv.warrantyMonths}</span>}
-                        </td>
-                        <td className="p-4">
-                          <p className={`font-bold ${t.textMain}`}>NPR {inv.totalCost}</p>
-                          {Number(inv.dueAmount) > 0 ? (
-                            <p className="text-sm text-rose-400 font-bold">Due: NPR {inv.dueAmount}</p>
-                          ) : (
-                            <p className="text-sm text-emerald-400 font-bold">Paid in Full</p>
-                          )}
-                        </td>
-                        <td className="p-4">
-                          <p className={`text-sm ${t.textMuted}`}>{inv.dateTime}</p>
-                          <span className={`inline-block mt-1 px-2 py-0.5 rounded text-xs font-bold ${Number(inv.dueAmount) > 0 ? 'bg-rose-500/10 text-rose-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
-                            {Number(inv.dueAmount) > 0 ? 'Due Pending' : 'Paid'}
-                          </span>
-                        </td>
-                        <td className="p-4 text-right space-x-2">
-                          <button onClick={() => setSelectedInvoice(inv)} className="p-2 bg-blue-600/20 text-blue-400 rounded-xl hover:bg-blue-600/30" title="View & Print"><Eye size={16}/></button>
-                          <button onClick={() => sendToWhatsApp(inv)} className="p-2 bg-emerald-600/20 text-emerald-400 rounded-xl hover:bg-emerald-600/30" title="Share WhatsApp"><MessageSquare size={16}/></button>
-                          {Number(inv.dueAmount) > 0 && (
-                            <button onClick={() => markInvoiceAsPaid(inv.id)} className="px-2.5 py-1.5 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-500">Mark Paid</button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* INVENTORY / PARTS STOCK TAB */}
-        {activeTab === 'inventory' && (
-          <div className="space-y-6 animate-in fade-in duration-300">
-            <div>
-              <h2 className={`text-xl font-bold ${t.textMain}`}>📦 Parts & Accessories Stock Control</h2>
-              <p className={`text-sm ${t.textMuted} mt-0.5`}>Add new spare parts or restock existing inventory. Each restock automatically records an expense and updates weighted cost price.</p>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <form onSubmit={handleAddPart} className={`${t.cardBg} border ${t.border} p-6 rounded-3xl space-y-4 shadow-xl`}>
-                <h3 className={`text-base font-bold ${t.textMain}`}>{editingPartId ? 'Edit Part Details' : 'Add New Part to Inventory'}</h3>
-                
-                <select value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}>
-                  {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                </select>
-
-                <input type="text" placeholder="Part Name (e.g. iPhone 13 OLED Screen)" value={newPart.name} onChange={e => setNewPart({...newPart, name: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
-                <div className="grid grid-cols-2 gap-4">
-                  <input type="number" placeholder="Initial Stock Qty" value={newPart.stock} onChange={e => setNewPart({...newPart, stock: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
-                  <input type="number" placeholder="Min Stock Alert" value={newPart.minStock} onChange={e => setNewPart({...newPart, minStock: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <input type="number" placeholder="Cost Price per Unit (NPR)" value={newPart.costPrice} onChange={e => setNewPart({...newPart, costPrice: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
-                  <input type="number" placeholder="Selling Price per Unit (NPR)" value={newPart.price} onChange={e => setNewPart({...newPart, price: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <input type="text" placeholder="Supplier Name" value={newPart.supplierName} onChange={e => setNewPart({...newPart, supplierName: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-                  <input type="text" placeholder="Supplier Phone" value={newPart.supplierPhone} onChange={e => setNewPart({...newPart, supplierPhone: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-                </div>
-                <input type="date" value={newPart.purchaseDate} onChange={e => setNewPart({...newPart, purchaseDate: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-
-                <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-blue-600/30">{editingPartId ? 'Update Part' : 'Save Part to Inventory'}</button>
-                {editingPartId && <button type="button" onClick={() => { setEditingPartId(null); setNewPart({ name: '', stock: '', costPrice: '', price: '', minStock: '5', supplierName: '', supplierPhone: '', purchaseDate: todayKey }); }} className="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-2xl p-3 transition">Cancel</button>}
-              </form>
-
-              <form onSubmit={handleAddStockPurchase} className={`${t.cardBg} border ${t.border} p-6 rounded-3xl space-y-4 shadow-xl`}>
-                <h3 className={`text-base font-bold ${t.textMain}`}>🔄 Restock / Buy Existing Part</h3>
-                
-                <select value={newStockPurchase.partId} onChange={e => {
-                  const id = e.target.value;
-                  const found = inventory.find(i => String(i.id) === String(id));
-                  setNewStockPurchase(prev => ({ ...prev, partId: id, partName: found ? found.name : '', category: found ? found.category : prev.category }));
-                }} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}>
-                  <option value="">Select existing part from inventory...</option>
-                  {inventory.map(inv => <option key={inv.id} value={inv.id}>{inv.name} (Current Stock: {inv.stock})</option>)}
-                </select>
-
-                {!newStockPurchase.partId && (
-                  <input type="text" placeholder="Or enter new part name..." value={newStockPurchase.partName} onChange={e => setNewStockPurchase({...newStockPurchase, partName: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm`} />
-                )}
-
-                <div className="grid grid-cols-2 gap-4">
-                  <input type="number" placeholder="Restock Qty" value={newStockPurchase.qty} onChange={e => setNewStockPurchase({...newStockPurchase, qty: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm`} required />
-                  <input type="number" placeholder="Unit Cost Price (NPR)" value={newStockPurchase.unitCost} onChange={e => setNewStockPurchase({...newStockPurchase, unitCost: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm`} required />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <input type="text" placeholder="Supplier Name" value={newStockPurchase.supplierName} onChange={e => setNewStockPurchase({...newStockPurchase, supplierName: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm`} />
-                  <input type="text" placeholder="Supplier Phone" value={newStockPurchase.supplierPhone} onChange={e => setNewStockPurchase({...newStockPurchase, supplierPhone: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm`} />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <input type="text" placeholder="Invoice / Bill No. (Optional)" value={newStockPurchase.invoiceNo} onChange={e => setNewStockPurchase({...newStockPurchase, invoiceNo: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm`} />
-                  <input type="date" value={newStockPurchase.date} onChange={e => setNewStockPurchase({...newStockPurchase, date: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm`} />
-                </div>
-                <input type="text" placeholder="Notes (Optional)" value={newStockPurchase.notes} onChange={e => setNewStockPurchase({...newStockPurchase, notes: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm`} />
-
-                <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-emerald-600/30">Confirm Restock & Log Expense</button>
-              </form>
-            </div>
-
-            <div className={`${t.cardBg} border ${t.border} rounded-3xl overflow-hidden shadow-xl`}>
-              <div className={`p-4 border-b ${t.border} flex items-center justify-between`}>
-                <h3 className={`font-bold ${t.textMain}`}>Current Inventory Stock List</h3>
-                <p className={`text-sm ${t.textMuted}`}>{inventory.length} items total</p>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                  <thead className={`${t.tableHeader} text-sm uppercase border-b`}>
-                    <tr>
-                      <th className="p-4">Part Name</th>
-                      <th className="p-4">Category</th>
-                      <th className="p-4">Stock Qty</th>
-                      <th className="p-4">Cost Price</th>
-                      <th className="p-4">Selling Price</th>
-                      <th className="p-4">Supplier</th>
-                      <th className="p-4 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className={`divide-y ${t.tableDivide}`}>
-                    {inventory.map(inv => (
-                      <tr key={inv.id} className={Number(inv.stock || 0) <= Number(inv.minStock || 5) ? 'bg-rose-500/5' : ''}>
-                        <td className="p-4 font-bold text-white">{inv.name}</td>
-                        <td className="p-4"><span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 text-xs font-bold">{inv.category}</span></td>
-                        <td className="p-4">
-                          <span className={`px-2.5 py-1 rounded-full font-bold text-xs ${Number(inv.stock || 0) <= Number(inv.minStock || 5) ? 'bg-rose-500/20 text-rose-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
-                            {inv.stock} units {Number(inv.stock || 0) <= Number(inv.minStock || 5) ? '⚠️ Low' : ''}
-                          </span>
-                        </td>
-                        <td className="p-4 text-slate-400">NPR {inv.costPrice}</td>
-                        <td className="p-4 font-bold text-emerald-400">NPR {inv.price}</td>
-                        <td className="p-4 text-slate-400">{inv.supplierName || '—'}{inv.supplierPhone ? ` (${inv.supplierPhone})` : ''}</td>
-                        <td className="p-4 text-right space-x-2">
-                          <button onClick={() => {
-                            setEditingPartId(inv.id);
-                            setSelectedCategory(inv.category || categories[0]);
-                            setNewPart({ name: inv.name, stock: String(inv.stock), costPrice: String(inv.costPrice), price: String(inv.price), minStock: String(inv.minStock || 5), supplierName: inv.supplierName || '', supplierPhone: inv.supplierPhone || '', purchaseDate: inv.lastPurchaseDate || todayKey });
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                          }} className="p-2 bg-amber-500/10 text-amber-400 rounded-xl hover:bg-amber-500/20" title="Edit"><Pencil size={16}/></button>
-                          <button onClick={() => {
-                            if (window.confirm(`Delete ${inv.name} from inventory?`)) {
-                              setInventory(inventory.filter(i => i.id !== inv.id));
-                            }
-                          }} className="p-2 bg-rose-500/10 text-rose-400 rounded-xl hover:bg-rose-500/20" title="Delete"><Trash2 size={16}/></button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* EXPENSES TAB */}
-        {activeTab === 'expenses' && (
-          <div className="space-y-6 animate-in fade-in duration-300">
-            <div>
-              <h2 className={`text-xl font-bold ${t.textMain}`}>💸 Shop Expenses & Supplier Udhaaro Due Tracker</h2>
-              <p className={`text-sm ${t.textMuted} mt-0.5`}>Track shop rent, utilities, part purchases, and manage supplier due amounts.</p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}>
-                <p className={`text-sm uppercase tracking-wider font-black ${t.textMuted}`}>Total Expenses Recorded</p>
-                <p className="text-3xl font-black text-rose-400 mt-2">NPR {totalExp}</p>
-              </div>
-              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}>
-                <p className={`text-sm uppercase tracking-wider font-black ${t.textMuted}`}>Total Cash Paid Out</p>
-                <p className="text-3xl font-black text-emerald-400 mt-2">NPR {totalExpensePaid}</p>
-              </div>
-              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}>
-                <p className={`text-sm uppercase tracking-wider font-black ${t.textMuted}`}>Supplier Due (Udhaaro)</p>
-                <p className="text-3xl font-black text-amber-400 mt-2">NPR {totalSupplierDue}</p>
-              </div>
-            </div>
-
-            <form onSubmit={handleAddExpense} className={`${t.cardBg} border ${t.border} p-6 rounded-3xl space-y-4 shadow-xl`}>
-              <h3 className={`text-base font-bold ${t.textMain}`}>{editingExpenseId ? 'Edit Expense Record' : 'Record New Expense / Supplier Bill'}</h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <select value={newExpense.category} onChange={e => setNewExpense({...newExpense, category: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}>
-                  <option value="General">General Expense</option>
-                  <option value="Shop Rent">Shop Rent</option>
-                  <option value="Electricity / Internet">Electricity / Internet</option>
-                  <option value="Parts Purchase">Parts Purchase</option>
-                  <option value="Device Purchase">Device Purchase</option>
-                  <option value="Salary / Staff">Salary / Staff</option>
-                  <option value="Tea & Refreshment">Tea & Refreshment</option>
-                  <option value="Miscellaneous">Miscellaneous</option>
-                </select>
-
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="Description (e.g. Shop Rent / Electricity Bill)"
-                    value={newExpense.description}
-                    onChange={e => setNewExpense({...newExpense, description: e.target.value})}
-                    list="expense-desc-suggestions"
-                    className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}
-                    required
-                  />
-                  <datalist id="expense-desc-suggestions">
-                    {uniqueExpenseDescriptions.map((desc, idx) => (
-                      <option key={idx} value={desc} />
-                    ))}
-                  </datalist>
-                </div>
-
-                <select value={newExpense.paymentStatus} onChange={e => setNewExpense({...newExpense, paymentStatus: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}>
-                  <option value="Paid">Paid in Full (Cash/Bank)</option>
-                  <option value="Unpaid">Unpaid (Full Udhaaro Due)</option>
-                  <option value="Partial">Partial Payment (Advance + Due)</option>
-                </select>
-              </div>
-
-              {(newExpense.category === 'Parts Purchase' || newExpense.category === 'Device Purchase') ? (
-                <div className={`grid grid-cols-1 md:grid-cols-3 gap-4 ${t.cardSecondary} p-4 rounded-2xl border ${t.border}`}>
-                  <input type="text" placeholder="Item / Device Name" value={newExpense.itemName} onChange={e => setNewExpense({...newExpense, itemName: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm`} />
-                  <input type="number" placeholder="Quantity" value={newExpense.quantity} onChange={e => setNewExpense({...newExpense, quantity: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm`} />
-                  <input type="number" placeholder="Unit Cost (NPR)" value={newExpense.unitCost} onChange={e => setNewExpense({...newExpense, unitCost: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm`} />
-                </div>
-              ) : (
-                <input type="number" placeholder="Expense Amount (NPR)" value={newExpense.amount} onChange={e => setNewExpense({...newExpense, amount: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
-              )}
-
-              {newExpense.paymentStatus === 'Partial' && (
-                <div className={`${t.cardSecondary} p-4 rounded-2xl border ${t.border}`}>
-                  <label className="text-xs font-bold text-slate-400 block mb-1">Amount Paid Now (NPR)</label>
-                  <input type="number" placeholder="Enter amount paid today..." value={newExpense.paidNow} onChange={e => setNewExpense({...newExpense, paidNow: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm`} />
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <SupplierAutocomplete
-                  value={newExpense.supplierName}
-                  placeholder="Supplier / Party Name"
-                  suppliers={uniqueSuppliers}
-                  onChange={value => setNewExpense(prev => ({ ...prev, supplierName: value }))}
-                  onSelect={supplier => handleSupplierSelect(supplier)}
-                  className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}
-                />
-                <SupplierAutocomplete
-                  value={newExpense.supplierPhone}
-                  placeholder="Supplier Phone Number"
-                  suppliers={uniqueSuppliers}
-                  onChange={value => setNewExpense(prev => ({ ...prev, supplierPhone: value }))}
-                  onSelect={supplier => handleSupplierSelect(supplier)}
-                  className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}
-                />
-                <input type="text" placeholder="Invoice / Bill No. (Optional)" value={newExpense.invoiceNo} onChange={e => setNewExpense({...newExpense, invoiceNo: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-                <select value={newExpense.paymentMethod} onChange={e => setNewExpense({...newExpense, paymentMethod: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}>
-                  <option value="Cash">Cash</option>
-                  <option value="Bank Transfer">Bank Transfer</option>
-                  <option value="Fonepay / QR">Fonepay / QR</option>
-                  <option value="Esewa / Khalti">Esewa / Khalti</option>
-                </select>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input type="text" placeholder="Notes / Remarks (Optional)" value={newExpense.notes} onChange={e => setNewExpense({...newExpense, notes: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-                <input type="date" value={newExpense.date} onChange={e => setNewExpense({...newExpense, date: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-              </div>
-
-              <button type="submit" className="w-full bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-rose-600/30">{editingExpenseId ? 'Update Expense' : 'Save Expense / Bill'}</button>
-              {editingExpenseId && <button type="button" onClick={() => { setEditingExpenseId(null); setNewExpense({ description: '', amount: '', category: 'General', paymentStatus: 'Paid', paidNow: '', itemName: '', quantity: '', unitCost: '', supplierName: '', supplierPhone: '', invoiceNo: '', paymentMethod: 'Cash', notes: '', date: todayKey }); }} className="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-2xl p-3 transition">Cancel</button>}
-            </form>
-
-            <div className={`${t.cardBg} border ${t.border} rounded-3xl overflow-hidden shadow-xl`}>
-              <div className={`p-4 border-b ${t.border} flex flex-wrap items-center justify-between gap-3`}>
-                <div className="flex flex-wrap gap-2 items-center">
-                  <input value={expenseSearch} onChange={e => setExpenseSearch(e.target.value)} placeholder="Search description, supplier..." className={`p-2.5 ${t.inputBg} border rounded-xl text-sm w-60`} />
-                  <select value={expenseCategoryFilter} onChange={e => setExpenseCategoryFilter(e.target.value)} className={`p-2.5 ${t.inputBg} border rounded-xl text-sm`}>
-                    <option value="All">All Categories</option>
-                    <option value="General">General</option>
-                    <option value="Shop Rent">Shop Rent</option>
-                    <option value="Electricity / Internet">Electricity / Internet</option>
-                    <option value="Parts Purchase">Parts Purchase</option>
-                    <option value="Device Purchase">Device Purchase</option>
-                    <option value="Salary / Staff">Salary / Staff</option>
-                  </select>
-                  <select value={expenseStatusFilter} onChange={e => setExpenseStatusFilter(e.target.value)} className={`p-2.5 ${t.inputBg} border rounded-xl text-sm`}>
-                    <option value="All">All Status</option>
-                    <option value="Paid">Fully Paid</option>
-                    <option value="Due">Has Due (Udhaaro)</option>
-                  </select>
-                </div>
-                <p className={`text-sm ${t.textMuted}`}>{filteredExpenses.length} records</p>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                  <thead className={`${t.tableHeader} text-sm uppercase border-b`}>
-                    <tr>
-                      <th className="p-4">Date & Category</th>
-                      <th className="p-4">Description / Item</th>
-                      <th className="p-4">Supplier & Phone</th>
-                      <th className="p-4">Total & Paid</th>
-                      <th className="p-4">Due (Udhaaro)</th>
-                      <th className="p-4 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className={`divide-y ${t.tableDivide}`}>
-                    {filteredExpenses.map(exp => {
-                      const totalAmt = Number(exp.amount !== undefined ? exp.amount : exp.paidAmount || 0);
-                      const paidAmt = Number(exp.paidAmount !== undefined ? exp.paidAmount : totalAmt);
-                      const dueAmt = Number(exp.dueAmount !== undefined ? exp.dueAmount : Math.max(0, totalAmt - paidAmt));
+                    {filteredInvoices.map(inv => {
+                      const isPaid = Number(inv.dueAmount || 0) <= 0;
                       return (
-                        <tr key={exp.id}>
+                        <tr key={inv.id}>
                           <td className="p-4">
-                            <p className={`text-sm ${t.textMuted}`}>{exp.date}</p>
-                            <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 text-xs font-bold">{exp.category}</span>
+                            <span className="font-mono font-bold text-blue-400">{inv.id}</span>
+                            <p className={`text-xs ${t.textMuted} mt-1`}>{inv.dateTime}</p>
                           </td>
                           <td className="p-4">
-                            <p className={`font-bold ${t.textMain}`}>{exp.description}</p>
-                            {exp.invoiceNo && <p className={`text-xs ${t.textMuted}`}>Inv: {exp.invoiceNo}</p>}
+                            <p className={`font-bold ${t.textMain}`}>{inv.customerName}</p>
+                            <p className={`text-sm ${t.textMuted}`}>{inv.phone}</p>
                           </td>
                           <td className="p-4">
-                            <p className={`font-bold ${t.textMain}`}>{exp.supplierName || '—'}</p>
-                            <p className={`text-sm ${t.textMuted}`}>{exp.supplierPhone || ''}</p>
+                            <p className={`font-bold ${t.textMain}`}>{inv.model || inv.issue}</p>
+                            <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 text-xs font-bold">{inv.billType || 'Repair'}</span>
                           </td>
                           <td className="p-4">
-                            <p className={`font-bold ${t.textMain}`}>NPR {totalAmt}</p>
-                            <p className="text-xs text-emerald-400">Paid: NPR {paidAmt}</p>
-                          </td>
-                          <td className="p-4">
-                            {dueAmt > 0 ? (
-                              <span className="px-2.5 py-1 rounded-full bg-rose-500/20 text-rose-400 font-bold text-xs">Due: NPR {dueAmt}</span>
+                            <p className={`font-bold ${t.textMain}`}>NPR {inv.totalCost}</p>
+                            {Number(inv.dueAmount || 0) > 0 ? (
+                              <p className="text-xs font-bold text-rose-400">Due: NPR {inv.dueAmount}</p>
                             ) : (
-                              <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-xs">Clear</span>
+                              <p className="text-xs font-bold text-emerald-400">Fully Paid</p>
                             )}
+                          </td>
+                          <td className="p-4">
+                            <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${isPaid ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>
+                              {isPaid ? 'Paid' : 'Due'}
+                            </span>
                           </td>
                           <td className="p-4 text-right space-x-2">
-                            {dueAmt > 0 && (
-                              <button onClick={() => { setPayingExpense(exp); setPayForm({ amount: String(dueAmt), date: todayKey }); }} className="px-3 py-1.5 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-500">Pay Due</button>
+                            <button onClick={() => setSelectedInvoice(inv)} className="p-2 bg-blue-500/10 text-blue-400 rounded-xl hover:bg-blue-500/20" title="Preview"><Eye size={15}/></button>
+                            <button onClick={() => printInvoice(inv)} className="p-2 bg-emerald-500/10 text-emerald-400 rounded-xl hover:bg-emerald-500/20" title="Print"><Printer size={15}/></button>
+                            <button onClick={() => sendToWhatsApp(inv)} className="p-2 bg-emerald-600/20 text-emerald-400 rounded-xl hover:bg-emerald-600/30" title="WhatsApp"><MessageSquare size={15}/></button>
+                            {!isPaid && (
+                              <button onClick={() => markInvoiceAsPaid(inv.id)} className="px-2.5 py-1 bg-emerald-600 text-white rounded-xl text-xs font-bold">Mark Paid</button>
                             )}
-                            <button onClick={() => setViewingExpenseDetails(exp)} className="p-2 bg-blue-600/20 text-blue-400 rounded-xl hover:bg-blue-600/30" title="View details"><Eye size={16}/></button>
-                            <button onClick={() => {
-                              setEditingExpenseId(exp.id);
-                              setNewExpense({ description: exp.description || '', amount: String(exp.amount || ''), category: exp.category || 'General', paymentStatus: dueAmt > 0 ? (paidAmt > 0 ? 'Partial' : 'Unpaid') : 'Paid', paidNow: String(paidAmt), itemName: exp.itemName || '', quantity: String(exp.quantity || ''), unitCost: String(exp.unitCost || ''), supplierName: exp.supplierName || '', supplierPhone: exp.supplierPhone || '', invoiceNo: exp.invoiceNo || '', paymentMethod: exp.paymentMethod || 'Cash', notes: exp.notes || '', date: exp.date || todayKey });
-                              window.scrollTo({ top: 0, behavior: 'smooth' });
-                            }} className="p-2 bg-amber-500/10 text-amber-400 rounded-xl hover:bg-amber-500/20" title="Edit"><Pencil size={16}/></button>
-                            <button onClick={() => deleteExpense(exp.id)} className="p-2 bg-rose-500/10 text-rose-400 rounded-xl hover:bg-rose-500/20" title="Delete"><Trash2 size={16}/></button>
                           </td>
                         </tr>
                       );
@@ -2273,27 +1967,471 @@ _Thank you for choosing ${shopInfo.name}!_`;
           </div>
         )}
 
-        {/* BACKUP TAB */}
+        {/* INVENTORY / PARTS STOCK TAB */}
+        {activeTab === 'inventory' && (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <div>
+              <h2 className={`text-xl font-bold ${t.textMain}`}>📦 Parts & Inventory Management</h2>
+              <p className={`text-sm ${t.textMuted} mt-0.5`}>Add new parts, update stock levels, or record stock purchases from suppliers.</p>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Add / Edit Part Form */}
+              <form onSubmit={handleAddPart} className={`${t.cardBg} border ${t.border} p-6 rounded-3xl space-y-4 shadow-xl`}>
+                <h3 className={`text-base font-bold ${t.textMain}`}>{editingPartId ? 'Edit Part Details' : 'Add New Part to Stock'}</h3>
+                
+                <select value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}>
+                  {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                </select>
+
+                <input type="text" placeholder="Part Name (e.g. iPhone 13 OLED Screen)" value={newPart.name} onChange={e => setNewPart({...newPart, name: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <input type="number" placeholder="Initial Stock Qty" value={newPart.stock} onChange={e => setNewPart({...newPart, stock: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
+                  <input type="number" placeholder="Min Alert Stock" value={newPart.minStock} onChange={e => setNewPart({...newPart, minStock: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <input type="number" placeholder="Cost Price (NPR)" value={newPart.costPrice} onChange={e => setNewPart({...newPart, costPrice: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
+                  <input type="number" placeholder="Selling Price (NPR)" value={newPart.price} onChange={e => setNewPart({...newPart, price: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <SupplierAutocomplete
+                    value={newPart.supplierName}
+                    placeholder="Supplier Name (optional)"
+                    suppliers={uniqueSuppliers}
+                    onChange={value => setNewPart(prev => ({ ...prev, supplierName: value }))}
+                    onSelect={sup => setNewPart(prev => ({ ...prev, supplierName: sup.name, supplierPhone: sup.phone || prev.supplierPhone }))}
+                    className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}
+                  />
+                  <input type="text" placeholder="Supplier Phone (optional)" value={newPart.supplierPhone} onChange={e => setNewPart({...newPart, supplierPhone: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                </div>
+
+                <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-blue-600/30">
+                  {editingPartId ? 'Update Part' : 'Save Part to Inventory'}
+                </button>
+                {editingPartId && (
+                  <button type="button" onClick={() => { setEditingPartId(null); setNewPart({ name: '', stock: '', costPrice: '', price: '', minStock: '5', supplierName: '', supplierPhone: '', purchaseDate: todayKey }); }} className="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-2xl p-3 transition">Cancel Edit</button>
+                )}
+              </form>
+
+              {/* Record Stock Purchase Form */}
+              <form onSubmit={handleAddStockPurchase} className={`${t.cardBg} border ${t.border} p-6 rounded-3xl space-y-4 shadow-xl`}>
+                <h3 className={`text-base font-bold ${t.textMain}`}>📥 Record Stock Purchase from Supplier</h3>
+                
+                <select
+                  value={newStockPurchase.partId}
+                  onChange={e => {
+                    const id = e.target.value;
+                    const item = inventory.find(i => String(i.id) === String(id));
+                    setNewStockPurchase(prev => ({ ...prev, partId: id, partName: item ? item.name : '', category: item ? item.category : prev.category }));
+                  }}
+                  className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}
+                >
+                  <option value="">Select existing part or enter new...</option>
+                  {inventory.map(inv => <option key={inv.id} value={inv.id}>{inv.name} (Current Stock: {inv.stock})</option>)}
+                </select>
+
+                {!newStockPurchase.partId && (
+                  <input type="text" placeholder="Or enter new part name" value={newStockPurchase.partName} onChange={e => setNewStockPurchase({...newStockPurchase, partName: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                )}
+
+                <div className="grid grid-cols-2 gap-4">
+                  <input type="number" placeholder="Quantity Purchased" value={newStockPurchase.qty} onChange={e => setNewStockPurchase({...newStockPurchase, qty: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
+                  <input type="number" placeholder="Unit Cost (NPR)" value={newStockPurchase.unitCost} onChange={e => setNewStockPurchase({...newStockPurchase, unitCost: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <SupplierAutocomplete
+                    value={newStockPurchase.supplierName}
+                    placeholder="Supplier Name"
+                    suppliers={uniqueSuppliers}
+                    onChange={value => setNewStockPurchase(prev => ({ ...prev, supplierName: value }))}
+                    onSelect={sup => setNewStockPurchase(prev => ({ ...prev, supplierName: sup.name, supplierPhone: sup.phone || prev.supplierPhone }))}
+                    className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}
+                  />
+                  <input type="text" placeholder="Supplier Phone" value={newStockPurchase.supplierPhone} onChange={e => setNewStockPurchase({...newStockPurchase, supplierPhone: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <input type="text" placeholder="Invoice No. (optional)" value={newStockPurchase.invoiceNo} onChange={e => setNewStockPurchase({...newStockPurchase, invoiceNo: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                  <input type="date" value={newStockPurchase.date} onChange={e => setNewStockPurchase({...newStockPurchase, date: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                </div>
+
+                <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-emerald-600/30">
+                  Save Stock Purchase & Update Inventory
+                </button>
+              </form>
+            </div>
+
+            {/* Inventory Items List */}
+            <div className={`${t.cardBg} border ${t.border} rounded-3xl overflow-hidden shadow-xl`}>
+              <div className={`p-4 border-b ${t.border}`}>
+                <h3 className={`text-base font-bold ${t.textMain}`}>Current Parts Stock Inventory</h3>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className={`${t.tableHeader} text-sm uppercase border-b`}>
+                    <tr>
+                      <th className="p-4">Part Name</th>
+                      <th className="p-4">Category</th>
+                      <th className="p-4">Stock Level</th>
+                      <th className="p-4">Cost Price</th>
+                      <th className="p-4">Selling Price</th>
+                      <th className="p-4">Supplier</th>
+                      <th className="p-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className={`divide-y ${t.tableDivide}`}>
+                    {inventory.map(item => {
+                      const isLow = Number(item.stock || 0) <= Number(item.minStock || 5);
+                      return (
+                        <tr key={item.id}>
+                          <td className="p-4 font-bold text-white">{item.name}</td>
+                          <td className="p-4 text-slate-400">{item.category}</td>
+                          <td className="p-4">
+                            <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${isLow ? 'bg-rose-500/10 text-rose-400 border border-rose-500/30' : 'bg-emerald-500/10 text-emerald-400'}`}>
+                              {item.stock} units {isLow && '⚠️ Low'}
+                            </span>
+                          </td>
+                          <td className="p-4 text-slate-400">NPR {item.costPrice}</td>
+                          <td className="p-4 font-bold text-blue-400">NPR {item.price}</td>
+                          <td className="p-4 text-slate-400">{item.supplierName || 'N/A'}</td>
+                          <td className="p-4 text-right space-x-2">
+                            <button onClick={() => {
+                              setEditingPartId(item.id);
+                              setSelectedCategory(item.category || categories[0]);
+                              setNewPart({ name: item.name, stock: item.stock, costPrice: item.costPrice, price: item.price, minStock: item.minStock || '5', supplierName: item.supplierName || '', supplierPhone: item.supplierPhone || '', purchaseDate: item.lastPurchaseDate || todayKey });
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }} className="p-2 bg-amber-500/10 text-amber-400 rounded-xl hover:bg-amber-500/20"><Pencil size={15}/></button>
+                            <button onClick={() => {
+                              if (window.confirm(`Delete part ${item.name}?`)) {
+                                setInventory(inventory.filter(i => i.id !== item.id));
+                              }
+                            }} className="p-2 bg-rose-500/10 text-rose-400 rounded-xl hover:bg-rose-500/20"><Trash2 size={15}/></button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* EXPENSES TAB */}
+        {activeTab === 'expenses' && (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+              <div>
+                <h2 className={`text-xl font-bold ${t.textMain}`}>💸 Shop Expenses & Supplier Udhaaro Due Ledger</h2>
+                <p className={`text-sm ${t.textMuted} mt-0.5`}>Track shop rent, electricity, bills, supplier purchases, and remaining supplier dues with instant payment updates.</p>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <div className={`${t.cardSecondary} border ${t.border} rounded-2xl px-4 py-2.5`}>
+                  <p className={`text-xs ${t.textMuted} uppercase`}>Total Expense Paid</p>
+                  <p className="text-lg font-black text-rose-400">NPR {totalExpensePaid}</p>
+                </div>
+                <div className={`${t.cardSecondary} border ${t.border} rounded-2xl px-4 py-2.5`}>
+                  <p className={`text-xs ${t.textMuted} uppercase`}>Supplier Dues (Udhaaro)</p>
+                  <p className="text-lg font-black text-amber-400">NPR {totalSupplierDue}</p>
+                </div>
+              </div>
+            </div>
+
+            <form onSubmit={handleAddExpense} className={`${t.cardBg} border ${t.border} p-6 rounded-3xl grid grid-cols-1 md:grid-cols-3 gap-4 shadow-xl`}>
+              <select value={newExpense.category} onChange={e => setNewExpense({...newExpense, category: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}>
+                <option value="General">General Expense</option>
+                <option value="Shop Rent">Shop Rent</option>
+                <option value="Electricity / Internet">Electricity / Internet</option>
+                <option value="Parts Purchase">Parts Purchase</option>
+                <option value="Device Purchase">Device Purchase</option>
+                <option value="Salary / Staff">Salary / Staff</option>
+                <option value="Tea & Snacks">Tea & Snacks</option>
+                <option value="Other">Other</option>
+              </select>
+
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Expense Description (or select/type)"
+                  value={newExpense.description}
+                  onChange={e => setNewExpense({...newExpense, description: e.target.value})}
+                  className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}
+                  list="expense_descriptions"
+                  required={!newExpense.itemName}
+                />
+                <datalist id="expense_descriptions">
+                  {uniqueExpenseDescriptions.map(desc => <option key={desc} value={desc} />)}
+                </datalist>
+              </div>
+
+              <select
+                value={newExpense.paymentStatus}
+                onChange={e => setNewExpense({...newExpense, paymentStatus: e.target.value})}
+                className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none font-bold text-blue-400`}
+              >
+                <option value="Paid">Paid Full (Cash/Bank)</option>
+                <option value="Unpaid">Unpaid (Udhaaro / Due)</option>
+                <option value="Partial">Partial Payment</option>
+              </select>
+
+              {(newExpense.category === 'Parts Purchase' || newExpense.category === 'Device Purchase') && (
+                <>
+                  <input type="text" placeholder="Item Name / Model" value={newExpense.itemName} onChange={e => setNewExpense({...newExpense, itemName: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm`} />
+                  <input type="number" placeholder="Quantity" value={newExpense.quantity} onChange={e => setNewExpense({...newExpense, quantity: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm`} />
+                  <input type="number" placeholder="Unit Cost (NPR)" value={newExpense.unitCost} onChange={e => setNewExpense({...newExpense, unitCost: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm`} />
+                </>
+              )}
+
+              <input
+                type="number"
+                placeholder={((newExpense.category === 'Parts Purchase' || newExpense.category === 'Device Purchase') && Number(newExpense.quantity || 0) > 0 && Number(newExpense.unitCost || 0) > 0) ? `Calculated: NPR ${Number(newExpense.quantity) * Number(newExpense.unitCost)}` : "Total Amount (NPR)"}
+                value={newExpense.amount}
+                onChange={e => setNewExpense({...newExpense, amount: e.target.value})}
+                className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}
+                required={!((newExpense.category === 'Parts Purchase' || newExpense.category === 'Device Purchase') && Number(newExpense.quantity || 0) > 0 && Number(newExpense.unitCost || 0) > 0)}
+              />
+
+              {newExpense.paymentStatus === 'Partial' && (
+                <input type="number" placeholder="Paid Now Amount (NPR)" value={newExpense.paidNow} onChange={e => setNewExpense({...newExpense, paidNow: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm`} required />
+              )}
+
+              <SupplierAutocomplete
+                value={newExpense.supplierName}
+                placeholder="Supplier / Payee Name"
+                suppliers={uniqueSuppliers}
+                onChange={value => setNewExpense(prev => ({ ...prev, supplierName: value }))}
+                onSelect={sup => setNewExpense(prev => ({ ...prev, supplierName: sup.name, supplierPhone: sup.phone || prev.supplierPhone }))}
+                className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}
+              />
+              <input type="text" placeholder="Supplier Phone" value={newExpense.supplierPhone} onChange={e => setNewExpense({...newExpense, supplierPhone: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+
+              <div className="grid grid-cols-2 gap-4">
+                <input type="text" placeholder="Bill / Invoice No." value={newExpense.invoiceNo} onChange={e => setNewExpense({...newExpense, invoiceNo: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm`} />
+                <input type="date" value={newExpense.date} onChange={e => setNewExpense({...newExpense, date: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm`} />
+              </div>
+
+              <input type="text" placeholder="Notes / Remarks (optional)" value={newExpense.notes} onChange={e => setNewExpense({...newExpense, notes: e.target.value})} className={`md:col-span-2 p-3 ${t.inputBg} border rounded-2xl text-sm`} />
+
+              <button type="submit" className="md:col-span-3 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-rose-600/30">
+                {editingExpenseId ? 'Update Expense Record' : 'Save Expense & Udhaaro Record'}
+              </button>
+              {editingExpenseId && (
+                <button type="button" onClick={() => { setEditingExpenseId(null); setNewExpense({ description: '', amount: '', category: 'General', paymentStatus: 'Paid', paidNow: '', itemName: '', quantity: '', unitCost: '', supplierName: '', supplierPhone: '', invoiceNo: '', paymentMethod: 'Cash', notes: '', date: todayKey }); }} className="md:col-span-3 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-2xl p-3 transition">Cancel Edit</button>
+              )}
+            </form>
+
+            {/* Supplier Dues Summary List */}
+            {supplierDueList.length > 0 && (
+              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}>
+                <h3 className={`text-base font-bold ${t.textMain} mb-3 flex items-center gap-2`}>
+                  <AlertTriangle size={18} className="text-amber-400" /> Outstanding Supplier Dues (Udhaaro Payable Summary)
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {supplierDueList.map(sup => (
+                    <div key={sup.name} className={`${t.cardSecondary} border ${t.border} rounded-2xl p-4 flex items-center justify-between`}>
+                      <div>
+                        <p className={`font-bold ${t.textMain}`}>{sup.name}</p>
+                        <p className={`text-xs ${t.textMuted}`}>{sup.bills} pending bill{sup.bills > 1 ? 's' : ''} {sup.phone && `• ${sup.phone}`}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-black text-amber-400">NPR {sup.due}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Expenses Table */}
+            <div className={`${t.cardBg} border ${t.border} rounded-3xl overflow-hidden shadow-xl`}>
+              <div className={`p-4 border-b ${t.border} flex flex-wrap gap-3 items-center justify-between`}>
+                <div className="flex flex-wrap gap-2 items-center">
+                  <div className={`flex items-center gap-2 ${t.inputBg} border ${t.border} rounded-xl px-3 py-2 w-64`}>
+                    <Search size={15} className={t.textMuted} />
+                    <input type="text" placeholder="Search description, supplier..." value={expenseSearch} onChange={e => setExpenseSearch(e.target.value)} className="bg-transparent outline-none text-sm w-full" />
+                  </div>
+                  <select value={expenseCategoryFilter} onChange={e => setExpenseCategoryFilter(e.target.value)} className={`p-2 ${t.inputBg} border rounded-xl text-sm`}>
+                    <option value="All">All Categories</option>
+                    <option value="General">General</option>
+                    <option value="Shop Rent">Shop Rent</option>
+                    <option value="Electricity / Internet">Electricity / Internet</option>
+                    <option value="Parts Purchase">Parts Purchase</option>
+                    <option value="Device Purchase">Device Purchase</option>
+                    <option value="Salary / Staff">Salary / Staff</option>
+                  </select>
+                  <select value={expenseStatusFilter} onChange={e => setExpenseStatusFilter(e.target.value)} className={`p-2 ${t.inputBg} border rounded-xl text-sm`}>
+                    <option value="All">All Status</option>
+                    <option value="Paid">Fully Paid</option>
+                    <option value="Due">Has Due (Udhaaro)</option>
+                  </select>
+                </div>
+                <p className={`text-sm ${t.textMuted}`}>{filteredExpenses.length} expense records</p>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className={`${t.tableHeader} text-sm uppercase border-b`}>
+                    <tr>
+                      <th className="p-4">Date & Category</th>
+                      <th className="p-4">Description / Item</th>
+                      <th className="p-4">Supplier / Payee</th>
+                      <th className="p-4">Total & Paid</th>
+                      <th className="p-4">Due (Udhaaro)</th>
+                      <th className="p-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className={`divide-y ${t.tableDivide}`}>
+                    {filteredExpenses.map(exp => {
+                      const due = Number(exp.dueAmount || 0);
+                      const paid = Number(exp.paidAmount !== undefined ? exp.paidAmount : exp.amount || 0);
+                      const total = Number(exp.amount !== undefined ? exp.amount : paid);
+                      return (
+                        <tr key={exp.id}>
+                          <td className="p-4">
+                            <span className={`px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 text-xs font-bold`}>{exp.category}</span>
+                            <p className={`text-xs ${t.textMuted} mt-1`}>{exp.date}</p>
+                          </td>
+                          <td className="p-4">
+                            <p className={`font-bold ${t.textMain}`}>{exp.description}</p>
+                            {exp.invoiceNo && <p className={`text-xs ${t.textMuted}`}>Inv: {exp.invoiceNo}</p>}
+                          </td>
+                          <td className="p-4">
+                            <p className={`font-bold ${t.textMain}`}>{exp.supplierName || 'N/A'}</p>
+                            {exp.supplierPhone && <p className={`text-xs ${t.textMuted}`}>{exp.supplierPhone}</p>}
+                          </td>
+                          <td className="p-4">
+                            <p className={`font-bold ${t.textMain}`}>NPR {total}</p>
+                            <p className="text-xs font-bold text-emerald-400">Paid: NPR {paid}</p>
+                          </td>
+                          <td className="p-4">
+                            {due > 0 ? (
+                              <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                                Due: NPR {due}
+                              </span>
+                            ) : (
+                              <span className="px-2 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400">
+                                Settled
+                              </span>
+                            )}
+                          </td>
+                          <td className="p-4 text-right space-x-2">
+                            {due > 0 && (
+                              <button onClick={() => setPayingExpense(exp.id)} className="px-3 py-1.5 bg-amber-500 text-slate-950 rounded-xl text-xs font-bold hover:bg-amber-400">Pay Due</button>
+                            )}
+                            <button onClick={() => {
+                              setEditingExpenseId(exp.id);
+                              setNewExpense({
+                                description: exp.description || '',
+                                amount: String(exp.amount ?? ''),
+                                category: exp.category || 'General',
+                                paymentStatus: due > 0 ? (paid > 0 ? 'Partial' : 'Unpaid') : 'Paid',
+                                paidNow: String(paid),
+                                itemName: exp.itemName || '',
+                                quantity: String(exp.quantity ?? ''),
+                                unitCost: String(exp.unitCost ?? ''),
+                                supplierName: exp.supplierName || '',
+                                supplierPhone: exp.supplierPhone || '',
+                                invoiceNo: exp.invoiceNo || '',
+                                paymentMethod: exp.paymentMethod || 'Cash',
+                                notes: exp.notes || '',
+                                date: exp.date || todayKey
+                              });
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }} className="p-2 bg-amber-500/10 text-amber-400 rounded-xl hover:bg-amber-500/20" title="Edit"><Pencil size={14}/></button>
+                            <button onClick={() => deleteExpense(exp.id)} className="p-2 bg-rose-500/10 text-rose-400 rounded-xl hover:bg-rose-500/20" title="Delete"><Trash2 size={14}/></button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Pay Due Modal */}
+            {payingExpense && (
+              <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+                <div className={`${t.cardBg} border ${t.border} p-6 rounded-3xl w-full max-w-md shadow-2xl`}>
+                  <h3 className={`text-lg font-bold ${t.textMain} mb-2`}>Pay Supplier Due (Udhaaro)</h3>
+                  {(() => {
+                    const exp = expenses.find(e => e.id === payingExpense);
+                    if (!exp) return null;
+                    return (
+                      <div className="space-y-4">
+                        <div className={`${t.cardSecondary} p-3 rounded-2xl border ${t.border} text-sm space-y-1`}>
+                          <p className={`font-bold ${t.textMain}`}>{exp.description}</p>
+                          <p className={`text-xs ${t.textMuted}`}>Supplier: {exp.supplierName || 'N/A'}</p>
+                          <p className="font-bold text-amber-400">Remaining Due: NPR {exp.dueAmount}</p>
+                        </div>
+
+                        <div>
+                          <label className={`text-xs ${t.textMuted} uppercase block mb-1`}>Payment Amount (NPR)</label>
+                          <input
+                            type="number"
+                            value={payForm.amount || exp.dueAmount}
+                            onChange={e => setPayForm({...payForm, amount: e.target.value})}
+                            className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm`}
+                            max={exp.dueAmount}
+                          />
+                        </div>
+
+                        <div>
+                          <label className={`text-xs ${t.textMuted} uppercase block mb-1`}>Payment Date</label>
+                          <input
+                            type="date"
+                            value={payForm.date}
+                            onChange={e => setPayForm({...payForm, date: e.target.value})}
+                            className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm`}
+                          />
+                        </div>
+
+                        <div className="flex gap-3 pt-2">
+                          <button onClick={() => addExpensePayment(payingExpense, payForm.amount || exp.dueAmount, payForm.date)} className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold p-3 rounded-2xl transition">Confirm Payment</button>
+                          <button onClick={() => setPayingExpense(null)} className="px-5 bg-slate-700 hover:bg-slate-600 text-white font-bold p-3 rounded-2xl transition">Cancel</button>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* BACKUP & RESTORE TAB */}
         {activeTab === 'backup' && (
           <div className="space-y-6 animate-in fade-in duration-300 max-w-2xl mx-auto">
+            <div>
+              <h2 className={`text-xl font-bold ${t.textMain}`}>💾 Backup & Restore Shop Data</h2>
+              <p className={`text-sm ${t.textMuted} mt-0.5`}>Download a complete JSON backup of your shop records or restore from a previous backup file.</p>
+            </div>
+
             <div className={`${t.cardBg} border ${t.border} p-8 rounded-3xl space-y-6 shadow-xl text-center`}>
               <div className="w-16 h-16 rounded-3xl bg-blue-500/10 text-blue-400 flex items-center justify-center mx-auto">
                 <Download size={32} />
               </div>
               <div>
-                <h2 className={`text-xl font-bold ${t.textMain}`}>Shop Data Backup & Restore</h2>
-                <p className={`text-sm ${t.textMuted} mt-1`}>Download a complete JSON backup of all your shop customers, job sheets, inventory, devices and expenses. You can restore it anytime.</p>
+                <h3 className={`text-lg font-bold ${t.textMain}`}>Download Shop Backup</h3>
+                <p className={`text-sm ${t.textMuted} mt-1`}>Save all repairs, inventory, devices, expenses and settings to your device.</p>
               </div>
+              <button onClick={exportData} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold p-4 rounded-2xl transition shadow-lg shadow-blue-600/30">
+                Download Backup File (.json)
+              </button>
+            </div>
 
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-                <button onClick={exportData} className="w-full sm:w-auto px-6 py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2">
-                  <Download size={18} /> Download Backup JSON
-                </button>
-                <label className="w-full sm:w-auto px-6 py-3.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold rounded-2xl cursor-pointer flex items-center justify-center gap-2">
-                  <Upload size={18} /> Restore Backup
-                  <input type="file" accept=".json" onChange={importData} className="hidden" />
-                </label>
+            <div className={`${t.cardBg} border ${t.border} p-8 rounded-3xl space-y-6 shadow-xl text-center`}>
+              <div className="w-16 h-16 rounded-3xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center mx-auto">
+                <Upload size={32} />
               </div>
+              <div>
+                <h3 className={`text-lg font-bold ${t.textMain}`}>Restore From Backup</h3>
+                <p className={`text-sm ${t.textMuted} mt-1`}>Upload a previously exported Genuine Fix backup JSON file.</p>
+              </div>
+              <input type="file" accept=".json" onChange={importData} className="w-full text-sm text-slate-400 file:mr-4 file:py-3 file:px-6 file:rounded-2xl file:border-0 file:text-sm file:font-semibold file:bg-emerald-600 file:text-white hover:file:bg-emerald-500 cursor-pointer" />
             </div>
           </div>
         )}
@@ -2301,229 +2439,154 @@ _Thank you for choosing ${shopInfo.name}!_`;
         {/* SETTINGS TAB */}
         {activeTab === 'settings' && (
           <div className="space-y-6 animate-in fade-in duration-300 max-w-2xl mx-auto">
-            <div className={`${t.cardBg} border ${t.border} p-8 rounded-3xl space-y-6 shadow-xl`}>
+            <div>
+              <h2 className={`text-xl font-bold ${t.textMain}`}>⚙️ Shop Settings & Business Rules</h2>
+              <p className={`text-sm ${t.textMuted} mt-0.5`}>Manage shop profile, PAN number, address, theme appearance, and custom categories.</p>
+            </div>
+
+            <div className={`${t.cardBg} border ${t.border} p-6 rounded-3xl space-y-4 shadow-xl`}>
+              <h3 className={`text-base font-bold ${t.textMain}`}>Shop Profile & Invoice Details</h3>
+              
               <div>
-                <h2 className={`text-xl font-bold ${t.textMain}`}>Shop Settings & Business Details</h2>
-                <p className={`text-sm ${t.textMuted} mt-1`}>Update your shop name, PAN number, address and phone. These appear on all generated invoices.</p>
+                <label className={`text-xs ${t.textMuted} uppercase block mb-1`}>Shop Name</label>
+                <input type="text" value={shopInfo.name} onChange={e => setShopInfo({...shopInfo, name: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm`} />
               </div>
 
-              <div className="space-y-4">
+              <div>
+                <label className={`text-xs ${t.textMuted} uppercase block mb-1`}>Tagline / Speciality</label>
+                <input type="text" value={shopInfo.tagline} onChange={e => setShopInfo({...shopInfo, tagline: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm`} />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className={`text-xs font-bold ${t.textMuted} block mb-1`}>Shop Name</label>
-                  <input type="text" value={shopInfo.name} onChange={e => setShopInfo({...shopInfo, name: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm`} />
-                </div>
-                <div>
-                  <label className={`text-xs font-bold ${t.textMuted} block mb-1`}>Tagline / Subtitle</label>
-                  <input type="text" value={shopInfo.tagline} onChange={e => setShopInfo({...shopInfo, tagline: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm`} />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className={`text-xs font-bold ${t.textMuted} block mb-1`}>Phone Number</label>
-                    <input type="text" value={shopInfo.phone} onChange={e => setShopInfo({...shopInfo, phone: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm`} />
-                  </div>
-                  <div>
-                    <label className={`text-xs font-bold ${t.textMuted} block mb-1`}>PAN No.</label>
-                    <input type="text" value={shopInfo.panNo} onChange={e => setShopInfo({...shopInfo, panNo: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm`} />
-                  </div>
-                </div>
-                <div>
-                  <label className={`text-xs font-bold ${t.textMuted} block mb-1`}>Address</label>
+                  <label className={`text-xs ${t.textMuted} uppercase block mb-1`}>Address</label>
                   <input type="text" value={shopInfo.address} onChange={e => setShopInfo({...shopInfo, address: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm`} />
                 </div>
-
                 <div>
-                  <label className={`text-xs font-bold ${t.textMuted} block mb-1`}>Theme Appearance</label>
-                  <div className="grid grid-cols-3 gap-3">
-                    {[
-                      ['dim', 'Dim Slate', Moon],
-                      ['dark', 'Deep Dark', Monitor],
-                      ['light', 'Light Mode', Sun],
-                    ].map(([key, label, Icon]) => (
-                      <button key={key} type="button" onClick={() => setTheme(key)} className={`p-3 rounded-2xl border flex items-center justify-center gap-2 font-bold text-sm transition ${theme === key ? 'bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-600/30' : `${t.cardSecondary} ${t.textMuted} border-slate-700`}`}>
-                        <Icon size={16}/> {label}
-                      </button>
-                    ))}
-                  </div>
+                  <label className={`text-xs ${t.textMuted} uppercase block mb-1`}>Phone Number</label>
+                  <input type="text" value={shopInfo.phone} onChange={e => setShopInfo({...shopInfo, phone: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm`} />
                 </div>
               </div>
 
-              <button onClick={() => alert('Shop settings saved successfully!')} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-blue-600/30">Save Settings</button>
+              <div>
+                <label className={`text-xs ${t.textMuted} uppercase block mb-1`}>PAN / VAT Number</label>
+                <input type="text" value={shopInfo.panNo} onChange={e => setShopInfo({...shopInfo, panNo: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm`} />
+              </div>
+            </div>
+
+            <div className={`${t.cardBg} border ${t.border} p-6 rounded-3xl space-y-4 shadow-xl`}>
+              <h3 className={`text-base font-bold ${t.textMain}`}>Theme Appearance (GUI Variety)</h3>
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  ['dim', 'Dim Modern (Default)', Monitor],
+                  ['dark', 'Pitch Dark', Moon],
+                  ['light', 'Clean Light', Sun]
+                ].map(([key, label, Icon]) => (
+                  <button
+                    key={key}
+                    onClick={() => setTheme(key)}
+                    className={`p-4 rounded-2xl border text-left transition flex flex-col justify-between gap-3 ${theme === key ? 'bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-600/30' : `${t.cardSecondary} ${t.border} ${t.textMuted} hover:text-white`}`}
+                  >
+                    <Icon size={20} />
+                    <span className="text-sm font-bold">{label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         )}
 
       </main>
 
-      {/* INVOICE PREVIEW MODAL */}
+      {/* Invoice Preview Modal */}
       {selectedInvoice && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className={`${t.cardBg} border ${t.border} rounded-3xl max-w-2xl w-full p-6 space-y-6 shadow-2xl max-h-[90vh] overflow-y-auto`}>
-            <div className="flex items-center justify-between border-b pb-4 border-slate-700/50">
-              <div>
-                <h3 className={`text-lg font-bold ${t.textMain}`}>Invoice #{selectedInvoice.id}</h3>
-                <p className={`text-sm ${t.textMuted}`}>{selectedInvoice.dateTime}</p>
-              </div>
-              <button onClick={() => setSelectedInvoice(null)} className="p-2 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700"><X size={18}/></button>
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className={`${t.cardBg} border ${t.border} rounded-3xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]`}>
+            <div className={`p-4 border-b ${t.border} flex items-center justify-between ${t.cardSecondary}`}>
+              <h3 className={`font-bold ${t.textMain}`}>Invoice / Bill Preview #{selectedInvoice.id}</h3>
+              <button onClick={() => setSelectedInvoice(null)} className="p-2 hover:bg-slate-700/50 rounded-xl text-slate-400 hover:text-white"><X size={18}/></button>
             </div>
-
-            <div className="space-y-4">
-              <div className={`${t.cardSecondary} p-4 rounded-2xl border ${t.border} flex flex-wrap justify-between gap-4`}>
-                <div>
-                  <p className="text-xs uppercase font-bold text-slate-400">Customer</p>
-                  <p className={`text-base font-bold ${t.textMain}`}>{selectedInvoice.customerName}</p>
-                  <p className={`text-sm ${t.textMuted}`}>{selectedInvoice.phone}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs uppercase font-bold text-slate-400">Warranty</p>
-                  <p className="text-sm font-bold text-amber-400">{selectedInvoice.warrantyMonths || '—'}</p>
-                  <p className={`text-sm font-bold mt-1 ${Number(selectedInvoice.dueAmount) > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
-                    {Number(selectedInvoice.dueAmount) > 0 ? `Due: NPR ${selectedInvoice.dueAmount}` : 'Paid in Full'}
-                  </p>
-                </div>
-              </div>
-
-              <div className="border rounded-2xl overflow-hidden border-slate-700/50">
-                <table className="w-full text-sm text-left">
-                  <thead className={`${t.tableHeader} text-xs uppercase border-b`}>
-                    <tr>
-                      <th className="p-3">Item / Service</th>
-                      <th className="p-3">Qty</th>
-                      <th className="p-3">Price</th>
-                      <th className="p-3 text-right">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody className={`divide-y ${t.tableDivide}`}>
-                    {(selectedInvoice.items && selectedInvoice.items.length > 0 ? selectedInvoice.items : [
-                      { name: selectedInvoice.model || selectedInvoice.issue, price: selectedInvoice.totalCost, qty: 1 }
-                    ]).map((item, idx) => (
-                      <tr key={idx}>
-                        <td className={`p-3 font-medium ${t.textMain}`}>{item.name}</td>
-                        <td className={`p-3 ${t.textMuted}`}>{item.qty || 1}</td>
-                        <td className={`p-3 ${t.textMuted}`}>NPR {item.price || 0}</td>
-                        <td className={`p-3 text-right font-bold ${t.textMain}`}>NPR {(item.price || 0) * (item.qty || 1)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className={`${t.cardSecondary} p-4 rounded-2xl border ${t.border} space-y-2 text-right`}>
-                <div className="flex justify-between text-sm">
-                  <span className={t.textMuted}>Total Amount:</span>
-                  <span className={`font-bold ${t.textMain}`}>NPR {selectedInvoice.totalCost}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className={t.textMuted}>Amount Paid:</span>
-                  <span className="font-bold text-emerald-400">NPR {selectedInvoice.paidAmount}</span>
-                </div>
-                <div className="flex justify-between text-base border-t pt-2 border-slate-700/50 font-black">
-                  <span className={t.textMain}>Balance Due:</span>
-                  <span className={Number(selectedInvoice.dueAmount) > 0 ? 'text-rose-400' : 'text-emerald-400'}>NPR {selectedInvoice.dueAmount}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-slate-700/50">
-              <button onClick={() => sendToWhatsApp(selectedInvoice)} className="px-4 py-2.5 bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 font-bold rounded-xl text-sm flex items-center gap-2">
-                <MessageSquare size={16}/> WhatsApp
-              </button>
-              <button onClick={() => downloadInvoiceImage(selectedInvoice)} className="px-4 py-2.5 bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 font-bold rounded-xl text-sm flex items-center gap-2">
-                <Download size={16}/> Download PNG
-              </button>
-              <button onClick={() => printInvoice(selectedInvoice)} className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-sm flex items-center gap-2 shadow-lg shadow-blue-600/30">
-                <Printer size={16}/> Print Bill
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* PAY EXPENSE DUE MODAL */}
-      {payingExpense && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className={`${t.cardBg} border ${t.border} rounded-3xl max-w-md w-full p-6 space-y-6 shadow-2xl`}>
-            <div className="flex items-center justify-between border-b pb-4 border-slate-700/50">
-              <div>
-                <h3 className={`text-lg font-bold ${t.textMain}`}>Pay Supplier Due (Udhaaro)</h3>
-                <p className={`text-sm ${t.textMuted}`}>{payingExpense.supplierName || 'Supplier'} — {payingExpense.description}</p>
-              </div>
-              <button onClick={() => setPayingExpense(null)} className="p-2 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700"><X size={18}/></button>
-            </div>
-
-            <div className="space-y-4">
-              <div className={`${t.cardSecondary} p-4 rounded-2xl border ${t.border} flex justify-between`}>
-                <span className={t.textMuted}>Remaining Due:</span>
-                <span className="font-bold text-rose-400">NPR {payingExpense.dueAmount}</span>
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-slate-400 block mb-1">Payment Amount (NPR)</label>
-                <input type="number" value={payForm.amount} onChange={e => setPayForm({...payForm, amount: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm`} />
-              </div>
-              <div>
-                <label className="text-xs font-bold text-slate-400 block mb-1">Payment Date</label>
-                <input type="date" value={payForm.date} onChange={e => setPayForm({...payForm, date: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm`} />
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 pt-4 border-t border-slate-700/50">
-              <button onClick={() => setPayingExpense(null)} className="px-4 py-2.5 bg-slate-800 text-slate-300 rounded-xl font-bold text-sm">Cancel</button>
-              <button onClick={() => addExpensePayment(payingExpense.id, payForm.amount, payForm.date)} className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-sm shadow-lg shadow-emerald-600/30">Confirm Payment</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* VIEW EXPENSE DETAILS MODAL */}
-      {viewingExpenseDetails && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className={`${t.cardBg} border ${t.border} rounded-3xl max-w-md w-full p-6 space-y-6 shadow-2xl`}>
-            <div className="flex items-center justify-between border-b pb-4 border-slate-700/50">
-              <div>
-                <h3 className={`text-lg font-bold ${t.textMain}`}>Expense Details</h3>
-                <p className={`text-sm ${t.textMuted}`}>{viewingExpenseDetails.date} • {viewingExpenseDetails.category}</p>
-              </div>
-              <button onClick={() => setViewingExpenseDetails(null)} className="p-2 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700"><X size={18}/></button>
-            </div>
-
-            <div className="space-y-3 text-sm">
-              <div className={`${t.cardSecondary} p-4 rounded-2xl border ${t.border} space-y-2`}>
-                <div className="flex justify-between"><span className={t.textMuted}>Description:</span><span className={`font-bold ${t.textMain}`}>{viewingExpenseDetails.description}</span></div>
-                <div className="flex justify-between"><span className={t.textMuted}>Supplier Name:</span><span className={`font-bold ${t.textMain}`}>{viewingExpenseDetails.supplierName || '—'}</span></div>
-                <div className="flex justify-between"><span className={t.textMuted}>Supplier Phone:</span><span className={`font-bold ${t.textMain}`}>{viewingExpenseDetails.supplierPhone || '—'}</span></div>
-                <div className="flex justify-between"><span className={t.textMuted}>Invoice No.:</span><span className={`font-bold ${t.textMain}`}>{viewingExpenseDetails.invoiceNo || '—'}</span></div>
-                <div className="flex justify-between"><span className={t.textMuted}>Payment Method:</span><span className={`font-bold ${t.textMain}`}>{viewingExpenseDetails.paymentMethod || 'Cash'}</span></div>
-                {viewingExpenseDetails.notes && <div className="flex justify-between"><span className={t.textMuted}>Notes:</span><span className={`font-bold ${t.textMain}`}>{viewingExpenseDetails.notes}</span></div>}
-              </div>
-
-              <div className={`${t.cardSecondary} p-4 rounded-2xl border ${t.border} space-y-2 text-right`}>
-                <div className="flex justify-between"><span className={t.textMuted}>Total Amount:</span><span className={`font-bold ${t.textMain}`}>NPR {viewingExpenseDetails.amount !== undefined ? viewingExpenseDetails.amount : viewingExpenseDetails.paidAmount}</span></div>
-                <div className="flex justify-between"><span className={t.textMuted}>Amount Paid:</span><span className="font-bold text-emerald-400">NPR {viewingExpenseDetails.paidAmount !== undefined ? viewingExpenseDetails.paidAmount : viewingExpenseDetails.amount}</span></div>
-                <div className="flex justify-between"><span className={t.textMuted}>Due (Udhaaro):</span><span className="font-bold text-rose-400">NPR {viewingExpenseDetails.dueAmount || 0}</span></div>
-              </div>
-
-              {viewingExpenseDetails.payments && viewingExpenseDetails.payments.length > 0 && (
-                <div>
-                  <p className="text-xs font-bold text-slate-400 uppercase mb-2">Payment History</p>
-                  <div className="space-y-1">
-                    {viewingExpenseDetails.payments.map((p, idx) => (
-                      <div key={idx} className={`flex justify-between text-xs ${t.cardSecondary} p-2.5 rounded-xl border ${t.border}`}>
-                        <span className={t.textMuted}>{p.date}</span>
-                        <span className="font-bold text-emerald-400">NPR {p.amount}</span>
-                      </div>
-                    ))}
+            
+            <div className="p-6 overflow-y-auto flex-1 flex justify-center bg-slate-950">
+              <div className="border border-slate-800 rounded-2xl overflow-hidden shadow-2xl bg-white max-w-full">
+                <div className="p-6 bg-slate-900 text-white flex justify-between items-start">
+                  <div>
+                    <h2 className="text-xl font-black">{shopInfo.name}</h2>
+                    <p className="text-xs text-blue-400 font-bold uppercase">{shopInfo.tagline}</p>
+                    <p className="text-xs text-slate-400 mt-1">{shopInfo.address} | Phone: {shopInfo.phone} | PAN: {shopInfo.panNo}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-mono font-bold text-blue-400 text-sm">INVOICE #{selectedInvoice.id}</p>
+                    <p className="text-xs text-slate-300 mt-1">{selectedInvoice.dateTime}</p>
                   </div>
                 </div>
-              )}
+
+                <div className="p-6 space-y-4 text-slate-900">
+                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 flex justify-between text-sm">
+                    <div>
+                      <p className="text-xs font-bold text-slate-500 uppercase">Bill To:</p>
+                      <p className="font-bold text-base mt-0.5">{selectedInvoice.customerName}</p>
+                      <p className="text-xs text-slate-600 mt-0.5">Phone: {selectedInvoice.phone}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs font-bold text-slate-500 uppercase">Warranty:</p>
+                      <p className="font-bold text-sm mt-0.5">{selectedInvoice.warrantyMonths || '—'}</p>
+                    </div>
+                  </div>
+
+                  <table className="w-full text-sm">
+                    <thead className="bg-slate-100 text-slate-700 font-bold uppercase text-xs">
+                      <tr>
+                        <th className="p-2.5 text-left">S.N.</th>
+                        <th className="p-2.5 text-left">Item / Description</th>
+                        <th className="p-2.5 text-center">Qty</th>
+                        <th className="p-2.5 text-right">Price</th>
+                        <th className="p-2.5 text-right">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {(selectedInvoice.items && selectedInvoice.items.length > 0 ? selectedInvoice.items : [{ name: selectedInvoice.model || selectedInvoice.issue, price: selectedInvoice.totalCost, qty: 1 }]).map((item, idx) => (
+                        <tr key={idx}>
+                          <td className="p-2.5 text-slate-500">{idx + 1}</td>
+                          <td className="p-2.5 font-medium">{item.name}</td>
+                          <td className="p-2.5 text-center">{item.qty || 1}</td>
+                          <td className="p-2.5 text-right">NPR {item.price}</td>
+                          <td className="p-2.5 text-right font-bold">NPR {(item.price || 0) * (item.qty || 1)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+
+                  <div className="flex justify-end pt-4 border-t border-slate-200">
+                    <div className="w-64 space-y-2 text-sm">
+                      <div className="flex justify-between text-slate-600">
+                        <span>Subtotal:</span>
+                        <span className="font-bold">NPR {selectedInvoice.totalCost}</span>
+                      </div>
+                      <div className="flex justify-between text-emerald-600">
+                        <span>Paid Amount:</span>
+                        <span className="font-bold">NPR {selectedInvoice.paidAmount}</span>
+                      </div>
+                      <div className="flex justify-between text-rose-600 border-t pt-2 font-bold text-base">
+                        <span>Balance Due:</span>
+                        <span>NPR {selectedInvoice.dueAmount}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div className="flex justify-end pt-4 border-t border-slate-700/50">
-              <button onClick={() => setViewingExpenseDetails(null)} className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-sm shadow-lg shadow-blue-600/30">Close</button>
+            <div className={`p-4 border-t ${t.border} ${t.cardSecondary} flex flex-wrap items-center justify-between gap-3`}>
+              <div className="flex gap-2">
+                <button onClick={() => downloadInvoiceImage(selectedInvoice)} className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-sm flex items-center gap-2"><Download size={15}/> Download Image</button>
+                <button onClick={() => printInvoice(selectedInvoice)} className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-sm flex items-center gap-2"><Printer size={15}/> Print</button>
+              </div>
+              <button onClick={() => sendToWhatsApp(selectedInvoice)} className="px-4 py-2.5 bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 font-bold rounded-xl text-sm flex items-center gap-2"><MessageSquare size={15}/> Send WhatsApp</button>
             </div>
           </div>
         </div>
       )}
-
     </div>
   );
 }
