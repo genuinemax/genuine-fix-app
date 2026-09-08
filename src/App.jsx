@@ -281,8 +281,10 @@ export default function App() {
   const [newPart, setNewPart] = useState({ name: '', stock: '', costPrice: '', price: '', minStock: '5', supplierName: '', supplierPhone: '', purchaseDate: getLocalDateKey() });
   const [editingPartId, setEditingPartId] = useState(null);
   const [newStockPurchase, setNewStockPurchase] = useState({ partId: '', partName: '', category: categories[0] || 'Mobile Parts', supplierName: '', supplierPhone: '', qty: '', unitCost: '', date: getLocalDateKey(), invoiceNo: '', notes: '' });
-  const [newExpense, setNewExpense] = useState({ description: '', amount: '', category: 'General', itemName: '', quantity: '', unitCost: '', supplierName: '', supplierPhone: '', invoiceNo: '', paymentMethod: 'Cash', notes: '', date: getLocalDateKey() });
+  const [newExpense, setNewExpense] = useState({ description: '', amount: '', category: 'General', paidNow: '', itemName: '', quantity: '', unitCost: '', supplierName: '', supplierPhone: '', invoiceNo: '', paymentMethod: 'Cash', notes: '', date: getLocalDateKey() });
   const [editingExpenseId, setEditingExpenseId] = useState(null);
+  const [payingExpense, setPayingExpense] = useState(null);
+  const [payForm, setPayForm] = useState({ amount: '', date: getLocalDateKey() });
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [editingInvoice, setEditingInvoice] = useState(null);
   const [invoiceSearch, setInvoiceSearch] = useState('');
@@ -363,7 +365,15 @@ export default function App() {
   const salesBills = repairs.filter(r => !['Device Purchase', 'Parts Purchase'].includes(r.billType));
   const totalRevenue = salesBills.reduce((acc, curr) => acc + Number(curr.totalCost || 0), 0);
   const totalDue = repairs.reduce((acc, curr) => acc + Number(curr.dueAmount || 0), 0);
-  const totalExp = expenses.reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
+  const totalExp = expenses.reduce((acc, curr) => acc + Number(curr.paidAmount !== undefined ? curr.paidAmount : curr.amount || 0), 0);
+  const totalSupplierDue = expenses.reduce((acc, curr) => acc + Number(curr.dueAmount || 0), 0);
+  const supplierDueList = Object.values(expenses.filter(e => Number(e.dueAmount || 0) > 0).reduce((map, e) => {
+    const key = (e.supplierName || 'Unknown Supplier').trim() || 'Unknown Supplier';
+    if (!map[key]) map[key] = { name: key, phone: e.supplierPhone || '', due: 0, bills: 0 };
+    map[key].due += Number(e.dueAmount || 0);
+    map[key].bills += 1;
+    return map;
+  }, {})).sort((a, b) => b.due - a.due);
 
   const totalDevicePurchase = devicesStock.filter(d => (d.tradeType || 'buy') === 'buy').reduce((sum, d) => sum + Number(d.buyPrice || 0), 0);
   const totalDeviceSales = devicesStock.filter(d => d.tradeType === 'sell').reduce((sum, d) => sum + Number(d.sellPrice || 0), 0);
@@ -380,7 +390,7 @@ export default function App() {
     .reduce((acc, curr) => acc + Number(curr.paidAmount || 0), 0);
   const todayExpense = expenses
     .filter(e => String(e.date || '') === todayKey)
-    .reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
+    .reduce((acc, curr) => acc + Number(curr.paidAmount !== undefined ? curr.paidAmount : curr.amount || 0), 0);
   const todayNet = todayIncome - todayExpense;
 
   const exportData = () => {
@@ -862,15 +872,67 @@ export default function App() {
     e.preventDefault();
     const qty = Number(newExpense.quantity || 0), unitCost = Number(newExpense.unitCost || 0);
     const calculatedAmount = newExpense.category === 'Parts Purchase' && qty > 0 && unitCost > 0 ? qty * unitCost : Number(newExpense.amount || 0);
+    // Paid Now can be less than the total amount — the rest is tracked as due (udhaaro) to the supplier.
+    const paidNowRaw = newExpense.paidNow === '' || newExpense.paidNow === undefined ? calculatedAmount : Number(newExpense.paidNow || 0);
+    const paidNowVal = Math.max(0, Math.min(paidNowRaw, calculatedAmount));
+    const dueVal = Math.max(0, calculatedAmount - paidNowVal);
     if (editingExpenseId) {
-      setExpenses(expenses.map(exp => exp.id === editingExpenseId ? { ...exp, ...newExpense, amount: calculatedAmount, quantity: qty || '', unitCost: unitCost || '', date: newExpense.date || exp.date } : exp));
+      setExpenses(expenses.map(exp => exp.id === editingExpenseId ? {
+        ...exp,
+        description: newExpense.description || exp.description,
+        category: newExpense.category || exp.category,
+        amount: calculatedAmount,
+        quantity: qty || '', unitCost: unitCost || '',
+        itemName: newExpense.itemName || exp.itemName || '',
+        supplierName: newExpense.supplierName || exp.supplierName || '',
+        supplierPhone: newExpense.supplierPhone || exp.supplierPhone || '',
+        invoiceNo: newExpense.invoiceNo || exp.invoiceNo || '',
+        paymentMethod: newExpense.paymentMethod || exp.paymentMethod || 'Cash',
+        notes: newExpense.notes || exp.notes || '',
+        date: newExpense.date || exp.date
+      } : exp));
       setEditingExpenseId(null);
-      setNewExpense({ description: '', amount: '', category: 'General', itemName: '', quantity: '', unitCost: '', supplierName: '', supplierPhone: '', invoiceNo: '', paymentMethod: 'Cash', notes: '', date: todayKey });
+      setNewExpense({ description: '', amount: '', category: 'General', paidNow: '', itemName: '', quantity: '', unitCost: '', supplierName: '', supplierPhone: '', invoiceNo: '', paymentMethod: 'Cash', notes: '', date: todayKey });
       alert('Expense updated successfully!'); return;
     }
-    const expense = { id: Date.now(), description: newExpense.description || (newExpense.itemName ? `Parts Purchase - ${newExpense.itemName}` : 'General Expense'), category: newExpense.category || 'General', amount: calculatedAmount, quantity: qty || '', unitCost: unitCost || '', itemName: newExpense.itemName || '', supplierName: newExpense.supplierName || '', supplierPhone: newExpense.supplierPhone || '', invoiceNo: newExpense.invoiceNo || '', paymentMethod: newExpense.paymentMethod || 'Cash', notes: newExpense.notes || '', date: newExpense.date || todayKey };
+    const expense = {
+      id: Date.now(),
+      description: newExpense.description || (newExpense.itemName ? `Parts Purchase - ${newExpense.itemName}` : 'General Expense'),
+      category: newExpense.category || 'General',
+      amount: calculatedAmount,
+      paidAmount: paidNowVal,
+      dueAmount: dueVal,
+      payments: paidNowVal > 0 ? [{ amount: paidNowVal, date: newExpense.date || todayKey }] : [],
+      quantity: qty || '', unitCost: unitCost || '',
+      itemName: newExpense.itemName || '',
+      supplierName: newExpense.supplierName || '',
+      supplierPhone: newExpense.supplierPhone || '',
+      invoiceNo: newExpense.invoiceNo || '',
+      paymentMethod: newExpense.paymentMethod || 'Cash',
+      notes: newExpense.notes || '',
+      date: newExpense.date || todayKey
+    };
     setExpenses([expense, ...expenses]);
-    setNewExpense({ description: '', amount: '', category: 'General', itemName: '', quantity: '', unitCost: '', supplierName: '', supplierPhone: '', invoiceNo: '', paymentMethod: 'Cash', notes: '', date: todayKey });
+    setNewExpense({ description: '', amount: '', category: 'General', paidNow: '', itemName: '', quantity: '', unitCost: '', supplierName: '', supplierPhone: '', invoiceNo: '', paymentMethod: 'Cash', notes: '', date: todayKey });
+    if (dueVal > 0) alert(`Expense saved. Paid now: NPR ${paidNowVal} | Baaki (Due)${newExpense.supplierName ? ' to ' + newExpense.supplierName : ''}: NPR ${dueVal}`);
+  };
+
+  // Record an installment / advance payment against an outstanding credit purchase (udhaaro tracking)
+  const addExpensePayment = (id, amount, date) => {
+    const payAmt = Number(amount || 0);
+    if (payAmt <= 0) { alert('Enter a valid payment amount.'); return; }
+    let overpaid = false;
+    setExpenses(expenses.map(exp => {
+      if (exp.id !== id) return exp;
+      const currentDue = Number(exp.dueAmount || 0);
+      const applied = Math.min(payAmt, currentDue);
+      if (payAmt > currentDue) overpaid = true;
+      const newPaid = Number(exp.paidAmount !== undefined ? exp.paidAmount : exp.amount || 0) + applied;
+      const newDue = Math.max(0, currentDue - applied);
+      const newPayments = [...(exp.payments || []), { amount: applied, date: date || todayKey }];
+      return { ...exp, paidAmount: newPaid, dueAmount: newDue, payments: newPayments };
+    }));
+    if (overpaid) alert('Entered amount was more than the remaining due — only the due amount was recorded.');
   };
 
   const markInvoiceAsPaid = (id) => {
@@ -1340,7 +1402,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
               <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}>
                 <p className={`text-sm uppercase tracking-wider font-black ${t.textMuted}`}>Total Shop Expense</p>
                 <p className="text-2xl font-black text-rose-400 mt-2">NPR {totalExp}</p>
-                <p className={`text-sm ${t.textMuted} mt-1`}>All recorded shop expenses</p>
+                <p className={`text-sm ${t.textMuted} mt-1`}>Cash actually paid out so far</p>
               </div>
               <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}>
                 <p className={`text-sm uppercase tracking-wider font-black ${t.textMuted}`}>Estimated Net Cash</p>
@@ -1349,11 +1411,16 @@ _Thank you for choosing ${shopInfo.name}!_`;
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mt-4">
               <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}><p className={`text-sm uppercase tracking-wider font-black ${t.textMuted}`}>Device Purchase</p><p className="text-2xl font-black text-amber-400 mt-2">NPR {totalDevicePurchase}</p><p className={`text-sm ${t.textMuted} mt-1`}>Total buy cost recorded</p></div>
               <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}><p className={`text-sm uppercase tracking-wider font-black ${t.textMuted}`}>Device Sales</p><p className="text-2xl font-black text-emerald-400 mt-2">NPR {totalDeviceSales}</p><p className={`text-sm ${t.textMuted} mt-1`}>Total sales value</p></div>
               <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}><p className={`text-sm uppercase tracking-wider font-black ${t.textMuted}`}>Device Profit</p><p className={`text-2xl font-black mt-2 ${totalDeviceProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>NPR {totalDeviceProfit}</p><p className={`text-sm ${t.textMuted} mt-1`}>Sales − purchase cost</p></div>
               <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}><p className={`text-sm uppercase tracking-wider font-black ${t.textMuted}`}>Parts Purchase</p><p className="text-2xl font-black text-blue-400 mt-2">NPR {totalPartsPurchase}</p><p className={`text-sm ${t.textMuted} mt-1`}>Stock purchases recorded</p></div>
+              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}>
+                <p className={`text-sm uppercase tracking-wider font-black ${t.textMuted}`}>Baaki / Due to Suppliers</p>
+                <p className={`text-2xl font-black mt-2 ${totalSupplierDue > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>NPR {totalSupplierDue}</p>
+                <p className={`text-sm ${t.textMuted} mt-1`}>Udhaaro not yet paid</p>
+              </div>
             </div>
           </div>
         )}
@@ -2021,9 +2088,28 @@ _Thank you for choosing ${shopInfo.name}!_`;
         {activeTab === 'expenses' && (
           <div className="space-y-6 animate-in fade-in duration-300">
             <h2 className={`text-xl font-bold ${t.textMain}`}>Shop Expenses & Outflows</h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}>
+                <p className={`text-sm uppercase tracking-wider font-black ${t.textMuted}`}>Total Paid Out</p>
+                <p className="text-2xl font-black text-rose-400 mt-2">NPR {totalExp}</p>
+                <p className={`text-sm ${t.textMuted} mt-1`}>Cash actually paid so far</p>
+              </div>
+              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}>
+                <p className={`text-sm uppercase tracking-wider font-black ${t.textMuted}`}>Baaki / Due to Suppliers</p>
+                <p className={`text-2xl font-black mt-2 ${totalSupplierDue > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>NPR {totalSupplierDue}</p>
+                <p className={`text-sm ${t.textMuted} mt-1`}>Udhaaro still to be paid</p>
+              </div>
+              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}>
+                <p className={`text-sm uppercase tracking-wider font-black ${t.textMuted}`}>Suppliers with Due</p>
+                <p className="text-2xl font-black text-blue-400 mt-2">{supplierDueList.length}</p>
+                <p className={`text-sm ${t.textMuted} mt-1`}>Parties you still owe money to</p>
+              </div>
+            </div>
+
             <form onSubmit={handleAddExpense} className={`${t.cardBg} border ${t.border} p-6 rounded-3xl grid grid-cols-1 md:grid-cols-3 gap-4 shadow-xl`}>
               <input type="text" placeholder="Expense Description (e.g. Shop Rent)" value={newExpense.description} onChange={e => setNewExpense({...newExpense, description: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
-              <input type="number" placeholder="Amount (NPR)" value={newExpense.amount} onChange={e => setNewExpense({...newExpense, amount: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
+              <input type="number" placeholder="Total Amount / Bill (NPR)" value={newExpense.amount} onChange={e => setNewExpense({...newExpense, amount: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
               <select value={newExpense.category} onChange={e => setNewExpense({...newExpense, category: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}>
                 <option value="General">General Expense</option>
                 <option value="Rent">Shop Rent</option>
@@ -2032,10 +2118,40 @@ _Thank you for choosing ${shopInfo.name}!_`;
                 <option value="Device Purchase">Device Purchase</option>
                 <option value="Salary">Staff Salary</option>
               </select>
+              <input type="text" placeholder="Supplier / Party Name (optional)" value={newExpense.supplierName} onChange={e => setNewExpense({...newExpense, supplierName: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+              <input
+                type="number"
+                placeholder="Paid Now (leave blank = paid full)"
+                value={newExpense.paidNow}
+                onChange={e => setNewExpense({...newExpense, paidNow: e.target.value})}
+                className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}
+              />
               <input type="date" value={newExpense.date} onChange={e => setNewExpense({...newExpense, date: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
 
-              <button type="submit" className="md:col-span-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-blue-600/30">Save Expense</button>
+              {newExpense.amount && newExpense.paidNow !== '' && Number(newExpense.paidNow) < Number(newExpense.amount) && (
+                <p className="md:col-span-3 text-sm font-bold text-amber-400 -mt-2">
+                  Baaki rahne: NPR {Number(newExpense.amount || 0) - Number(newExpense.paidNow || 0)} — this will be tracked as due until fully paid.
+                </p>
+              )}
+
+              <button type="submit" className="md:col-span-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-blue-600/30">
+                {editingExpenseId ? 'Update Expense' : 'Save Expense'}
+              </button>
             </form>
+
+            {supplierDueList.length > 0 && (
+              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}>
+                <h3 className={`font-bold text-sm uppercase tracking-wider ${t.textMuted} mb-3`}>Supplier-wise Baaki (Outstanding Dues)</h3>
+                <div className="flex flex-wrap gap-3">
+                  {supplierDueList.map(s => (
+                    <div key={s.name} className={`${t.cardSecondary} border ${t.border} rounded-2xl px-4 py-3`}>
+                      <p className={`text-sm font-bold ${t.textMain}`}>{s.name}{s.phone ? ` · ${s.phone}` : ''}</p>
+                      <p className="text-lg font-black text-amber-400 mt-0.5">NPR {s.due} <span className={`text-sm font-normal ${t.textMuted}`}>({s.bills} bill{s.bills > 1 ? 's' : ''})</span></p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className={`${t.cardBg} border ${t.border} rounded-3xl overflow-hidden shadow-xl`}>
               <div className="overflow-x-auto">
@@ -2045,22 +2161,43 @@ _Thank you for choosing ${shopInfo.name}!_`;
                       <th className="p-4">Date</th>
                       <th className="p-4">Description</th>
                       <th className="p-4">Category</th>
-                      <th className="p-4">Amount</th>
+                      <th className="p-4">Total</th>
+                      <th className="p-4">Paid</th>
+                      <th className="p-4">Due</th>
                       <th className="p-4 text-right">Action</th>
                     </tr>
                   </thead>
                   <tbody className={`divide-y ${t.tableDivide}`}>
-                    {expenses.map(exp => (
-                      <tr key={exp.id}>
-                        <td className="p-4 font-mono text-slate-400">{exp.date}</td>
-                        <td className={`p-4 font-bold ${t.textMain}`}>{exp.description}</td>
-                        <td className="p-4"><span className="px-2 py-1 rounded bg-blue-500/10 text-blue-400 text-xs font-bold">{exp.category}</span></td>
-                        <td className="p-4 font-bold text-rose-400">NPR {exp.amount}</td>
-                        <td className="p-4 text-right">
-                          <button onClick={() => { if(window.confirm('Delete expense?')) deleteExpense(exp.id); }} className="p-2 bg-rose-500/10 text-rose-400 rounded-xl hover:bg-rose-500/20"><Trash2 size={14}/></button>
-                        </td>
-                      </tr>
-                    ))}
+                    {expenses.map(exp => {
+                      const paid = Number(exp.paidAmount !== undefined ? exp.paidAmount : exp.amount || 0);
+                      const due = Number(exp.dueAmount || 0);
+                      return (
+                        <tr key={exp.id}>
+                          <td className="p-4 font-mono text-slate-400">{exp.date}</td>
+                          <td className={`p-4 font-bold ${t.textMain}`}>
+                            {exp.description}
+                            {exp.supplierName && <p className={`text-sm font-normal ${t.textMuted} mt-0.5`}>{exp.supplierName}</p>}
+                          </td>
+                          <td className="p-4"><span className="px-2 py-1 rounded bg-blue-500/10 text-blue-400 text-xs font-bold">{exp.category}</span></td>
+                          <td className="p-4 font-bold text-rose-400">NPR {exp.amount}</td>
+                          <td className="p-4 font-bold text-emerald-400">NPR {paid}</td>
+                          <td className="p-4 font-bold">
+                            {due > 0 ? <span className="text-amber-400">NPR {due}</span> : <span className={t.textMuted}>—</span>}
+                          </td>
+                          <td className="p-4 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              {due > 0 && (
+                                <button onClick={() => { setPayingExpense(exp); setPayForm({ amount: due, date: todayKey }); }} className="p-2 bg-emerald-500/10 text-emerald-400 rounded-xl hover:bg-emerald-500/20" title="Add payment (pay baaki)"><CreditCard size={14}/></button>
+                              )}
+                              {exp.payments && exp.payments.length > 0 && (
+                                <button onClick={() => setPayingExpense(exp)} className="p-2 bg-blue-500/10 text-blue-400 rounded-xl hover:bg-blue-500/20" title="View payment history"><History size={14}/></button>
+                              )}
+                              <button onClick={() => { if(window.confirm('Delete expense?')) deleteExpense(exp.id); }} className="p-2 bg-rose-500/10 text-rose-400 rounded-xl hover:bg-rose-500/20"><Trash2 size={14}/></button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -2250,6 +2387,70 @@ _Thank you for choosing ${shopInfo.name}!_`;
               <button type="submit" className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-bold">Save Changes</button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* SUPPLIER PAYMENT / UDHAARO TRACKING MODAL */}
+      {payingExpense && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+          <div className={`${t.cardBg} border ${t.border} rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5 my-8`}>
+            <div className="flex items-center justify-between border-b pb-4 border-slate-700">
+              <div>
+                <h3 className={`text-lg font-bold ${t.textMain}`}>{payingExpense.description}</h3>
+                <p className={`text-sm ${t.textMuted}`}>{payingExpense.supplierName || 'No supplier name'}{payingExpense.supplierPhone ? ` · ${payingExpense.supplierPhone}` : ''}</p>
+              </div>
+              <button onClick={() => setPayingExpense(null)} className="p-2 rounded-xl bg-slate-800 text-slate-300"><X size={18}/></button>
+            </div>
+
+            <div className={`${t.cardSecondary} border ${t.border} rounded-2xl p-4 grid grid-cols-3 gap-2 text-center`}>
+              <div>
+                <p className={`text-sm ${t.textMuted}`}>Total</p>
+                <p className={`font-black ${t.textMain}`}>NPR {payingExpense.amount}</p>
+              </div>
+              <div>
+                <p className={`text-sm ${t.textMuted}`}>Paid</p>
+                <p className="font-black text-emerald-400">NPR {Number(payingExpense.paidAmount !== undefined ? payingExpense.paidAmount : payingExpense.amount || 0)}</p>
+              </div>
+              <div>
+                <p className={`text-sm ${t.textMuted}`}>Due</p>
+                <p className="font-black text-amber-400">NPR {Number(payingExpense.dueAmount || 0)}</p>
+              </div>
+            </div>
+
+            {Number(payingExpense.dueAmount || 0) > 0 && (
+              <div className="space-y-3">
+                <label className={`text-sm font-bold ${t.textMuted} block`}>Add Payment (paisa tirda)</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <input type="number" placeholder="Amount (NPR)" value={payForm.amount} onChange={e => setPayForm({...payForm, amount: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                  <input type="date" value={payForm.date} onChange={e => setPayForm({...payForm, date: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                </div>
+                <button
+                  onClick={() => {
+                    addExpensePayment(payingExpense.id, payForm.amount, payForm.date);
+                    setPayingExpense(null);
+                    setPayForm({ amount: '', date: todayKey });
+                  }}
+                  className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl p-3 transition shadow-lg shadow-emerald-600/30"
+                >
+                  Save Payment
+                </button>
+              </div>
+            )}
+
+            {payingExpense.payments && payingExpense.payments.length > 0 && (
+              <div>
+                <label className={`text-sm font-bold ${t.textMuted} block mb-2`}>Payment History</label>
+                <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                  {payingExpense.payments.map((p, idx) => (
+                    <div key={idx} className={`flex justify-between text-sm ${t.cardSecondary} border ${t.border} rounded-xl px-3 py-2`}>
+                      <span className={t.textMuted}>{p.date}</span>
+                      <span className={`font-bold ${t.textMain}`}>NPR {p.amount}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
