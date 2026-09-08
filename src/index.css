@@ -83,18 +83,65 @@ textarea {
     max-width: 100%;
   }
 
-  table {
+  /* Tables must never push the phone viewport wider. The table keeps its
+     useful desktop column width and becomes a horizontal scroll surface. */
+  main table {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  main table thead,
+  main table tbody {
     min-width: 640px;
+    display: table;
+    width: 100%;
+  }
+
+  /* Stop long flex/grid children, cards and generated Pro controls from
+     establishing a wider intrinsic width than the phone screen. */
+  main,
+  main > *,
+  main .grid,
+  main .grid > *,
+  main .flex,
+  main .flex > *,
+  main section,
+  main article,
+  main form,
+  main fieldset {
+    min-width: 0 !important;
+    max-width: 100%;
+  }
+
+  main .overflow-x-auto {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .fixed.inset-0 {
+    width: 100vw;
+    max-width: 100vw;
   }
 
   .fixed.inset-0 > div,
   [role="dialog"] {
+    width: calc(100vw - 1rem) !important;
     max-width: calc(100vw - 1rem) !important;
+    min-width: 0 !important;
+    overflow-x: hidden;
   }
 
   /* Mobile top navigation: one clean horizontal scroll row instead of
      wrapping ten buttons and cutting the labels off. */
   nav > div {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
     padding-left: 0.75rem !important;
     padding-right: 0.75rem !important;
     gap: 0.5rem !important;
@@ -133,6 +180,7 @@ textarea {
     white-space: nowrap;
     padding: 0.55rem 0.7rem !important;
     font-size: 12px !important;
+    max-width: none;
   }
 
   /* Main content gets comfortable phone gutters. */
@@ -143,10 +191,9 @@ textarea {
     padding-right: 0.75rem !important;
     padding-top: 1rem !important;
     padding-bottom: 1.5rem !important;
+    overflow-x: hidden;
   }
 
-  /* Don't force every grid into one column. Tailwind's responsive
-     classes are allowed to control the layout; only prevent overflow. */
   main .grid {
     min-width: 0;
   }
@@ -155,7 +202,8 @@ textarea {
     min-width: 0;
   }
 
-  /* Toolbars and action rows can scroll instead of pushing the page wide. */
+  /* Toolbars and action rows can shrink/scroll instead of pushing the page
+     wider on narrow phones. */
   main .flex.items-center,
   main .flex.justify-between {
     min-width: 0;
