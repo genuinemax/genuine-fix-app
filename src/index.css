@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* Genuine Fix - responsive/mobile layout hardening */
+/* Genuine Fix - responsive/mobile GUI */
 html,
 body,
 #root {
@@ -58,16 +58,8 @@ textarea {
     min-width: 0 !important;
   }
 
-  .grid {
-    grid-template-columns: minmax(0, 1fr) !important;
-  }
-
   .flex {
     min-width: 0;
-  }
-
-  .flex-wrap {
-    row-gap: 0.5rem;
   }
 
   input,
@@ -79,7 +71,6 @@ textarea {
 
   p,
   span,
-  div,
   td,
   th,
   label {
@@ -99,6 +90,75 @@ textarea {
   .fixed.inset-0 > div,
   [role="dialog"] {
     max-width: calc(100vw - 1rem) !important;
+  }
+
+  /* Mobile top navigation: one clean horizontal scroll row instead of
+     wrapping ten buttons and cutting the labels off. */
+  nav > div {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+    gap: 0.5rem !important;
+  }
+
+  nav > div > div:first-child {
+    flex: 0 0 auto;
+    max-width: 100%;
+  }
+
+  nav > div > div:first-child > div:last-child p {
+    font-size: 9px !important;
+    letter-spacing: 0.08em !important;
+    white-space: nowrap;
+  }
+
+  nav > div > div:last-child {
+    width: 100% !important;
+    max-width: 100%;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    justify-content: flex-start;
+    padding: 0.35rem !important;
+  }
+
+  nav > div > div:last-child::-webkit-scrollbar {
+    display: none;
+  }
+
+  nav > div > div:last-child button {
+    flex: 0 0 auto;
+    min-height: 42px;
+    white-space: nowrap;
+    padding: 0.55rem 0.7rem !important;
+    font-size: 12px !important;
+  }
+
+  /* Main content gets comfortable phone gutters. */
+  main {
+    width: 100%;
+    min-width: 0;
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+    padding-top: 1rem !important;
+    padding-bottom: 1.5rem !important;
+  }
+
+  /* Don't force every grid into one column. Tailwind's responsive
+     classes are allowed to control the layout; only prevent overflow. */
+  main .grid {
+    min-width: 0;
+  }
+
+  main .grid > * {
+    min-width: 0;
+  }
+
+  /* Toolbars and action rows can scroll instead of pushing the page wide. */
+  main .flex.items-center,
+  main .flex.justify-between {
+    min-width: 0;
   }
 }
 
@@ -135,5 +195,20 @@ textarea {
 
   .gap-6 {
     gap: 0.875rem !important;
+  }
+
+  nav > div > div:first-child img {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  nav > div > div:first-child h1 {
+    font-size: 15px !important;
+  }
+
+  nav > div > div:last-child button {
+    font-size: 11px !important;
+    padding-left: 0.6rem !important;
+    padding-right: 0.6rem !important;
   }
 }
