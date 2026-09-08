@@ -1,4 +1,3 @@
-// Genuine Fix PRO Premium GUI — customer CRM, warranty watch, quick actions, responsive polish
 import { auth } from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import Login from './Login';
@@ -1829,122 +1828,129 @@ _Thank you for choosing ${shopInfo.name}!_`;
                               placeholder={`IMEI / Serial #${idx + 1}`}
                               value={imei}
                               onChange={e => updateDeviceImeiField(idx, e.target.value)}
-                              className={`w-full p-2.5 ${t.inputBg} border rounded-xl text-sm focus:outline-none`}
+                              className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}
                             />
                             {idx > 0 && (
-                              <button type="button" onClick={() => removeDeviceImeiField(idx)} className="px-3 bg-rose-600/20 text-rose-400 rounded-xl font-bold">×</button>
+                              <button type="button" onClick={() => removeDeviceImeiField(idx)} className="px-3 bg-rose-600/20 text-rose-400 rounded-2xl text-xs font-bold hover:bg-rose-600/30">✕</button>
                             )}
                           </div>
                         ))}
                       </div>
                     </div>
 
-                    <input type="text" placeholder="Condition (e.g. Good, Battery 88%, Fresh)" value={newDevice.condition} onChange={e => setNewDevice({...newDevice, condition: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                    <input type="text" placeholder="Condition (e.g. Good, Battery 88%, Minor scratch)" value={newDevice.condition} onChange={e => setNewDevice({...newDevice, condition: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
 
                     <CustomerAutocomplete
                       value={newDevice.partyName}
-                      placeholder="Seller Name"
+                      onChange={val => setNewDevice({...newDevice, partyName: val})}
+                      onSelect={cust => handleCustomerSelect(cust, 'device')}
                       customers={uniqueCustomers}
-                      onChange={value => setNewDevice(prev => ({ ...prev, partyName: value }))}
-                      onSelect={customer => handleCustomerSelect(customer, 'device')}
-                      className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`}
+                      placeholder="Seller Name (e.g. Bikash Thapa)"
+                      className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}
                     />
+
                     <input type="text" placeholder="Seller Phone" value={newDevice.partyPhone} onChange={e => setNewDevice({...newDevice, partyPhone: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-                    <input type="text" placeholder="Seller Citizenship No. (Optional)" value={newDevice.citizenshipNo} onChange={e => setNewDevice({...newDevice, citizenshipNo: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                    <input type="text" placeholder="Citizenship No (Optional)" value={newDevice.citizenshipNo} onChange={e => setNewDevice({...newDevice, citizenshipNo: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
 
                     <div className="grid grid-cols-2 gap-3">
                       <input type="number" placeholder="Buy Price (NPR)" value={newDevice.buyPrice} onChange={e => setNewDevice({...newDevice, buyPrice: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
                       <input type="number" placeholder="Expected Sell Price" value={newDevice.sellPrice} onChange={e => setNewDevice({...newDevice, sellPrice: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
                     </div>
 
-                    <input type="text" placeholder="Warranty (e.g. 30 Days, 1 Year)" value={newDevice.warrantyMonths} onChange={e => setNewDevice({...newDevice, warrantyMonths: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                    <input type="text" placeholder="Warranty (e.g. 1 Month Shop Warranty)" value={newDevice.warrantyMonths} onChange={e => setNewDevice({...newDevice, warrantyMonths: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
                   </div>
                 )}
 
                 {deviceTradeTab === 'sell' && (
                   <div className="space-y-4">
                     <div>
-                      <label className="text-xs uppercase tracking-wider font-bold text-slate-400 block mb-1">Select In-Stock Device</label>
+                      <label className="text-xs uppercase tracking-wider font-bold text-slate-400 block mb-1">Select In-Stock Device to Sell</label>
                       <select value={selectedPurchaseId} onChange={e => {
                         setSelectedPurchaseId(e.target.value);
                         const found = devicesStock.find(d => d.id === e.target.value);
                         if (found) setNewDevice(prev => ({ ...prev, sellPrice: found.sellPrice || '', warrantyMonths: found.warrantyMonths || '' }));
                       }} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}>
-                        <option value="">-- Choose Device to Sell --</option>
-                        {devicesStock.filter(d => (d.tradeType || 'buy') === 'buy' && d.status !== 'Sold').map(d => (
-                          <option key={d.id} value={d.id}>{d.brandModel} [IMEI: {d.imeiOrSerial}] - NPR {d.buyPrice}</option>
+                        <option value="">-- Choose Device from Stock --</option>
+                        {devicesStock.filter(d => (d.tradeType || 'buy') === 'buy' && d.status === 'In Stock').map(d => (
+                          <option key={d.id} value={d.id}>
+                            {d.brandModel} (IMEI: {d.imeiOrSerial}) - Buy: {d.buyPrice}
+                          </option>
                         ))}
                       </select>
                     </div>
 
                     <CustomerAutocomplete
                       value={newDevice.partyName}
-                      placeholder="Buyer Customer Name"
+                      onChange={val => setNewDevice({...newDevice, partyName: val})}
+                      onSelect={cust => handleCustomerSelect(cust, 'device')}
                       customers={uniqueCustomers}
-                      onChange={value => setNewDevice(prev => ({ ...prev, partyName: value }))}
-                      onSelect={customer => handleCustomerSelect(customer, 'device')}
-                      className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`}
+                      placeholder="Customer Name (Buyer)"
+                      className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}
                     />
-                    <input type="text" placeholder="Buyer Phone" value={newDevice.partyPhone} onChange={e => setNewDevice({...newDevice, partyPhone: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-                    <input type="number" placeholder="Selling Price (NPR)" value={newDevice.sellPrice} onChange={e => setNewDevice({...newDevice, sellPrice: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-                    <input type="text" placeholder="Warranty (e.g. 30 Days)" value={newDevice.warrantyMonths} onChange={e => setNewDevice({...newDevice, warrantyMonths: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+
+                    <input type="text" placeholder="Customer Phone" value={newDevice.partyPhone} onChange={e => setNewDevice({...newDevice, partyPhone: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                    <input type="number" placeholder="Final Selling Price (NPR)" value={newDevice.sellPrice} onChange={e => setNewDevice({...newDevice, sellPrice: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                    <input type="text" placeholder="Warranty (e.g. 1 Month Warranty)" value={newDevice.warrantyMonths} onChange={e => setNewDevice({...newDevice, warrantyMonths: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
                   </div>
                 )}
 
-                <button type="submit" className={`w-full py-3 rounded-2xl font-bold text-sm text-white shadow-lg ${deviceTradeTab === 'buy' ? 'bg-blue-600 shadow-blue-600/30' : 'bg-emerald-600 shadow-emerald-600/30'}`}>
-                  {editingDeviceId ? 'Update Record' : deviceTradeTab === 'buy' ? 'Save Purchase Record' : 'Complete Sale & Generate Bill'}
+                <button type="submit" className={`w-full py-3 text-white rounded-2xl font-bold text-sm shadow-lg ${deviceTradeTab === 'buy' ? 'bg-blue-600 shadow-blue-600/30' : 'bg-emerald-600 shadow-emerald-600/30'}`}>
+                  {editingDeviceId ? 'Update Record' : deviceTradeTab === 'buy' ? 'Save Purchase & Stock' : 'Complete Sale & Bill'}
                 </button>
               </form>
 
               <div className={`${t.cardBg} border ${t.border} p-6 rounded-3xl shadow-xl lg:col-span-2`}>
-                <h3 className={`text-base font-bold ${t.textMain} mb-4`}>Device Inventory & Sales History</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className={`text-base font-bold ${t.textMain}`}>Device Trading Stock & History</h3>
+                  <div className="flex gap-2">
+                    <span className="px-3 py-1 bg-blue-500/10 text-blue-400 rounded-full text-xs font-bold">In Stock: {devicesStock.filter(d => (d.tradeType || 'buy') === 'buy' && d.status === 'In Stock').length}</span>
+                    <span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-full text-xs font-bold">Sold: {devicesStock.filter(d => d.tradeType === 'sell').length}</span>
+                  </div>
+                </div>
+
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead className={`${t.tableHeader} font-bold uppercase text-sm border-b`}>
                       <tr>
-                        <th className="pb-3 text-left">Model / Device</th>
+                        <th className="pb-3 text-left">Device / Model</th>
                         <th className="pb-3 text-left">IMEI / S.N.</th>
-                        <th className="pb-3 text-left">Party / Customer</th>
-                        <th className="pb-3 text-right">Buy / Sell Price</th>
-                        <th className="pb-3 text-left">Status</th>
+                        <th className="pb-3 text-left">Party / Status</th>
+                        <th className="pb-3 text-right">Buy / Sell</th>
                         <th className="pb-3 text-right">Action</th>
                       </tr>
                     </thead>
                     <tbody className={`divide-y ${t.tableDivide}`}>
-                      {devicesStock.map(d => {
-                        const isSell = d.tradeType === 'sell';
-                        const imeisList = getDeviceImeis(d);
+                      {devicesStock.map(dev => {
+                        const isSell = dev.tradeType === 'sell';
                         return (
-                          <tr key={d.id}>
+                          <tr key={dev.id}>
                             <td className={`py-3.5 font-bold ${t.textMain}`}>
-                              {d.brandModel}
-                              <div className={`text-xs ${t.textMuted} font-normal`}>{d.deviceCategory} • {d.condition}</div>
+                              {dev.brandModel}
+                              <div className={`text-xs ${t.textMuted} font-normal`}>{dev.deviceCategory}</div>
                             </td>
-                            <td className={`py-3.5 font-mono text-xs ${t.textMuted}`}>
-                              {imeisList.length > 1 ? `${imeisList.length} IMEIs (${imeisList[0]}...)` : (d.imeiOrSerial || 'N/A')}
+                            <td className="py-3.5 font-mono text-xs text-blue-400">{dev.imeiOrSerial || 'N/A'}</td>
+                            <td className="py-3.5">
+                              <div className={`font-medium ${t.textMain}`}>{dev.partyName}</div>
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${isSell ? 'bg-emerald-500/20 text-emerald-400' : dev.status === 'Sold' ? 'bg-slate-500/20 text-slate-400' : 'bg-blue-500/20 text-blue-400'}`}>
+                                {isSell ? 'Sold Record' : dev.status}
+                              </span>
                             </td>
-                            <td className={`py-3.5 ${t.textMuted}`}>{d.partyName}</td>
                             <td className="py-3.5 text-right font-bold">
                               {isSell ? (
-                                <span className="text-emerald-400">Sell: NPR {d.sellPrice} <span className="block text-xs font-normal text-emerald-400/80">Profit: +{d.profit}</span></span>
+                                <span className="text-emerald-400">NPR {dev.sellPrice} <span className="text-xs block text-slate-400">Profit: +{dev.profit}</span></span>
                               ) : (
-                                <span className="text-amber-400">Buy: NPR {d.buyPrice}</span>
+                                <span className="text-blue-400">NPR {dev.buyPrice}</span>
                               )}
-                            </td>
-                            <td className="py-3.5">
-                              <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${d.status === 'Sold' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-blue-500/20 text-blue-400'}`}>
-                                {d.status || 'In Stock'}
-                              </span>
                             </td>
                             <td className="py-3.5 text-right">
                               <div className="flex items-center justify-end gap-1.5">
-                                {!isSell && (
-                                  <button onClick={() => generateDevicePurchaseBill(d)} className="p-1.5 bg-blue-600/20 text-blue-400 rounded-lg text-xs" title="Generate Purchase Bill"><FileText size={13}/></button>
+                                {!isSell && dev.status === 'In Stock' && (
+                                  <button onClick={() => generateDevicePurchaseBill(dev)} className="px-2 py-1 bg-amber-600/20 text-amber-400 rounded-lg text-xs font-bold" title="Generate Purchase Bill">Bill</button>
                                 )}
                                 {isSell && (
-                                  <button onClick={() => restoreDeviceSale(d.id)} className="px-2 py-1 bg-amber-600/20 text-amber-400 rounded-lg text-xs font-bold" title="Restore back to In Stock">Restore</button>
+                                  <button onClick={() => restoreDeviceSale(dev.id)} className="px-2 py-1 bg-amber-600/20 text-amber-400 rounded-lg text-xs font-bold" title="Restore to In Stock">Restore</button>
                                 )}
-                                <button onClick={() => deleteDevice(d.id)} className="p-1.5 bg-rose-600/20 text-rose-400 rounded-lg" title="Delete"><Trash2 size={13}/></button>
+                                <button onClick={() => deleteDevice(dev.id)} className="p-1.5 bg-rose-600/20 text-rose-400 rounded-lg" title="Delete"><Trash2 size={13}/></button>
                               </div>
                             </td>
                           </tr>
@@ -1958,119 +1964,140 @@ _Thank you for choosing ${shopInfo.name}!_`;
           </div>
         )}
 
-        {/* ACCESSORIES & POS BILL TAB */}
+        {/* ACCESSORIES BILL (POS) TAB */}
         {activeTab === 'pos' && (
           <div className="space-y-6 animate-in fade-in duration-300">
-            <h2 className={`text-xl font-bold ${t.textMain}`}>Accessories & Direct Sales Bill (POS)</h2>
-            <form onSubmit={handleSavePosBill} className={`${t.cardBg} border ${t.border} p-6 rounded-3xl space-y-6 shadow-xl`}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <CustomerAutocomplete
-                  value={posBill.customerName}
-                  placeholder="Customer Name"
-                  customers={uniqueCustomers}
-                  onChange={value => setPosBill(prev => ({ ...prev, customerName: value }))}
-                  onSelect={customer => handleCustomerSelect(customer, 'pos')}
-                  className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`}
-                />
-                <input type="text" placeholder="Phone Number" value={posBill.phone} onChange={e => setPosBill({...posBill, phone: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-bold text-slate-400">Items / Accessories</label>
-                  <button type="button" onClick={handleAddPosItem} className="px-3 py-1 bg-blue-600/20 text-blue-400 rounded-xl text-xs font-bold">+ Add Item</button>
+            <h2 className={`text-xl font-bold ${t.textMain}`}>Direct Store Bill / Accessories POS</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <form onSubmit={handleSavePosBill} className={`${t.cardBg} border ${t.border} p-6 rounded-3xl space-y-4 shadow-xl lg:col-span-2`}>
+                <h3 className={`text-base font-bold ${t.textMain}`}>Create Retail / Accessory Bill</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <CustomerAutocomplete
+                    value={posBill.customerName}
+                    onChange={val => setPosBill({...posBill, customerName: val})}
+                    onSelect={cust => handleCustomerSelect(cust, 'pos')}
+                    customers={uniqueCustomers}
+                    placeholder="Customer Name"
+                    className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}
+                  />
+                  <input type="text" placeholder="Customer Phone" value={posBill.phone} onChange={e => setPosBill({...posBill, phone: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
                 </div>
+
                 <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs uppercase tracking-wider font-bold text-slate-400">Bill Items & Parts</label>
+                    <button type="button" onClick={handleAddPosItem} className="text-xs font-bold text-blue-400 hover:text-blue-300">+ Add Item</button>
+                  </div>
                   {posBill.items.map((item, index) => (
-                    <div key={index} className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
-                      <div className="md:col-span-6">
-                        <input type="text" placeholder="Item Name (e.g. Type-C Cable)" value={item.name} onChange={e => handlePosItemChange(index, 'name', e.target.value)} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-                      </div>
-                      <div className="md:col-span-2">
-                        <input type="number" placeholder="Qty" value={item.qty} onChange={e => handlePosItemChange(index, 'qty', e.target.value)} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-                      </div>
-                      <div className="md:col-span-3">
-                        <input type="number" placeholder="Price (NPR)" value={item.price} onChange={e => handlePosItemChange(index, 'price', e.target.value)} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-                      </div>
-                      <div className="md:col-span-1 text-center">
-                        {posBill.items.length > 1 && (
-                          <button type="button" onClick={() => handleRemovePosItem(index)} className="p-2 bg-rose-600/20 text-rose-400 rounded-xl"><Trash2 size={16}/></button>
-                        )}
-                      </div>
+                    <div key={index} className="flex gap-2 items-center">
+                      <input type="text" list="inventory-items" placeholder="Item Name / Part" value={item.name} onChange={e => handlePosItemChange(index, 'name', e.target.value)} className={`flex-1 p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                      <datalist id="inventory-items">
+                        {inventory.map(i => <option key={i.id} value={i.name} />)}
+                      </datalist>
+                      <input type="number" placeholder="Qty" value={item.qty} onChange={e => handlePosItemChange(index, 'qty', e.target.value)} className={`w-20 p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                      <input type="number" placeholder="Price" value={item.price} onChange={e => handlePosItemChange(index, 'price', e.target.value)} className={`w-28 p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                      {posBill.items.length > 1 && (
+                        <button type="button" onClick={() => handleRemovePosItem(index)} className="p-3 bg-rose-600/20 text-rose-400 rounded-2xl"><Trash2 size={15}/></button>
+                      )}
                     </div>
                   ))}
                 </div>
-              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input type="number" placeholder="Amount Paid by Customer (NPR)" value={posBill.paidAmount} onChange={e => setPosBill({...posBill, paidAmount: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-                <input type="text" placeholder="Warranty (e.g. 7 Days Replacement)" value={posBill.warrantyMonths} onChange={e => setPosBill({...posBill, warrantyMonths: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-              </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                  <input type="number" placeholder="Paid Amount (NPR)" value={posBill.paidAmount} onChange={e => setPosBill({...posBill, paidAmount: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                  <input type="text" placeholder="Warranty (e.g. 1 Year Warranty)" value={posBill.warrantyMonths} onChange={e => setPosBill({...posBill, warrantyMonths: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                </div>
 
-              <button type="submit" className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-bold text-base shadow-xl shadow-blue-600/30">
-                Complete Sale & Generate Bill
-              </button>
-            </form>
+                <button type="submit" className="w-full py-3.5 bg-blue-600 text-white rounded-2xl font-bold text-sm shadow-lg shadow-blue-600/30">
+                  Save & Print Bill
+                </button>
+              </form>
+
+              <div className={`${t.cardBg} border ${t.border} p-6 rounded-3xl shadow-xl`}>
+                <h3 className={`text-base font-bold ${t.textMain} mb-3`}>Quick Summary</h3>
+                <div className={`${t.cardSecondary} border ${t.border} p-4 rounded-2xl space-y-3`}>
+                  <div className="flex justify-between text-sm">
+                    <span className={t.textMuted}>Total Items:</span>
+                    <span className={`font-bold ${t.textMain}`}>{posBill.items.reduce((sum, i) => sum + Number(i.qty || 1), 0)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className={t.textMuted}>Total Amount:</span>
+                    <span className="font-bold text-blue-400">NPR {posBill.items.reduce((sum, i) => sum + (Number(i.price || 0) * Number(i.qty || 1)), 0)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
-        {/* INVOICES & BILLS TAB */}
+        {/* INVOICES & JOB SHEETS TAB */}
         {activeTab === 'invoices' && (
           <div className="space-y-6 animate-in fade-in duration-300">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h2 className={`text-xl font-bold ${t.textMain}`}>Invoices & Job Sheets Archive</h2>
-                <p className={`text-sm ${t.textMuted} mt-0.5`}>Search, preview, print, download or share bills directly via WhatsApp.</p>
+                <h2 className={`text-xl font-bold ${t.textMain}`}>Invoices, Job Sheets & Bills</h2>
+                <p className={`text-sm ${t.textMuted} mt-0.5`}>Search, preview, print, and share bills via WhatsApp.</p>
               </div>
-              <div className={`flex items-center gap-2 ${t.inputBg} border ${t.border} rounded-2xl px-3 py-2 w-full sm:w-72`}>
+              <div className={`flex items-center gap-2 ${t.inputBg} border ${t.border} rounded-2xl px-3 py-2 w-full sm:w-80`}>
                 <Search size={16} className={t.textMuted} />
-                <input type="text" placeholder="Search bill ID, customer..." value={invoiceSearch} onChange={e => setInvoiceSearch(e.target.value)} className="bg-transparent outline-none text-sm w-full" />
+                <input type="text" placeholder="Search by customer, phone, bill ID..." value={invoiceSearch} onChange={e => setInvoiceSearch(e.target.value)} className="bg-transparent outline-none text-sm w-full" />
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-2">
+            <div className={`flex gap-1.5 overflow-x-auto pb-2`}>
               {['All', 'Repair', 'Accessories', 'Devices', 'Due', 'Paid'].map(tab => (
-                <button key={tab} onClick={() => setInvoiceFilterTab(tab)} className={`px-4 py-2 rounded-2xl text-sm font-bold transition ${invoiceFilterTab === tab ? 'bg-blue-600 text-white shadow' : `${t.cardSecondary} ${t.textMuted} border ${t.border}`}`}>
+                <button key={tab} onClick={() => setInvoiceFilterTab(tab)} className={`px-4 py-2 rounded-xl text-xs font-bold transition ${invoiceFilterTab === tab ? 'bg-blue-600 text-white shadow' : `${t.cardSecondary} ${t.textMuted} hover:text-white border ${t.border}`}`}>
                   {tab}
                 </button>
               ))}
             </div>
 
-            <div className={`${t.cardBg} border ${t.border} rounded-3xl p-6 shadow-xl`}>
+            <div className={`${t.cardBg} border ${t.border} rounded-3xl overflow-hidden shadow-xl`}>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className={`${t.tableHeader} font-bold uppercase text-sm border-b`}>
                     <tr>
-                      <th className="pb-4 text-left">Bill ID</th>
-                      <th className="pb-4 text-left">Customer</th>
-                      <th className="pb-4 text-left">Device / Service</th>
-                      <th className="pb-4 text-left">Total</th>
-                      <th className="pb-4 text-left">Due</th>
-                      <th className="pb-4 text-left">Date</th>
-                      <th className="pb-4 text-right">Actions</th>
+                      <th className="py-4 px-4 text-left">Bill ID</th>
+                      <th className="py-4 px-4 text-left">Customer</th>
+                      <th className="py-4 px-4 text-left">Type / Model</th>
+                      <th className="py-4 px-4 text-left">Total</th>
+                      <th className="py-4 px-4 text-left">Due</th>
+                      <th className="py-4 px-4 text-left">Status</th>
+                      <th className="py-4 px-4 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className={`divide-y ${t.tableDivide}`}>
-                    {filteredInvoices.map(inv => (
-                      <tr key={inv.id}>
-                        <td className="py-4 font-mono font-bold text-blue-400">{inv.id}</td>
-                        <td className={`py-4 font-bold ${t.textMain}`}>{inv.customerName}<span className={`block text-xs font-normal ${t.textMuted}`}>{inv.phone}</span></td>
-                        <td className={`py-4 ${t.textMuted}`}>{inv.model || inv.deviceType}</td>
-                        <td className={`py-4 font-bold ${t.textMain}`}>NPR {inv.totalCost}</td>
-                        <td className="py-4 font-bold text-rose-400">NPR {inv.dueAmount}</td>
-                        <td className={`py-4 text-xs ${t.textMuted}`}>{inv.dateTime}</td>
-                        <td className="py-4 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            <button onClick={() => setSelectedInvoice(inv)} className="p-2 bg-blue-600/20 text-blue-400 rounded-xl" title="Preview & Print"><Eye size={15}/></button>
-                            <button onClick={() => sendToWhatsApp(inv)} className="p-2 bg-emerald-600/20 text-emerald-400 rounded-xl" title="Share WhatsApp"><MessageSquare size={15}/></button>
-                            {Number(inv.dueAmount) > 0 && (
-                              <button onClick={() => markInvoiceAsPaid(inv.id)} className="px-2 py-1 bg-emerald-600 text-white rounded-xl text-xs font-bold" title="Mark Paid">Paid</button>
-                            )}
-                            <button onClick={() => deleteRepair(inv.id)} className="p-2 bg-rose-600/20 text-rose-400 rounded-xl" title="Delete"><Trash2 size={15}/></button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                    {filteredInvoices.map(inv => {
+                      const isPaid = Number(inv.dueAmount || 0) <= 0;
+                      return (
+                        <tr key={inv.id} className="hover:bg-blue-600/5 transition">
+                          <td className="py-4 px-4 font-mono font-bold text-blue-400">{inv.id}</td>
+                          <td className="py-4 px-4">
+                            <div className={`font-bold ${t.textMain}`}>{inv.customerName}</div>
+                            <div className={`text-xs ${t.textMuted}`}>{inv.phone}</div>
+                          </td>
+                          <td className="py-4 px-4">
+                            <div className={`font-medium ${t.textMain}`}>{inv.model}</div>
+                            <div className={`text-xs ${t.textMuted}`}>{inv.billType || inv.deviceType}</div>
+                          </td>
+                          <td className={`py-4 px-4 font-bold ${t.textMain}`}>NPR {inv.totalCost}</td>
+                          <td className="py-4 px-4 font-bold text-rose-400">NPR {inv.dueAmount}</td>
+                          <td className="py-4 px-4">
+                            <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${isPaid ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
+                              {isPaid ? 'Paid' : 'Due'}
+                            </span>
+                          </td>
+                          <td className="py-4 px-4 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button onClick={() => setSelectedInvoice(inv)} className="p-2 bg-blue-600/20 text-blue-400 rounded-xl" title="Preview"><Eye size={14}/></button>
+                              <button onClick={() => printInvoice(inv)} className="p-2 bg-slate-600/20 text-slate-300 rounded-xl" title="Print"><Printer size={14}/></button>
+                              <button onClick={() => sendToWhatsApp(inv)} className="p-2 bg-emerald-600/20 text-emerald-400 rounded-xl" title="WhatsApp"><MessageSquare size={14}/></button>
+                              <button onClick={() => deleteRepair(inv.id)} className="p-2 bg-rose-600/20 text-rose-400 rounded-xl" title="Delete"><Trash2 size={14}/></button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -2078,65 +2105,138 @@ _Thank you for choosing ${shopInfo.name}!_`;
           </div>
         )}
 
-        {/* BACKUP & RESTORE TAB */}
-        {activeTab === 'backup' && (
-          <div className="space-y-6 animate-in fade-in duration-300 max-w-2xl mx-auto">
-            <h2 className={`text-xl font-bold ${t.textMain}`}>Shop Data Backup & Restore</h2>
-            <div className={`${t.cardBg} border ${t.border} p-8 rounded-3xl space-y-6 shadow-xl text-center`}>
-              <div className="w-16 h-16 rounded-3xl bg-blue-600/10 text-blue-400 flex items-center justify-center mx-auto">
-                <Download size={32}/>
-              </div>
-              <div>
-                <h3 className={`text-lg font-bold ${t.textMain}`}>Export Shop Backup</h3>
-                <p className={`text-sm ${t.textMuted} mt-1`}>Download all your repairs, inventory, expenses, and settings as a JSON file.</p>
-              </div>
-              <button onClick={exportData} className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-bold text-sm shadow-lg shadow-blue-600/30">
-                Download JSON Backup
-              </button>
-            </div>
+        {/* JOB SHEETS TAB */}
+        {activeTab === 'repairs' && (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <h2 className={`text-xl font-bold ${t.textMain}`}>Repair & Unlocking Job Sheets</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <form onSubmit={handleAddRepair} className={`${t.cardBg} border ${t.border} p-6 rounded-3xl space-y-4 shadow-xl`}>
+                <h3 className={`text-base font-bold ${t.textMain}`}>Create New Job Sheet</h3>
+                <CustomerAutocomplete
+                  value={newRepair.customerName}
+                  onChange={val => setNewRepair({...newRepair, customerName: val})}
+                  onSelect={cust => handleCustomerSelect(cust, 'repair')}
+                  customers={uniqueCustomers}
+                  placeholder="Customer Name"
+                  className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}
+                />
+                <input type="text" placeholder="Customer Phone" value={newRepair.phone} onChange={e => setNewRepair({...newRepair, phone: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                <select value={newRepair.deviceType} onChange={e => setNewRepair({...newRepair, deviceType: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}>
+                  <option value="Mobile (Unlock)">Mobile (Unlock)</option>
+                  <option value="Laptop Repair">Laptop Repair</option>
+                  <option value="Computer / Desktop">Computer / Desktop</option>
+                  <option value="Tablet / iPad">Tablet / iPad</option>
+                </select>
+                <input type="text" placeholder="Device Model (e.g. iPhone 13 Pro / Dell Inspiron)" value={newRepair.model} onChange={e => setNewRepair({...newRepair, model: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                <textarea placeholder="Issue Description / Unlocking Details" value={newRepair.issue} onChange={e => setNewRepair({...newRepair, issue: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none h-24`} />
+                <div className="grid grid-cols-2 gap-3">
+                  <input type="number" placeholder="Total Cost (NPR)" value={newRepair.totalCost} onChange={e => setNewRepair({...newRepair, totalCost: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                  <input type="number" placeholder="Paid Advance" value={newRepair.paidAmount} onChange={e => setNewRepair({...newRepair, paidAmount: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                </div>
+                <input type="text" placeholder="Warranty (e.g. 1 Month Repair Warranty)" value={newRepair.warrantyMonths} onChange={e => setNewRepair({...newRepair, warrantyMonths: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                <button type="submit" className="w-full py-3 bg-blue-600 text-white rounded-2xl font-bold text-sm shadow-lg shadow-blue-600/30">
+                  Save Job Sheet
+                </button>
+              </form>
 
-            <div className={`${t.cardBg} border ${t.border} p-8 rounded-3xl space-y-6 shadow-xl text-center`}>
-              <div className="w-16 h-16 rounded-3xl bg-emerald-600/10 text-emerald-400 flex items-center justify-center mx-auto">
-                <Upload size={32}/>
+              <div className={`${t.cardBg} border ${t.border} p-6 rounded-3xl shadow-xl lg:col-span-2`}>
+                <h3 className={`text-base font-bold ${t.textMain} mb-4`}>Active Repair Job Sheets</h3>
+                <div className="space-y-3">
+                  {repairs.filter(r => r.billType === 'Repair').map(job => (
+                    <div key={job.id} className={`${t.cardSecondary} border ${t.border} p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4`}>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-bold text-blue-400">{job.id}</span>
+                          <span className="text-xs text-slate-400">{job.dateTime}</span>
+                        </div>
+                        <h4 className={`font-bold ${t.textMain} mt-1`}>{job.customerName} ({job.phone})</h4>
+                        <p className={`text-xs ${t.textMuted} mt-0.5`}>{job.model} — {job.issue}</p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <select value={job.status} onChange={e => updateJobStatus(job.id, e.target.value)} className={`p-2 ${t.inputBg} border rounded-xl text-xs font-bold outline-none`}>
+                          <option value="Pending">Pending</option>
+                          <option value="In Progress">In Progress</option>
+                          <option value="Ready for Pickup">Ready for Pickup</option>
+                          <option value="Delivered">Delivered</option>
+                        </select>
+                        <button onClick={() => setSelectedInvoice(job)} className="px-3 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold">View</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* BACKUP TAB */}
+        {activeTab === 'backup' && (
+          <div className="space-y-6 animate-in fade-in duration-300 max-w-2xl mx-auto text-center py-10">
+            <div className={`p-8 ${t.cardBg} border ${t.border} rounded-3xl shadow-xl space-y-6`}>
+              <div className="w-16 h-16 rounded-3xl bg-blue-500/10 text-blue-400 mx-auto flex items-center justify-center">
+                <Download size={32} />
               </div>
               <div>
-                <h3 className={`text-lg font-bold ${t.textMain}`}>Restore Shop Backup</h3>
-                <p className={`text-sm ${t.textMuted} mt-1`}>Upload a previously exported Genuine Fix backup file to restore your data.</p>
+                <h2 className={`text-2xl font-black ${t.textMain}`}>Backup & Restore Data</h2>
+                <p className={`text-sm ${t.textMuted} mt-1`}>Safeguard all your shop records, invoices, inventory, and customer lists.</p>
               </div>
-              <input type="file" accept=".json" onChange={importData} className="text-sm text-slate-400 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-emerald-600/20 file:text-emerald-400 hover:file:bg-emerald-600/30 cursor-pointer mx-auto block" />
+              <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
+                <button onClick={exportData} className="px-6 py-3.5 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-bold text-sm shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2">
+                  <Download size={16}/> Download Backup JSON
+                </button>
+                <label className="px-6 py-3.5 border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-2xl font-bold text-sm cursor-pointer flex items-center justify-center gap-2">
+                  <Upload size={16}/> Restore Backup
+                  <input type="file" accept=".json" onChange={importData} className="hidden" />
+                </label>
+              </div>
             </div>
           </div>
         )}
 
         {/* SETTINGS TAB */}
         {activeTab === 'settings' && (
-          <div className="space-y-6 animate-in fade-in duration-300 max-w-2xl mx-auto">
-            <h2 className={`text-xl font-bold ${t.textMain}`}>Shop Settings & Theme Preference</h2>
-            
-            <div className={`${t.cardBg} border ${t.border} p-6 rounded-3xl space-y-4 shadow-xl`}>
-              <h3 className={`text-base font-bold ${t.textMain}`}>Shop Business Details</h3>
-              <div className="space-y-3">
-                <input type="text" placeholder="Shop Name" value={shopInfo.name} onChange={e => setShopInfo({...shopInfo, name: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm`} />
-                <input type="text" placeholder="Tagline" value={shopInfo.tagline} onChange={e => setShopInfo({...shopInfo, tagline: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm`} />
-                <input type="text" placeholder="Address" value={shopInfo.address} onChange={e => setShopInfo({...shopInfo, address: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm`} />
-                <input type="text" placeholder="Phone" value={shopInfo.phone} onChange={e => setShopInfo({...shopInfo, phone: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm`} />
-                <input type="text" placeholder="PAN Number" value={shopInfo.panNo} onChange={e => setShopInfo({...shopInfo, panNo: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm`} />
-              </div>
-            </div>
+          <div className="space-y-6 animate-in fade-in duration-300 max-w-3xl mx-auto">
+            <div className={`p-8 ${t.cardBg} border ${t.border} rounded-3xl shadow-xl space-y-6`}>
+              <h2 className={`text-xl font-bold ${t.textMain}`}>Shop Profile & Configuration</h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs uppercase tracking-wider font-bold text-slate-400 block mb-1">Shop Name</label>
+                  <input type="text" value={shopInfo.name} onChange={e => setShopInfo({...shopInfo, name: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                </div>
+                <div>
+                  <label className="text-xs uppercase tracking-wider font-bold text-slate-400 block mb-1">Tagline</label>
+                  <input type="text" value={shopInfo.tagline} onChange={e => setShopInfo({...shopInfo, tagline: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                </div>
+                <div>
+                  <label className="text-xs uppercase tracking-wider font-bold text-slate-400 block mb-1">Address</label>
+                  <input type="text" value={shopInfo.address} onChange={e => setShopInfo({...shopInfo, address: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs uppercase tracking-wider font-bold text-slate-400 block mb-1">Phone Number</label>
+                    <input type="text" value={shopInfo.phone} onChange={e => setShopInfo({...shopInfo, phone: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                  </div>
+                  <div>
+                    <label className="text-xs uppercase tracking-wider font-bold text-slate-400 block mb-1">PAN No</label>
+                    <input type="text" value={shopInfo.panNo} onChange={e => setShopInfo({...shopInfo, panNo: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                  </div>
+                </div>
 
-            <div className={`${t.cardBg} border ${t.border} p-6 rounded-3xl space-y-4 shadow-xl`}>
-              <h3 className={`text-base font-bold ${t.textMain}`}>Appearance Theme</h3>
-              <div className="grid grid-cols-3 gap-3">
-                {[
-                  ['dim', 'Dim Slate', Moon],
-                  ['dark', 'Pitch Dark', Monitor],
-                  ['light', 'Clean Light', Sun]
-                ].map(([id, label, Icon]) => (
-                  <button key={id} onClick={() => setTheme(id)} className={`p-4 rounded-2xl border text-left flex flex-col gap-2 transition ${theme === id ? 'border-blue-500 bg-blue-600/10' : `${t.border} ${t.cardSecondary}`}`}>
-                    <Icon size={18} className={theme === id ? 'text-blue-400' : t.textMuted} />
-                    <span className={`text-xs font-bold ${theme === id ? 'text-white' : t.textMuted}`}>{label}</span>
-                  </button>
-                ))}
+                <div>
+                  <label className="text-xs uppercase tracking-wider font-bold text-slate-400 block mb-2">Select Theme Style</label>
+                  <div className="grid grid-cols-3 gap-3">
+                    {[
+                      { id: 'dim', name: 'Dim Gray', bg: 'bg-[#181B22]' },
+                      { id: 'dark', name: 'Pure Dark', bg: 'bg-[#0B0F17]' },
+                      { id: 'light', name: 'Clean Light', bg: 'bg-slate-200' },
+                    ].map(thm => (
+                      <button key={thm.id} onClick={() => setTheme(thm.id)} className={`p-4 rounded-2xl border text-center font-bold text-sm transition ${theme === thm.id ? 'border-blue-500 bg-blue-600/20 text-blue-400' : 'border-slate-700 text-slate-400 hover:text-white'}`}>
+                        <div className={`w-6 h-6 rounded-full ${thm.bg} mx-auto mb-2 border border-slate-600`} />
+                        {thm.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -2144,83 +2244,48 @@ _Thank you for choosing ${shopInfo.name}!_`;
 
       </main>
 
-      {/* INVOICE PREVIEW MODAL */}
+      {/* Invoice Modal Preview */}
       {selectedInvoice && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <div className={`${t.cardBg} border ${t.border} rounded-3xl max-w-2xl w-full p-6 shadow-2xl relative space-y-6 my-8`}>
-            <button onClick={() => setSelectedInvoice(null)} className="absolute top-5 right-5 p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white"><X size={18}/></button>
-            <div className="flex items-center justify-between border-b pb-4 border-slate-700/50">
+          <div className={`${t.cardBg} border ${t.border} max-w-2xl w-full rounded-3xl p-6 shadow-2xl relative space-y-6 my-8`}>
+            <div className="flex items-center justify-between border-b pb-4 border-slate-700">
               <div>
-                <h3 className={`text-lg font-bold ${t.textMain}`}>Invoice / Bill Preview</h3>
-                <p className={`text-xs ${t.textMuted}`}>#{selectedInvoice.id} • {selectedInvoice.dateTime}</p>
+                <h3 className={`text-lg font-black ${t.textMain}`}>Invoice #{selectedInvoice.id}</h3>
+                <p className={`text-xs ${t.textMuted}`}>{selectedInvoice.dateTime}</p>
               </div>
-              <div className="flex gap-2">
-                <button onClick={() => printInvoice(selectedInvoice)} className="px-3 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold flex items-center gap-1.5"><Printer size={14}/> Print</button>
-                <button onClick={() => downloadInvoiceImage(selectedInvoice)} className="px-3 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold flex items-center gap-1.5"><Download size={14}/> Save Image</button>
-              </div>
+              <button onClick={() => setSelectedInvoice(null)} className="p-2 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700"><X size={18}/></button>
             </div>
-            
-            <div className="bg-white text-slate-900 p-6 rounded-2xl space-y-4 font-sans shadow-inner">
-              <div className="flex justify-between items-start border-b pb-4">
-                <div>
-                  <h4 className="font-extrabold text-xl text-slate-900">{shopInfo.name}</h4>
-                  <p className="text-xs text-blue-600 font-bold uppercase">{shopInfo.tagline}</p>
-                  <p className="text-xs text-slate-500 mt-1">{shopInfo.address} | Phone: {shopInfo.phone} | PAN: {shopInfo.panNo}</p>
-                </div>
-                <div className="text-right">
-                  <p className="font-mono font-bold text-sm text-blue-600">INVOICE #{selectedInvoice.id}</p>
-                  <p className="text-xs text-slate-500">{selectedInvoice.dateTime}</p>
-                  <span className={`inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-bold ${Number(selectedInvoice.dueAmount) <= 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
-                    {Number(selectedInvoice.dueAmount) <= 0 ? 'PAID IN FULL' : 'DUE PENDING'}
-                  </span>
-                </div>
-              </div>
 
-              <div className="bg-slate-50 p-3 rounded-xl flex justify-between text-xs">
-                <div>
-                  <span className="font-bold text-slate-400 block">BILL TO:</span>
-                  <span className="font-bold text-slate-900 text-sm">{selectedInvoice.customerName}</span>
-                  <span className="block text-slate-600">Phone: {selectedInvoice.phone}</span>
-                </div>
-                <div className="text-right">
-                  <span className="font-bold text-slate-400 block">WARRANTY:</span>
-                  <span className="font-bold text-slate-800">{selectedInvoice.warrantyMonths || '—'}</span>
-                </div>
-              </div>
+            <div className={`${t.cardSecondary} border ${t.border} p-4 rounded-2xl space-y-2 text-sm`}>
+              <div className="flex justify-between"><span className={t.textMuted}>Customer:</span><span className={`font-bold ${t.textMain}`}>{selectedInvoice.customerName} ({selectedInvoice.phone})</span></div>
+              <div className="flex justify-between"><span className={t.textMuted}>Device / Model:</span><span className={`font-bold ${t.textMain}`}>{selectedInvoice.model}</span></div>
+              <div className="flex justify-between"><span className={t.textMuted}>Total Cost:</span><span className="font-bold text-blue-400">NPR {selectedInvoice.totalCost}</span></div>
+              <div className="flex justify-between"><span className={t.textMuted}>Amount Paid:</span><span className="font-bold text-emerald-400">NPR {selectedInvoice.paidAmount}</span></div>
+              <div className="flex justify-between"><span className={t.textMuted}>Balance Due:</span><span className="font-bold text-rose-400">NPR {selectedInvoice.dueAmount}</span></div>
+              {selectedInvoice.warrantyMonths && (
+                <div className="flex justify-between"><span className={t.textMuted}>Warranty:</span><span className="font-bold text-amber-400">{selectedInvoice.warrantyMonths}</span></div>
+              )}
+            </div>
 
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="bg-slate-900 text-white">
-                    <th className="p-2 text-left rounded-l-lg">Item / Service</th>
-                    <th className="p-2 text-center">Qty</th>
-                    <th className="p-2 text-right">Price</th>
-                    <th className="p-2 text-right rounded-r-lg">Total</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {(selectedInvoice.items && selectedInvoice.items.length > 0 ? selectedInvoice.items : [{ name: selectedInvoice.model || selectedInvoice.issue, price: selectedInvoice.totalCost, qty: 1 }]).map((item, idx) => (
-                    <tr key={idx}>
-                      <td className="p-2 font-medium">{item.name}</td>
-                      <td className="p-2 text-center">{item.qty || 1}</td>
-                      <td className="p-2 text-right">NPR {item.price || 0}</td>
-                      <td className="p-2 text-right font-bold">NPR {(item.price || 0) * (item.qty || 1)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              <div className="flex justify-end pt-2 border-t">
-                <div className="w-48 space-y-1 text-xs">
-                  <div className="flex justify-between text-slate-600"><span>Subtotal:</span><span>NPR {selectedInvoice.totalCost}</span></div>
-                  <div className="flex justify-between text-emerald-600 font-bold"><span>Paid:</span><span>NPR {selectedInvoice.paidAmount}</span></div>
-                  <div className="flex justify-between text-rose-600 font-bold border-t pt-1 text-sm"><span>Due:</span><span>NPR {selectedInvoice.dueAmount}</span></div>
-                </div>
-              </div>
+            <div className="flex flex-wrap gap-3 pt-2">
+              <button onClick={() => printInvoice(selectedInvoice)} className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-bold text-sm shadow-lg flex items-center justify-center gap-2">
+                <Printer size={16}/> Print Bill
+              </button>
+              <button onClick={() => downloadInvoiceImage(selectedInvoice)} className={`px-5 py-3 border ${t.border} ${t.cardSecondary} hover:bg-slate-800 rounded-2xl font-bold text-sm flex items-center justify-center gap-2`}>
+                <Download size={16}/> Download PNG
+              </button>
+              <button onClick={() => sendToWhatsApp(selectedInvoice)} className="px-5 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-bold text-sm flex items-center justify-center gap-2">
+                <MessageSquare size={16}/> WhatsApp
+              </button>
+              {Number(selectedInvoice.dueAmount) > 0 && (
+                <button onClick={() => { markInvoiceAsPaid(selectedInvoice.id); setSelectedInvoice(null); }} className="w-full py-3 bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 rounded-2xl font-bold text-sm">
+                  Mark as Paid in Full
+                </button>
+              )}
             </div>
           </div>
         </div>
       )}
-
     </div>
   );
 }
