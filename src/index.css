@@ -1,1 +1,139 @@
 @import "tailwindcss";
+
+/* Genuine Fix - responsive/mobile layout hardening */
+html,
+body,
+#root {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  overflow-x: hidden;
+}
+
+body {
+  min-height: 100vh;
+  -webkit-text-size-adjust: 100%;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+}
+
+button,
+input,
+select,
+textarea {
+  max-width: 100%;
+}
+
+.overflow-x-auto {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 768px) {
+  body {
+    font-size: 14px;
+  }
+
+  .w-screen,
+  .min-w-screen {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .flex {
+    min-width: 0;
+  }
+
+  .flex-wrap {
+    row-gap: 0.5rem;
+  }
+
+  input,
+  select,
+  textarea {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  p,
+  span,
+  div,
+  td,
+  th,
+  label {
+    overflow-wrap: anywhere;
+  }
+
+  .rounded-2xl,
+  .rounded-xl,
+  .rounded-lg {
+    max-width: 100%;
+  }
+
+  table {
+    min-width: 640px;
+  }
+
+  .fixed.inset-0 > div,
+  [role="dialog"] {
+    max-width: calc(100vw - 1rem) !important;
+  }
+}
+
+@media (max-width: 480px) {
+  body {
+    font-size: 13px;
+  }
+
+  button {
+    min-height: 40px;
+  }
+
+  .p-8 {
+    padding: 1rem !important;
+  }
+
+  .p-6 {
+    padding: 0.875rem !important;
+  }
+
+  .px-8 {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  .px-6 {
+    padding-left: 0.875rem !important;
+    padding-right: 0.875rem !important;
+  }
+
+  .gap-8 {
+    gap: 1rem !important;
+  }
+
+  .gap-6 {
+    gap: 0.875rem !important;
+  }
+}
