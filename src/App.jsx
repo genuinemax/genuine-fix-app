@@ -983,1022 +983,489 @@ export default function App() {
     ctx.fillText(shopInfo.tagline.toUpperCase(), 50, 80);
 
     ctx.fillStyle = '#94A3B8';
-    ctx.font = '12px sans-serif';
-    ctx.fillText(`${shopInfo.address}  |  Phone: ${shopInfo.phone}  |  PAN: ${shopInfo.panNo}`, 50, 105);
-
-    ctx.fillStyle = '#38BDF8';
-    ctx.font = 'bold 16px monospace';
-    ctx.fillText(`INVOICE #${inv.id}`, 560, 55);
-
-    ctx.fillStyle = '#E2E8F0';
-    ctx.font = '12px sans-serif';
-    ctx.fillText(`Date: ${inv.dateTime}`, 560, 85);
-    
-    const isPaid = Number(inv.dueAmount) <= 0;
-    ctx.fillStyle = isPaid ? '#34D399' : '#F87171';
-    ctx.font = 'bold 13px sans-serif';
-    ctx.fillText(`Status: ${isPaid ? 'PAID IN FULL' : 'DUE PENDING'}`, 560, 110);
-
-    ctx.fillStyle = '#F8FAFC';
-    ctx.strokeStyle = '#E2E8F0';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.roundRect(50, 185, 700, 95, 8);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = '#64748B';
-    ctx.font = 'bold 11px sans-serif';
-    ctx.fillText('BILL TO:', 70, 210);
-
-    ctx.fillStyle = '#0F172A';
-    ctx.font = 'bold 16px sans-serif';
-    ctx.fillText(inv.customerName, 70, 238);
-
-    ctx.fillStyle = '#475569';
-    ctx.font = '13px sans-serif';
-    ctx.fillText(`Phone: ${inv.phone}`, 70, 262);
-
-    ctx.fillText(`Type: ${inv.deviceType || 'Repair & Sales'}`, 420, 210);
-    ctx.fillText(`Warranty: ${inv.warrantyMonths || '—'}`, 420, 238);
+    ctx.font = '14px sans-serif';
+    ctx.fillText(`Address: ${shopInfo.address}`, 50, 110);
+    ctx.fillText(`Phone: ${shopInfo.phone} | PAN No: ${shopInfo.panNo}`, 50, 135);
 
     ctx.fillStyle = '#1E293B';
-    ctx.fillRect(50, 310, 700, 40);
-
-    ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'bold 12px sans-serif';
-    ctx.fillText('S.N.', 70, 335);
-    ctx.fillText('ITEM / DESCRIPTION', 120, 335);
-    ctx.fillText('QTY', 480, 335);
-    ctx.fillText('PRICE (NPR)', 560, 335);
-    ctx.fillText('TOTAL', 660, 335);
-
-    const itemsList = inv.items && inv.items.length > 0 ? inv.items : [
-      { name: inv.model || inv.issue, price: inv.totalCost, qty: 1 }
-    ];
-
-    let startY = 375;
-    itemsList.forEach((item, index) => {
-      ctx.fillStyle = index % 2 === 0 ? '#FFFFFF' : '#F8FAFC';
-      ctx.fillRect(50, startY - 20, 700, 36);
-
-      ctx.strokeStyle = '#F1F5F9';
-      ctx.strokeRect(50, startY - 20, 700, 36);
-
-      ctx.fillStyle = '#334155';
-      ctx.font = '13px sans-serif';
-      ctx.fillText(`${index + 1}`, 75, startY + 2);
-      ctx.fillText(item.name || 'Service / Item', 120, startY + 2);
-      ctx.fillText(`${item.qty || 1}`, 490, startY + 2);
-      ctx.fillText(`${item.price || 0}`, 570, startY + 2);
-      ctx.fillText(`${(item.price || 0) * (item.qty || 1)}`, 660, startY + 2);
-
-      startY += 36;
-    });
-
-    const totalsY = Math.max(startY + 30, 520);
-    
-    ctx.fillStyle = '#F8FAFC';
-    ctx.strokeStyle = '#E2E8F0';
-    ctx.beginPath();
-    ctx.roundRect(430, totalsY, 320, 130, 8);
-    ctx.fill();
-    ctx.stroke();
+    ctx.font = 'bold 22px sans-serif';
+    ctx.fillText(inv.billType === 'Device Purchase' ? 'DEVICE PURCHASE VOUCHER' : inv.billType === 'Parts Purchase' ? 'PARTS PURCHASE INVOICE' : inv.billType === 'Device Sale' ? 'DEVICE SALE INVOICE' : 'TAX / REPAIR INVOICE', 500, 55, 260);
 
     ctx.fillStyle = '#64748B';
     ctx.font = '13px sans-serif';
-    ctx.fillText('Subtotal:', 460, totalsY + 30);
-    ctx.fillText(`NPR ${inv.totalCost}`, 630, totalsY + 30);
+    ctx.fillText(`Invoice No: ${inv.id}`, 500, 85);
+    ctx.fillText(`Date: ${inv.dateTime || inv.date || getCurrentDateTime()}`, 500, 105);
+    ctx.fillText(`Status: ${inv.status || 'Paid'}`, 500, 125);
 
-    ctx.fillText('Amount Paid:', 460, totalsY + 65);
-    ctx.fillStyle = '#16A34A';
-    ctx.font = 'bold 13px sans-serif';
-    ctx.fillText(`NPR ${inv.paidAmount}`, 630, totalsY + 65);
-
-    ctx.strokeStyle = '#CBD5E1';
+    ctx.fillStyle = '#F8FAFC';
+    ctx.strokeStyle = '#E2E8F0';
+    ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(450, totalsY + 80);
-    ctx.lineTo(730, totalsY + 80);
+    ctx.roundRect(50, 190, 700, 90, 8);
+    ctx.fill();
     ctx.stroke();
 
     ctx.fillStyle = '#0F172A';
     ctx.font = 'bold 15px sans-serif';
-    ctx.fillText('BALANCE DUE:', 460, totalsY + 110);
-    
-    ctx.fillStyle = Number(inv.dueAmount) > 0 ? '#DC2626' : '#16A34A';
-    ctx.font = 'bold 16px monospace';
-    ctx.fillText(`NPR ${inv.dueAmount}`, 615, totalsY + 110);
+    ctx.fillText('CUSTOMER / PARTY DETAILS:', 75, 220);
+    ctx.font = '14px sans-serif';
+    ctx.fillStyle = '#334155';
+    ctx.fillText(`Name: ${inv.customerName || 'Walk-in Customer'}`, 75, 245);
+    ctx.fillText(`Phone: ${inv.phone || 'N/A'}`, 75, 268);
+    if (inv.citizenshipNo) {
+      ctx.fillText(`Citizenship No: ${inv.citizenshipNo}`, 400, 245);
+    }
 
-    const footerY = totalsY + 160;
-    
-    ctx.fillStyle = '#FEF9C3';
-    ctx.strokeStyle = '#FEF08A';
-    ctx.beginPath();
-    ctx.roundRect(50, footerY, 700, 65, 8);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = '#854D0E';
-    ctx.font = 'bold 11px sans-serif';
-    ctx.fillText('WARRANTY & TRADING TERMS:', 70, footerY + 22);
-
-    ctx.fillStyle = '#713F12';
-    ctx.font = '11px sans-serif';
-    ctx.fillText('Warranty covers devices/parts as specified. Physical or water damage voids all warranty.', 70, footerY + 42);
-    ctx.fillText(`Thank you for choosing ${shopInfo.name}! Your trusted tech partner.`, 70, footerY + 56);
-
+    let startY = 320;
     ctx.fillStyle = '#0F172A';
-    ctx.font = '12px sans-serif';
-    ctx.fillText('Authorized Signature', 600, footerY + 130);
-    ctx.strokeStyle = '#94A3B8';
+    ctx.fillRect(50, startY, 700, 35);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 13px sans-serif';
+    ctx.fillText('DESCRIPTION', 70, startY + 23);
+    ctx.fillText('QTY', 480, startY + 23);
+    ctx.fillText('PRICE (NPR)', 550, startY + 23);
+    ctx.fillText('TOTAL', 660, startY + 23);
+
+    startY += 35;
+    ctx.font = '14px sans-serif';
+    const items = inv.items?.length ? inv.items : [{ name: inv.model || inv.deviceType || 'Repair & Maintenance', price: inv.totalCost, qty: 1, remarks: inv.issue }];
+    
+    items.forEach((item, idx) => {
+      ctx.fillStyle = idx % 2 === 0 ? '#FFFFFF' : '#F8FAFC';
+      ctx.fillRect(50, startY, 700, 45);
+      ctx.strokeStyle = '#E2E8F0';
+      ctx.strokeRect(50, startY, 700, 45);
+
+      ctx.fillStyle = '#1E293B';
+      ctx.fillText(item.name || '', 70, startY + 20, 380);
+      if (item.remarks) {
+        ctx.fillStyle = '#64748B';
+        ctx.font = '11px sans-serif';
+        ctx.fillText(item.remarks, 70, startY + 36, 380);
+        ctx.font = '14px sans-serif';
+      }
+      ctx.fillStyle = '#1E293B';
+      ctx.fillText(String(item.qty || 1), 485, startY + 28);
+      ctx.fillText(Number(item.price || 0).toLocaleString(), 550, startY + 28);
+      ctx.fillText((Number(item.price || 0) * Number(item.qty || 1)).toLocaleString(), 660, startY + 28);
+      startY += 45;
+    });
+
+    startY += 20;
+    ctx.fillStyle = '#1E293B';
+    ctx.font = '14px sans-serif';
+    const totalC = Number(inv.totalCost || 0);
+    const paidC = Number(inv.paidAmount || 0);
+    const dueC = Number(inv.dueAmount || 0);
+
+    ctx.fillText('Total Amount:', 500, startY);
+    ctx.fillText(`NPR ${totalC.toLocaleString()}`, 640, startY);
+    startY += 25;
+    ctx.fillText('Paid Amount:', 500, startY);
+    ctx.fillText(`NPR ${paidC.toLocaleString()}`, 640, startY);
+    startY += 25;
+    ctx.fillStyle = dueC > 0 ? '#EF4444' : '#10B981';
+    ctx.font = 'bold 15px sans-serif';
+    ctx.fillText('Due Balance:', 500, startY);
+    ctx.fillText(`NPR ${dueC.toLocaleString()}`, 640, startY);
+
+    if (inv.warrantyMonths) {
+      startY += 40;
+      ctx.fillStyle = '#EFF6FF';
+      ctx.strokeStyle = '#BFDBFE';
+      ctx.beginPath();
+      ctx.roundRect(50, startY, 700, 40, 6);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#1E40AF';
+      ctx.font = 'bold 13px sans-serif';
+      ctx.fillText(`Warranty Period: ${inv.warrantyMonths} Months. Terms & conditions apply.`, 70, startY + 25);
+    }
+
+    startY += 90;
+    ctx.strokeStyle = '#CBD5E1';
     ctx.beginPath();
-    ctx.moveTo(560, footerY + 105);
-    ctx.lineTo(730, footerY + 105);
+    ctx.moveTo(70, startY); ctx.lineTo(270, startY);
+    ctx.moveTo(530, startY); ctx.lineTo(730, startY);
     ctx.stroke();
 
-    return canvas;
-  };
+    ctx.fillStyle = '#475569';
+    ctx.font = '12px sans-serif';
+    ctx.fillText('Customer Signature', 110, startY + 20);
+    ctx.fillText(`For: ${shopInfo.name}`, 580, startY + 20);
 
-  const downloadInvoiceImage = (inv) => {
-    const canvas = generateInvoiceCanvas(inv);
-    const dataUrl = canvas.toDataURL('image/png');
-    const link = document.createElement('a');
-    link.href = dataUrl;
-    link.download = `Invoice_${inv.id}_${inv.customerName.replace(/\s+/g, '_')}.png`;
-    link.click();
+    return canvas.toDataURL('image/png');
   };
 
   const printInvoice = (inv) => {
-    const canvas = generateInvoiceCanvas(inv);
-    const dataUrl = canvas.toDataURL('image/png');
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(`
+    const dataUrl = generateInvoiceCanvas(inv);
+    const win = window.open('', '_blank');
+    win.document.write(`
       <html>
-        <head><title>Print Invoice #${inv.id}</title></head>
-        <body style="margin:0; display:flex; justify-content:center; align-items:center; height:100vh; background:#fff;">
-          <img src="${dataUrl}" style="max-width:100%; height:auto;" onload="window.print();window.close();" />
+        <head><title>Invoice ${inv.id}</title></head>
+        <body style="margin:0; background:#eee; display:flex; justify-content:center; align-items:center; min-height:100vh;">
+          <img src="${dataUrl}" style="max-width:100%; height:auto; box-shadow: 0 10px 25px rgba(0,0,0,0.2);" />
+          <script>setTimeout(() => { window.print(); }, 500);</script>
         </body>
       </html>
     `);
-    printWindow.document.close();
+    win.document.close();
   };
 
-  const sendToWhatsApp = (inv) => {
-    const text = `*${shopInfo.name.toUpperCase()} - ${shopInfo.tagline.toUpperCase()}*
-📍 ${shopInfo.address} | 📞 ${shopInfo.phone} | PAN: ${shopInfo.panNo}
-----------------------------------------
-👤 *Customer:* ${inv.customerName}
-📞 *Phone:* ${inv.phone}
-📅 *Date & Time:* ${inv.dateTime}
-----------------------------------------
-🛠️ *Service/Device:* ${inv.model}
-📝 *Details:* ${inv.issue}
-🛡️ *Warranty:* ${inv.warrantyMonths || '—'}
-----------------------------------------
-💰 *Total Cost:* NPR ${inv.totalCost}
-💵 *Amount Paid:* NPR ${inv.paidAmount}
-🔴 *Balance Due:* NPR ${inv.dueAmount}
-----------------------------------------
-_Thank you for choosing ${shopInfo.name}!_`;
-
-    let cleanPhone = inv.phone.replace(/\D/g, '');
-    if (cleanPhone.length === 10 && cleanPhone.startsWith('9')) {
-      cleanPhone = '977' + cleanPhone;
-    }
-    const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`;
-    window.open(url, '_blank');
+  const downloadInvoiceImage = (inv) => {
+    const dataUrl = generateInvoiceCanvas(inv);
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = `Invoice_${inv.id}_${inv.customerName || 'Customer'}.png`;
+    a.click();
   };
-
-  const deleteRepair = (id) => setRepairs(repairs.filter(r => r.id !== id));
-  const deletePart = (id) => { setInventory(inventory.filter(i => i.id !== id)); setStockPurchases(stockPurchases.filter(p => p.partId !== id)); };
-  const deleteDevice = (id) => {
-    const device = devicesStock.find(d => d.id === id);
-    if (device?.tradeType === 'sell' && device.linkedPurchaseId) setDevicesStock(devicesStock.filter(d => d.id !== id).map(d => d.id === device.linkedPurchaseId ? { ...d, status: 'In Stock', soldDate: '', soldRecordId: '' } : d));
-    else setDevicesStock(devicesStock.filter(d => d.id !== id));
-  };
-  const deleteExpense = (id) => setExpenses(expenses.filter(e => e.id !== id));
-
-  const filteredInvoices = repairs.filter(r => {
-    const matchesSearch = r.customerName.toLowerCase().includes(invoiceSearch.toLowerCase()) || 
-      r.id.toLowerCase().includes(invoiceSearch.toLowerCase()) ||
-      r.phone.includes(invoiceSearch);
-    
-    if (invoiceFilterTab === 'Repair') return matchesSearch && r.billType !== 'Accessories' && r.billType !== 'Device Sale' && r.billType !== 'Device Purchase';
-    if (invoiceFilterTab === 'Accessories') return matchesSearch && r.billType === 'Accessories';
-    if (invoiceFilterTab === 'Devices') return matchesSearch && (r.billType === 'Device Sale' || r.billType === 'Device Purchase');
-    if (invoiceFilterTab === 'Due') return matchesSearch && Number(r.dueAmount) > 0;
-    if (invoiceFilterTab === 'Paid') return matchesSearch && Number(r.dueAmount) === 0;
-    return matchesSearch;
-  });
-
-  const customerRecords = uniqueCustomers
-    .map(customer => {
-      const customerRepairs = repairs.filter(r =>
-        String(r.customerName || '').trim().toLowerCase() === customer.name.toLowerCase()
-      );
-      const customerDevices = devicesStock.filter(d =>
-        String(d.partyName || '').trim().toLowerCase() === customer.name.toLowerCase()
-      );
-      const lastRepair = customerRepairs
-        .slice()
-        .sort((a, b) => String(b.dateTime || '').localeCompare(String(a.dateTime || '')))[0];
-      return {
-        ...customer,
-        repairCount: customerRepairs.length,
-        deviceCount: customerDevices.length,
-        lastVisit: lastRepair?.dateTime || customerDevices[0]?.date || '',
-        due: customerRepairs.reduce((sum, r) => sum + Number(r.dueAmount || 0), 0),
-        history: [...customerRepairs, ...customerDevices]
-      };
-    })
-    .sort((a, b) => a.name.localeCompare(b.name));
-
-  const filteredCustomers = customerRecords.filter(c => {
-    const q = customerSearch.trim().toLowerCase();
-    return !q || c.name.toLowerCase().includes(q) || String(c.phone || '').includes(q);
-  });
-
-  const selectedCustomer = customerRecords.find(
-    c => c.name.toLowerCase() === selectedCustomerName.toLowerCase()
-  );
-
-  const warrantyJobs = repairs.filter(r => String(r.warrantyMonths || '').trim());
-  const warrantyActiveCount = warrantyJobs.length;
-
 
   return (
-    <div className={`min-h-screen ${t.appBg} font-sans transition-colors duration-200`}>
-      {/* Premium Top Navigation */}
-      <nav className={`border-b ${t.border} ${t.navBg} backdrop-blur-xl sticky top-0 z-30 shadow-2xl`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl overflow-hidden border border-slate-700 shadow-md bg-slate-900 flex items-center justify-center">
-              <img src="/logo.jpg" alt="Genuine Fix Logo" className="w-full h-full object-cover" />
+    <div className={`min-h-screen ${t.appBg} font-sans selection:bg-blue-500 selection:text-white transition-colors duration-200`}>
+      {/* Top Header */}
+      <header className={`${t.navBg} backdrop-blur-md sticky top-0 z-30 border-b transition-colors duration-200`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/30">
+              <Wrench className="w-6 h-6 text-white animate-pulse" />
             </div>
             <div>
-              <div className="flex items-center gap-2"><h1 className={`font-extrabold text-lg ${t.textMain} leading-tight tracking-tight`}>{shopInfo.name}</h1><span className="px-1.5 py-0.5 rounded-md bg-blue-600/15 text-blue-400 border border-blue-500/20 text-[9px] font-black tracking-wider">PRO</span></div>
-              <p className="text-sm text-blue-400 font-bold uppercase tracking-widest">Laptop & Smartphone Repair</p>
+              <h1 className="text-xl font-black tracking-tight text-white flex items-center gap-2">
+                {shopInfo.name} <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 font-semibold border border-blue-500/30">PRO</span>
+              </h1>
+              <p className="text-xs text-slate-400 font-medium">{shopInfo.tagline} • PAN: {shopInfo.panNo}</p>
             </div>
           </div>
-          
-          <div className={`w-full lg:w-auto flex flex-wrap items-center gap-1.5 ${t.cardSecondary} p-1.5 rounded-2xl border ${t.border} shadow-inner`}>
-            {[
-              { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-              { id: 'customers', icon: Users, label: 'Customers' },
-              { id: 'repairs', icon: ShieldCheck, label: 'Job Sheets' },
-              { id: 'devices', icon: Smartphone, label: 'Device Buy/Sell' },
-              { id: 'pos', icon: ShoppingBag, label: 'Accessories Bill' },
-              { id: 'invoices', icon: FileText, label: 'Invoices' },
-              { id: 'inventory', icon: Package, label: 'Parts Stock' },
-              { id: 'expenses', icon: DollarSign, label: 'Expenses' },
-              { id: 'backup', icon: Download, label: 'Backup' },
-              { id: 'settings', icon: Settings, label: 'Settings' },
-            ].map(item => (
-              <button 
-                key={item.id}
-                onClick={() => setActiveTab(item.id)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold transition-all duration-200 ${
-                  activeTab === item.id 
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 scale-[1.01]' 
-                    : `${t.textMuted} hover:text-white hover:bg-blue-600/10 hover:-translate-y-0.5`
+
+          <div className="flex items-center gap-3">
+            <div className="hidden lg:flex items-center bg-[#14171f]/80 px-4 py-2 rounded-2xl border border-slate-700 text-xs text-slate-300 gap-4">
+              <div><span className="text-slate-400">Today Sales:</span> <strong className="text-white">NPR {todayIncome.toLocaleString()}</strong></div>
+              <div className="w-px h-3 bg-slate-700"></div>
+              <div><span className="text-slate-400">Net Cash:</span> <strong className="text-emerald-400">NPR {todayNet.toLocaleString()}</strong></div>
+            </div>
+
+            <div className="flex items-center bg-[#14171f] p-1 rounded-2xl border border-slate-700">
+              <button onClick={() => setTheme('dim')} className={`p-2 rounded-xl transition ${theme === 'dim' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`} title="Dim Tech Theme">
+                <Monitor className="w-4 h-4" />
+              </button>
+              <button onClick={() => setTheme('dark')} className={`p-2 rounded-xl transition ${theme === 'dark' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`} title="OLED Dark Theme">
+                <Moon className="w-4 h-4" />
+              </button>
+              <button onClick={() => setTheme('light')} className={`p-2 rounded-xl transition ${theme === 'light' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`} title="Light Theme">
+                <Sun className="w-4 h-4" />
+              </button>
+            </div>
+
+            <button onClick={() => auth.signOut()} className="px-3.5 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-bold border border-red-500/20 transition">
+              Logout
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Navigation Tabs */}
+      <nav className={`${t.cardBg} border-b sticky top-20 z-20 backdrop-blur-md`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex overflow-x-auto no-scrollbar space-x-2 py-3">
+          {[
+            { id: 'invoices', label: 'Invoices & Jobs', icon: FileText },
+            { id: 'pos', label: 'POS Billing', icon: ShoppingBag },
+            { id: 'devices', label: 'Device Trade & Stock', icon: Smartphone },
+            { id: 'inventory', label: 'Parts & Stock', icon: Package },
+            { id: 'expenses', label: 'Expenses & Supplier Due', icon: DollarSign },
+            { id: 'crm', label: 'Customer CRM', icon: Users },
+            { id: 'dashboard', label: 'Dashboard & Reports', icon: LayoutDashboard },
+            { id: 'settings', label: 'Shop Settings', icon: Settings }
+          ].map(tab => {
+            const Icon = tab.icon;
+            const active = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center space-x-2 px-4 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap transition-all ${
+                  active 
+                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/30 scale-[1.02]' 
+                    : `${t.textMuted} hover:bg-slate-800/50 hover:text-white`
                 }`}
               >
-                <item.icon size={15} />
-                <span>{item.label}</span>
+                <Icon className={`w-4 h-4 ${active ? 'text-white' : 'text-slate-400'}`} />
+                <span>{tab.label}</span>
               </button>
-            ))}
-          </div>
+            );
+          })}
         </div>
       </nav>
 
       {/* Main Container */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
-        {/* DASHBOARD TAB */}
-        {activeTab === 'dashboard' && (
-          <div className="space-y-8 animate-in fade-in duration-300">
-            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
-              <div>
-                <p className={`text-sm uppercase tracking-[0.22em] font-black ${t.textMuted}`}>Genuine Fix • Shop Control Center</p>
-                <h2 className={`text-2xl sm:text-3xl font-black tracking-tight ${t.textMain}`}>{(() => { const h = new Date(clockTick).getHours(); const greeting = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : h < 21 ? 'Good evening' : 'Good night'; return `${greeting}, manage the shop faster.`; })()}</h2>
-                 <p className={`text-sm ${t.textMuted} mt-1`}>{new Date(clockTick).toLocaleString('en-NP', { dateStyle: 'full', timeStyle: 'medium' })}</p>
+        {/* ================================= TAB 1: INVOICES & REPAIR JOBS ================================= */}
+        {activeTab === 'invoices' && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className={`${t.cardBg} p-6 rounded-3xl border shadow-xl relative overflow-hidden`}>
+                <div className="absolute right-4 top-4 p-3 bg-blue-500/10 rounded-2xl text-blue-400"><FileText className="w-6 h-6" /></div>
+                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Invoices</div>
+                <div className="text-3xl font-black text-white mt-2">{repairs.length}</div>
               </div>
-              <div className={`inline-flex items-center gap-2 ${t.cardSecondary} border ${t.border} rounded-2xl px-3 py-2 text-sm font-bold ${t.textMuted}`}>
-                <Clock3 size={15} className="text-blue-400" /> Live shop overview
+              <div className={`${t.cardBg} p-6 rounded-3xl border shadow-xl relative overflow-hidden`}>
+                <div className="absolute right-4 top-4 p-3 bg-emerald-500/10 rounded-2xl text-emerald-400"><DollarSign className="w-6 h-6" /></div>
+                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Revenue</div>
+                <div className="text-3xl font-black text-emerald-400 mt-2">NPR {totalRevenue.toLocaleString()}</div>
               </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className={`bg-gradient-to-br from-blue-500/10 to-transparent border ${t.border} p-6 rounded-3xl shadow-xl`}>
-                <p className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">Active Jobs</p>
-                <h3 className="text-3xl font-black text-blue-400">{repairs.filter(r => r.status === 'In Progress' || r.status === 'Pending').length}</h3>
-                <p className={`text-sm mt-2 ${t.textMuted}`}>Currently in service</p>
+              <div className={`${t.cardBg} p-6 rounded-3xl border shadow-xl relative overflow-hidden`}>
+                <div className="absolute right-4 top-4 p-3 bg-amber-500/10 rounded-2xl text-amber-400"><Clock3 className="w-6 h-6" /></div>
+                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Due (Baaki)</div>
+                <div className="text-3xl font-black text-amber-400 mt-2">NPR {totalDue.toLocaleString()}</div>
               </div>
-              <div className={`bg-gradient-to-br from-emerald-500/10 to-transparent border ${t.border} p-6 rounded-3xl shadow-xl`}>
-                <p className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">Ready for Pickup</p>
-                <h3 className="text-3xl font-black text-emerald-400">{repairs.filter(r => r.status === 'Ready for Pickup' || r.status === 'Completed').length}</h3>
-                <p className={`text-sm mt-2 ${t.textMuted}`}>Customers to notify</p>
-              </div>
-              <div className={`bg-gradient-to-br from-amber-500/10 to-transparent border ${t.border} p-6 rounded-3xl shadow-xl`}>
-                <p className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">Today's Jobs</p>
-                <h3 className="text-3xl font-black text-amber-400">{repairs.filter(r => String(r.dateTime || '').startsWith(getLocalDateKey())).length}</h3>
-                <p className={`text-sm mt-2 ${t.textMuted}`}>Jobs & bills created today</p>
-              </div>
-              <div className={`bg-gradient-to-br from-rose-500/10 to-transparent border ${t.border} p-6 rounded-3xl shadow-xl`}>
-                <p className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">Low Stock</p>
-                <h3 className="text-3xl font-black text-rose-400">{inventory.filter(i => Number(i.stock || 0) <= Number(i.minStock || 5)).length}</h3>
-                <p className={`text-sm mt-2 ${t.textMuted}`}>Items need attention</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl lg:col-span-2`}>
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <p className={`text-sm uppercase tracking-[0.18em] font-black ${t.textMuted}`}>Quick Actions</p>
-                    <h3 className={`text-base font-black ${t.textMain}`}>Shop counter shortcuts</h3>
-                  </div>
-                  <PlusCircle size={20} className="text-blue-400" />
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {[
-                    ['repairs', 'New Job', ShieldCheck],
-                    ['pos', 'New Bill', ShoppingBag],
-                    ['devices', 'Device Trade', Smartphone],
-                    ['customers', 'Customers', Users]
-                  ].map(([id, label, Icon]) => (
-                    <button key={id} onClick={() => setActiveTab(id)}
-                      className={`${t.cardSecondary} border ${t.border} rounded-2xl p-4 text-left hover:border-blue-500/50 hover:-translate-y-0.5 transition-all group`}>
-                      <Icon size={18} className="text-blue-400 mb-3 group-hover:scale-110 transition-transform" />
-                      <span className={`text-sm font-black ${t.textMain}`}>{label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}>
-                <div className="flex items-center gap-2 mb-4">
-                  <ShieldCheck size={18} className="text-amber-400" />
-                  <div>
-                    <p className={`text-sm uppercase tracking-[0.18em] font-black ${t.textMuted}`}>Warranty Control</p>
-                    <h3 className={`text-base font-black ${t.textMain}`}>Owner sets warranty</h3>
-                  </div>
-                </div>
-                <div className={`${t.cardSecondary} border ${t.border} rounded-2xl p-4`}>
-                  <p className={`text-sm font-bold ${t.textMain}`}>{warrantyActiveCount} bills have a warranty entered.</p>
-                  <p className={`text-sm ${t.textMuted} mt-1`}>No automatic 30-day rule or expiry alerts. Enter any warranty you choose on each bill.</p>
-                </div>
-              </div>
-            </div>
-
-            <div className={`${t.cardBg} border ${t.border} rounded-3xl p-6 shadow-xl`}>
-              <div className="flex items-center justify-between mb-6">
-                <h2 className={`text-lg font-bold ${t.textMain}`}>Recent Bills & Job Sheets</h2>
-                <button onClick={() => setActiveTab('invoices')} className="text-blue-400 text-sm font-bold flex items-center gap-1 hover:text-blue-300">
-                  View All <ChevronRight size={15}/>
+              <div className={`${t.cardBg} p-6 rounded-3xl border shadow-xl relative overflow-hidden flex items-center justify-center`}>
+                <button 
+                  onClick={() => setActiveTab('pos')}
+                  className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-2xl shadow-lg shadow-blue-600/30 transition flex items-center justify-center gap-2"
+                >
+                  <PlusCircle className="w-5 h-5" /> New Quick Sale / POS
                 </button>
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className={`${t.tableHeader} font-bold uppercase text-sm border-b`}>
-                    <tr>
-                      <th className="pb-4 text-left">Bill ID</th>
-                      <th className="pb-4 text-left">Customer</th>
-                      <th className="pb-4 text-left">Type / Model</th>
-                      <th className="pb-4 text-left">Due Amount</th>
-                      <th className="pb-4 text-left">Status</th>
-                      <th className="pb-4 text-right">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className={`divide-y ${t.tableDivide}`}>
-                    {repairs.slice(0, 5).map(r => (
-                      <tr key={r.id}>
-                        <td className="py-4 font-mono font-bold text-blue-400">{r.id}</td>
-                        <td className={`py-4 ${t.textMain} font-medium`}>{r.customerName}</td>
-                        <td className={`py-4 ${t.textMuted}`}>{r.model}</td>
-                        <td className="py-4 font-bold text-rose-400">NPR {r.dueAmount}</td>
-                        <td className="py-4">
-                          <span className={`px-3 py-1 rounded-full ${t.cardSecondary} ${t.textMuted} text-sm font-bold border ${t.border}`}>
-                            {r.status}
-                          </span>
-                        </td>
-                        <td className="py-4 text-right">
-                          <button onClick={() => setSelectedInvoice(r)} className="px-3 py-1.5 bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 rounded-xl text-sm font-bold inline-flex items-center gap-1">
-                            <Eye size={14}/> Preview
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}>
-                <p className={`text-sm uppercase tracking-wider font-black ${t.textMuted}`}>Total Income Received</p>
-                <p className="text-2xl font-black text-emerald-400 mt-2">NPR {totalIncome}</p>
-                <p className={`text-sm ${t.textMuted} mt-1`}>Paid amounts from saved bills</p>
-              </div>
-              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}>
-                <p className={`text-sm uppercase tracking-wider font-black ${t.textMuted}`}>Total Shop Expense</p>
-                <p className="text-2xl font-black text-rose-400 mt-2">NPR {totalExp}</p>
-                <p className={`text-sm ${t.textMuted} mt-1`}>Cash actually paid out so far</p>
-              </div>
-              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}>
-                <p className={`text-sm uppercase tracking-wider font-black ${t.textMuted}`}>Estimated Net Cash</p>
-                <p className={`text-2xl font-black mt-2 ${netCash >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>NPR {netCash}</p>
-                <p className={`text-sm ${t.textMuted} mt-1`}>Income received − expenses</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mt-4">
-              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}><p className={`text-sm uppercase tracking-wider font-black ${t.textMuted}`}>Device Purchase</p><p className="text-2xl font-black text-amber-400 mt-2">NPR {totalDevicePurchase}</p><p className={`text-sm ${t.textMuted} mt-1`}>Total buy cost recorded</p></div>
-              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}><p className={`text-sm uppercase tracking-wider font-black ${t.textMuted}`}>Device Sales</p><p className="text-2xl font-black text-emerald-400 mt-2">NPR {totalDeviceSales}</p><p className={`text-sm ${t.textMuted} mt-1`}>Total sales value</p></div>
-              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}><p className={`text-sm uppercase tracking-wider font-black ${t.textMuted}`}>Device Profit</p><p className={`text-2xl font-black mt-2 ${totalDeviceProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>NPR {totalDeviceProfit}</p><p className={`text-sm ${t.textMuted} mt-1`}>Sales − purchase cost</p></div>
-              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}><p className={`text-sm uppercase tracking-wider font-black ${t.textMuted}`}>Parts Purchase</p><p className="text-2xl font-black text-blue-400 mt-2">NPR {totalPartsPurchase}</p><p className={`text-sm ${t.textMuted} mt-1`}>Stock purchases recorded</p></div>
-              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}>
-                <p className={`text-sm uppercase tracking-wider font-black ${t.textMuted}`}>Baaki / Due to Suppliers</p>
-                <p className={`text-2xl font-black mt-2 ${totalSupplierDue > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>NPR {totalSupplierDue}</p>
-                <p className={`text-sm ${t.textMuted} mt-1`}>Udhaaro not yet paid</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* CUSTOMER CRM TAB */}
-        {activeTab === 'customers' && (
-          <div className="space-y-6 animate-in fade-in duration-300">
-            <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
-              <div>
-                <p className={`text-sm uppercase tracking-[0.2em] font-black ${t.textMuted}`}>Customer CRM</p>
-                <h2 className={`text-2xl font-black ${t.textMain}`}>Customers & Repair History</h2>
-                <p className={`text-sm ${t.textMuted} mt-1`}>Search customers, see visit count, due amount and previous jobs from one place.</p>
-              </div>
-              <div className={`flex items-center gap-2 ${t.inputBg} border ${t.border} rounded-2xl px-3 py-2.5 w-full lg:w-80`}>
-                <Search size={16} className={t.textMuted} />
-                <input
-                  value={customerSearch}
-                  onChange={e => setCustomerSearch(e.target.value)}
-                  placeholder="Search name or phone..."
-                  className="bg-transparent outline-none text-sm w-full"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}>
-                <p className={`text-sm uppercase tracking-wider font-black ${t.textMuted}`}>Total Customers</p>
-                <p className="text-3xl font-black text-blue-400 mt-2">{customerRecords.length}</p>
-              </div>
-              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}>
-                <p className={`text-sm uppercase tracking-wider font-black ${t.textMuted}`}>Repeat Customers</p>
-                <p className="text-3xl font-black text-emerald-400 mt-2">{customerRecords.filter(c => c.repairCount > 1).length}</p>
-              </div>
-              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}>
-                <p className={`text-sm uppercase tracking-wider font-black ${t.textMuted}`}>Warranty Entered</p>
-                <p className="text-3xl font-black text-amber-400 mt-2">{warrantyActiveCount}</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 xl:grid-cols-5 gap-5">
-              <div className={`${t.cardBg} border ${t.border} rounded-3xl overflow-hidden shadow-xl xl:col-span-2`}>
-                <div className={`p-4 border-b ${t.border} ${t.cardSecondary}`}>
-                  <p className={`text-sm font-black ${t.textMain}`}>Customer Directory</p>
-                </div>
-                <div className="max-h-[520px] overflow-y-auto divide-y divide-slate-700/40">
-                  {filteredCustomers.map(c => (
-                    <button key={c.name} onClick={() => setSelectedCustomerName(c.name)}
-                      className={`w-full text-left p-4 transition ${selectedCustomerName === c.name ? 'bg-blue-600/10 border-l-2 border-blue-500' : 'hover:bg-blue-600/5'}`}>
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className={`font-black text-sm ${t.textMain}`}>{c.name}</p>
-                          <p className={`text-sm ${t.textMuted} mt-1`}>{c.phone || 'No phone saved'}</p>
-                        </div>
-                        <span className="text-sm font-black px-2 py-1 rounded-full bg-blue-500/10 text-blue-400">{c.repairCount} visits</span>
-                      </div>
-                      {c.due > 0 && <p className="text-sm text-rose-400 font-bold mt-2">Outstanding: NPR {c.due}</p>}
-                    </button>
-                  ))}
-                  {filteredCustomers.length === 0 && (
-                    <div className={`p-8 text-center text-sm ${t.textMuted}`}>No customers found.</div>
-                  )}
-                </div>
-              </div>
-
-              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl xl:col-span-3`}>
-                {!selectedCustomer ? (
-                  <div className="h-full min-h-[420px] flex flex-col items-center justify-center text-center">
-                    <div className="w-16 h-16 rounded-3xl bg-blue-500/10 flex items-center justify-center mb-4">
-                      <History size={28} className="text-blue-400" />
-                    </div>
-                    <h3 className={`font-black ${t.textMain}`}>Select a customer</h3>
-                    <p className={`text-sm ${t.textMuted} mt-1 max-w-sm`}>Their repair visits, device trades and outstanding amount will appear here.</p>
-                  </div>
-                ) : (
-                  <div>
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-5 mb-5 border-slate-700/50">
-                      <div>
-                        <p className={`text-xl font-black ${t.textMain}`}>{selectedCustomer.name}</p>
-                        <p className={`text-sm ${t.textMuted} mt-1`}>{selectedCustomer.phone || 'No phone saved'}</p>
-                      </div>
-                      <div className="flex gap-2">
-                        <span className="px-3 py-2 rounded-xl bg-blue-500/10 text-blue-400 text-sm font-black">{selectedCustomer.repairCount} visits</span>
-                        {selectedCustomer.due > 0 && <span className="px-3 py-2 rounded-xl bg-rose-500/10 text-rose-400 text-sm font-black">Due NPR {selectedCustomer.due}</span>}
-                      </div>
-                    </div>
-                    <div className="space-y-3 max-h-[430px] overflow-y-auto">
-                      {selectedCustomer.history.map(item => {
-                        const isRepair = Boolean(item.id && item.customerName);
-                        return (
-                          <div key={`${isRepair ? 'repair' : 'device'}-${item.id}`} className={`${t.cardSecondary} border ${t.border} rounded-2xl p-4`}>
-                            <div className="flex items-start justify-between gap-3">
-                              <div>
-                                <p className={`text-sm font-black ${t.textMain}`}>{isRepair ? (item.model || item.deviceType) : item.brandModel}</p>
-                                <p className={`text-sm ${t.textMuted} mt-1`}>{item.id} • {isRepair ? item.dateTime : item.date}</p>
-                              </div>
-                              <span className={`text-sm font-black px-2 py-1 rounded-full ${isRepair ? 'bg-emerald-500/10 text-emerald-400' : 'bg-violet-500/10 text-violet-400'}`}>
-                                {isRepair ? item.status : item.status || 'Device'}
-                              </span>
-                            </div>
-                            {isRepair && <p className={`text-sm ${t.textMuted} mt-3`}>{item.issue || 'Repair / service job'}</p>}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* REPAIRS / JOB SHEETS TAB */}
-        {activeTab === 'repairs' && (
-          <div className="space-y-6 animate-in fade-in duration-300">
-            <h2 className={`text-xl font-bold ${t.textMain}`}>Create Repair / Unlocking Job Sheet</h2>
-            <form onSubmit={handleAddRepair} className={`${t.cardBg} border ${t.border} p-6 rounded-3xl grid grid-cols-1 md:grid-cols-3 gap-4 shadow-xl`}>
-              <CustomerAutocomplete
-                value={newRepair.customerName}
-                placeholder="Customer Full Name"
-                customers={uniqueCustomers}
-                onChange={value => setNewRepair(prev => ({ ...prev, customerName: value }))}
-                onSelect={customer => handleCustomerSelect(customer, 'repair')}
-                className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`}
-              />
-              <input type="text" placeholder="Phone Number (e.g. 98xxxxxxxx)" value={newRepair.phone} onChange={e => setNewRepair({...newRepair, phone: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`} />
-              <input type="text" placeholder="Citizenship No. (Optional)" value={newRepair.citizenshipNo} onChange={e => setNewRepair({...newRepair, citizenshipNo: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none focus:border-blue-600`} />
-
-              <select value={newRepair.deviceType} onChange={e => setNewRepair({...newRepair, deviceType: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}>
-                <option value="Laptop Repair">Laptop Repair</option>
-                <option value="Mobile Repair">Mobile Repair</option>
-                <option value="Mobile (Unlock)">Mobile (Unlock)</option>
-                <option value="Desktop/Computer">Desktop/Computer</option>
-                <option value="Tablet Repair">Tablet Repair</option>
-              </select>
-
-              <input type="text" placeholder="Device Model (Optional)" value={newRepair.model} onChange={e => setNewRepair({...newRepair, model: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-              <input type="number" placeholder="Total Cost (NPR)" value={newRepair.totalCost} onChange={e => setNewRepair({...newRepair, totalCost: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-              <input type="number" placeholder="Paid Amount (NPR)" value={newRepair.paidAmount} onChange={e => setNewRepair({...newRepair, paidAmount: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-              <input type="text" placeholder="Warranty (e.g. 30 Days, 1 Year)" value={newRepair.warrantyMonths} onChange={e => setNewRepair({...newRepair, warrantyMonths: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-              <input type="text" placeholder="Issue / Details (Optional)" value={newRepair.issue} onChange={e => setNewRepair({...newRepair, issue: e.target.value})} className={`md:col-span-2 p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-
-              <div className={`md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-4 ${t.cardSecondary} p-4 rounded-2xl border ${t.border}`}>
+            {/* New Repair / Job Form */}
+            <div className={`${t.cardBg} rounded-3xl border p-6 shadow-2xl`}>
+              <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <Wrench className="w-5 h-5 text-blue-400" /> Create New Repair / Job Sheet
+              </h2>
+              <form onSubmit={handleAddRepair} className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
-                  <label className="text-sm font-bold text-slate-400 block mb-1">Customer Photo (Optional)</label>
-                  <input type="file" accept="image/*" onChange={e => handleImageUpload(e, 'customerPhoto')} className="text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer" />
-                  {newRepair.customerPhoto && <span className="text-sm text-emerald-400 mt-1 block font-semibold">✓ Customer Photo Attached</span>}
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">Customer Name</label>
+                  <CustomerAutocomplete
+                    value={newRepair.customerName}
+                    onChange={(val) => setNewRepair({ ...newRepair, customerName: val })}
+                    onSelect={(cust) => handleCustomerSelect(cust, 'repair')}
+                    customers={uniqueCustomers}
+                    placeholder="Customer Full Name"
+                    className={`w-full px-4 py-3 rounded-2xl ${t.inputBg} border text-sm outline-none focus:border-blue-500 transition`}
+                  />
                 </div>
                 <div>
-                  <label className="text-sm font-bold text-slate-400 block mb-1">Citizenship Photo (Optional)</label>
-                  <input type="file" accept="image/*" onChange={e => handleImageUpload(e, 'citizenshipPhoto')} className="text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer" />
-                  {newRepair.citizenshipPhoto && <span className="text-sm text-emerald-400 mt-1 block font-semibold">✓ Citizenship Photo Attached</span>}
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">Phone Number</label>
+                  <input
+                    type="text"
+                    value={newRepair.phone}
+                    onChange={(e) => setNewRepair({ ...newRepair, phone: e.target.value })}
+                    placeholder="98XXXXXXXX"
+                    className={`w-full px-4 py-3 rounded-2xl ${t.inputBg} border text-sm outline-none focus:border-blue-500 transition`}
+                  />
                 </div>
-              </div>
-              
-              <button type="submit" className="md:col-span-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-blue-600/35">Save Job Sheet</button>
-            </form>
-          </div>
-        )}
-
-        {/* DEVICES TAB */}
-        {activeTab === 'devices' && (
-          <div className="space-y-6 animate-in fade-in duration-300">
-            <div>
-              <h2 className={`text-xl font-bold ${t.textMain}`}>📱 Second-Hand & New Phone / Laptop Trading</h2>
-              <p className={`text-sm ${t.textMuted} mt-0.5`}>Buy multiple identical phones from the same party by adding a separate IMEI/Serial for each physical device. Edit records anytime; sales keep purchase price, seller, buyer and profit linked.</p>
-            </div>
-
-            <form onSubmit={handleAddDevice} className={`${t.cardBg} border ${t.border} p-6 rounded-3xl grid grid-cols-1 md:grid-cols-3 gap-4 shadow-xl`}>
-              <select
-                value={newDevice.tradeType || 'buy'}
-                onChange={e => {
-                  const tradeType = e.target.value;
-                  setNewDevice(prev => ({ ...prev, tradeType }));
-                  setDeviceTradeTab(tradeType);
-                  setSelectedPurchaseId('');
-                }}
-                className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}
-              >
-                <option value="buy">BUY / PURCHASE RECORD</option>
-                <option value="sell">SELL / SALES RECORD</option>
-              </select>
-
-              {newDevice.tradeType === 'sell' ? (
-                <select
-                  value={selectedPurchaseId}
-                  onChange={e => {
-                    const id = e.target.value;
-                    setSelectedPurchaseId(id);
-                    const purchase = devicesStock.find(d => d.id === id);
-                    if (purchase) {
-                      setNewDevice(prev => ({
-                        ...prev,
-                        deviceCategory: purchase.deviceCategory,
-                        brandModel: purchase.brandModel,
-                        imeiOrSerial: purchase.imeiOrSerial,
-                        condition: purchase.condition,
-                        buyPrice: String(purchase.buyPrice ?? ''),
-                        warrantyMonths: purchase.warrantyMonths || ''
-                      }));
-                    }
-                  }}
-                  className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}
-                  required
-                >
-                  <option value="">Select purchased device...</option>
-                  {devicesStock
-                    .filter(d => (d.tradeType || 'buy') === 'buy' && (d.status !== 'Sold' || d.id === selectedPurchaseId))
-                    .map(d => (
-                      <option key={d.id} value={d.id}>
-                        {d.brandModel} — IMEI/SN {d.imeiOrSerial} — Buy NPR {d.buyPrice}
-                      </option>
-                    ))}
-                </select>
-              ) : (
-                <select value={newDevice.deviceCategory} onChange={e => setNewDevice({...newDevice, deviceCategory: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}>
-                  <option value="Second-Hand Phone">Second-Hand Phone</option>
-                  <option value="Second-Hand Laptop">Second-Hand Laptop</option>
-                  <option value="New Phone">New Phone (Brand New)</option>
-                  <option value="New Laptop">New Laptop (Brand New)</option>
-                </select>
-              )}
-
-              <input type="text" placeholder="Brand & Model (e.g. iPhone 13 / Dell Inspiron)" value={newDevice.brandModel} onChange={e => setNewDevice({...newDevice, brandModel: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required readOnly={newDevice.tradeType === 'sell'} />
-
-              {newDevice.tradeType === 'buy' ? (
-                <div className={`md:col-span-2 ${t.cardSecondary} border ${t.border} rounded-2xl p-3`}>
-                  <div className="flex items-center justify-between gap-3 mb-2">
-                    <div>
-                      <p className={`text-sm font-black ${t.textMain}`}>IMEI / Serial Numbers</p>
-                      <p className={`text-xs ${t.textMuted}`}>Same model + same seller: add one IMEI for each physical phone.</p>
-                    </div>
-                    <button type="button" onClick={addDeviceImeiField} className="px-3 py-2 bg-blue-600/20 text-blue-400 rounded-xl text-xs font-black">+ Add IMEI</button>
-                  </div>
-                  <div className="space-y-2">
-                    {(newDevice.imeiList?.length ? newDevice.imeiList : [newDevice.imeiOrSerial || '']).map((imei, idx) => (
-                      <div key={idx} className="flex gap-2">
-                        <input type="text" placeholder={`IMEI / Serial No. ${idx + 1}`} value={imei}
-                          onChange={e => updateDeviceImeiField(idx, e.target.value)}
-                          className={`flex-1 p-3 ${t.inputBg} border rounded-xl text-sm font-mono focus:outline-none`} required />
-                        {(newDevice.imeiList?.length || 1) > 1 && (
-                          <button type="button" onClick={() => removeDeviceImeiField(idx)} className="p-3 bg-rose-500/10 text-rose-400 rounded-xl"><X size={16}/></button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">Citizenship No. (Optional)</label>
+                  <input
+                    type="text"
+                    value={newRepair.citizenshipNo}
+                    onChange={(e) => setNewRepair({ ...newRepair, citizenshipNo: e.target.value })}
+                    placeholder="XX-XX-XX-XXXXX"
+                    className={`w-full px-4 py-3 rounded-2xl ${t.inputBg} border text-sm outline-none focus:border-blue-500 transition`}
+                  />
                 </div>
-              ) : (
-                <input type="text" placeholder="IMEI / Serial No." value={newDevice.imeiOrSerial} className={`p-3 ${t.inputBg} border rounded-2xl text-sm font-mono focus:outline-none`} required readOnly />
-              )}
-
-              <input type="text" placeholder="Condition / Specs (e.g. Battery 90%, Scratchless)" value={newDevice.condition} onChange={e => setNewDevice({...newDevice, condition: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} readOnly={newDevice.tradeType === 'sell'} />
-              <CustomerAutocomplete
-                value={newDevice.partyName}
-                placeholder={newDevice.tradeType === 'buy' ? 'Seller / Party Name' : 'Buyer / Customer Name'}
-                customers={uniqueCustomers}
-                onChange={value => setNewDevice(prev => ({ ...prev, partyName: value }))}
-                onSelect={customer => handleCustomerSelect(customer, 'device')}
-                className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}
-              />
-              <input type="text" placeholder={newDevice.tradeType === 'buy' ? 'Seller Phone Number' : 'Customer Phone Number'} value={newDevice.partyPhone} onChange={e => setNewDevice({...newDevice, partyPhone: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-
-              {newDevice.tradeType === 'buy' && newDevice.deviceCategory.startsWith('Second-Hand') && (
-                <div className={`md:col-span-3 ${t.cardSecondary} border ${t.border} rounded-2xl p-4`}>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-                    <input type="text" placeholder="Citizenship / Nagarikta No. (optional)" value={newDevice.citizenshipNo || ''} onChange={e => setNewDevice({...newDevice, citizenshipNo: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm`} />
-                    <div>
-                      <label className={`text-sm font-bold ${t.textMuted} block mb-2`}>Seller Nagarikta Photo (optional)</label><p className={`text-xs ${t.textMuted} mb-2`}>Stored with this browser backup. Keep sensitive citizenship images protected.</p>
-                      <input type="file" accept="image/*" onChange={e => handleDeviceImageUpload(e, 'citizenshipPhoto')} className={`w-full p-2 ${t.inputBg} border rounded-2xl text-sm`} />
-                      {newDevice.citizenshipPhoto && <div className="mt-2 flex items-center gap-3"><img src={newDevice.citizenshipPhoto} alt="Citizenship preview" className="h-16 w-24 object-cover rounded-lg border" /><button type="button" onClick={() => setNewDevice(prev => ({...prev, citizenshipPhoto: ''}))} className="text-xs text-rose-400 font-bold">Remove</button></div>}
-                    </div>
-                  </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">Device Category</label>
+                  <select
+                    value={newRepair.deviceType}
+                    onChange={(e) => setNewRepair({ ...newRepair, deviceType: e.target.value })}
+                    className={`w-full px-4 py-3 rounded-2xl ${t.inputBg} border text-sm outline-none focus:border-blue-500 transition`}
+                  >
+                    <option value="Mobile Repair">Mobile Repair</option>
+                    <option value="Mobile (Unlock)">Mobile (Unlock)</option>
+                    <option value="Laptop Repair">Laptop Repair</option>
+                    <option value="Computer Repair">Computer Repair</option>
+                    <option value="Tablet Repair">Tablet Repair</option>
+                  </select>
                 </div>
-              )}
-
-              <input type="number" placeholder={newDevice.tradeType === 'buy' ? 'Purchase / Buy Price (NPR)' : 'Original Purchase Price (NPR)'} value={newDevice.buyPrice} onChange={e => setNewDevice({...newDevice, buyPrice: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} readOnly={newDevice.tradeType === 'sell'} />
-              <input type="number" placeholder={newDevice.tradeType === 'buy' ? 'Expected Selling Price (NPR)' : 'Selling Price (NPR)'} value={newDevice.sellPrice} onChange={e => setNewDevice({...newDevice, sellPrice: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
-              <input type="text" placeholder="Warranty (optional — enter your own)" value={newDevice.warrantyMonths} onChange={e => setNewDevice({...newDevice, warrantyMonths: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-
-              {newDevice.tradeType === 'buy' && (
-                <div className={`md:col-span-3 flex flex-wrap items-center justify-between gap-3 ${t.cardSecondary} border ${t.border} rounded-2xl p-3`}>
-                  <span className={`text-sm font-bold ${t.textMuted}`}>Units: {(newDevice.imeiList?.filter(v => String(v || '').trim()).length || 1)}</span>
-                  <span className={`text-sm font-black ${t.textMain}`}>Total Purchase: NPR {(newDevice.imeiList?.filter(v => String(v || '').trim()).length || 1) * Number(newDevice.buyPrice || 0)}</span>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">Device Model & Specs</label>
+                  <input
+                    type="text"
+                    value={newRepair.model}
+                    onChange={(e) => setNewRepair({ ...newRepair, model: e.target.value })}
+                    placeholder="e.g. iPhone 13 Pro / Dell Latitude"
+                    className={`w-full px-4 py-3 rounded-2xl ${t.inputBg} border text-sm outline-none focus:border-blue-500 transition`}
+                    required
+                  />
                 </div>
-              )}
-
-              <button type="submit" className="md:col-span-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-emerald-600/30">{editingDeviceId ? 'Update Device Record' : (newDevice.tradeType === 'sell' ? 'Save Sale & Generate Bill' : 'Save Purchase Record')}</button>
-              {editingDeviceId && newDevice.tradeType === 'sell' && <button type="button" onClick={() => restoreDeviceSale(editingDeviceId)} className="md:col-span-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl p-3.5 transition inline-flex items-center justify-center gap-2"><History size={17}/> Restore Sale / Return To Stock</button>}
-              {editingDeviceId && <button type="button" onClick={() => resetDeviceForm(newDevice.tradeType || 'buy')} className="md:col-span-3 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-2xl p-3.5 transition">Cancel Edit</button>}
-            </form>
-
-            <div className={`${t.cardBg} border ${t.border} rounded-3xl overflow-hidden shadow-xl`}>
-              <div className={`p-4 border-b ${t.border} flex flex-wrap gap-2 items-center justify-between`}>
-                <div className={`${t.cardSecondary} p-1 rounded-xl border ${t.border} flex`}>
-                  <button type="button" onClick={() => setDeviceTradeTab('buy')} className={`px-4 py-2 rounded-lg text-sm font-black transition ${deviceTradeTab === 'buy' ? 'bg-blue-600 text-white' : t.textMuted}`}>Bought / Purchased</button>
-                  <button type="button" onClick={() => setDeviceTradeTab('sell')} className={`px-4 py-2 rounded-lg text-sm font-black transition ${deviceTradeTab === 'sell' ? 'bg-emerald-600 text-white' : t.textMuted}`}>Sold / Sales</button>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">Total Cost (NPR)</label>
+                  <input
+                    type="number"
+                    value={newRepair.totalCost}
+                    onChange={(e) => setNewRepair({ ...newRepair, totalCost: e.target.value })}
+                    placeholder="5000"
+                    className={`w-full px-4 py-3 rounded-2xl ${t.inputBg} border text-sm outline-none focus:border-blue-500 transition`}
+                    required
+                  />
                 </div>
-                <div className={`text-sm ${t.textMuted}`}>
-                  Bought: {devicesStock.filter(d => (d.tradeType || 'buy') === 'buy').length} • Sold: {devicesStock.filter(d => d.tradeType === 'sell').length}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">Paid Amount (NPR)</label>
+                  <input
+                    type="number"
+                    value={newRepair.paidAmount}
+                    onChange={(e) => setNewRepair({ ...newRepair, paidAmount: e.target.value })}
+                    placeholder="2000"
+                    className={`w-full px-4 py-3 rounded-2xl ${t.inputBg} border text-sm outline-none focus:border-blue-500 transition`}
+                  />
                 </div>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                  <thead className={`${t.tableHeader} text-sm uppercase border-b`}>
-                    <tr>
-                      <th className="p-4">Device & Category</th>
-                      <th className="p-4">IMEI / S.N. & Condition</th>
-                      <th className="p-4">{deviceTradeTab === 'buy' ? 'Seller / Party' : 'Buyer / Customer'}</th>
-                      <th className="p-4">{deviceTradeTab === 'buy' ? 'Purchase Price' : 'Purchase → Sale / Profit'}</th>
-                      <th className="p-4">Date / Status</th>
-                      <th className="p-4 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className={`divide-y ${t.tableDivide}`}>
-                    {devicesStock.filter(dev => (dev.tradeType || 'buy') === deviceTradeTab).map(dev => (
-                      <tr key={dev.id}>
-                        <td className="p-4">
-                          <p className={`font-bold ${t.textMain}`}>{dev.brandModel}</p>
-                          <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 text-sm font-bold">{dev.deviceCategory}</span>
-                          {dev.linkedPurchaseId && <p className="text-xs text-violet-400 mt-1">Purchase: {dev.linkedPurchaseId}</p>}
-                        </td>
-                        <td className="p-4">
-                          <p className="font-mono text-sm text-blue-400">{getDeviceImeis(dev).join(', ')}</p>
-                          {getDeviceImeis(dev).length > 1 && <p className={`text-xs ${t.textMuted}`}>{getDeviceImeis(dev).length} IMEI records</p>}
-                          <p className={`text-sm ${t.textMuted}`}>{dev.condition}</p>
-                        </td>
-                        <td className="p-4">
-                          <p className={`font-bold ${t.textMain}`}>{dev.partyName}</p>
-                          <p className={`text-sm ${t.textMuted}`}>{dev.partyPhone}</p>
-                          {deviceTradeTab === 'sell' && <p className={`text-xs ${t.textMuted} mt-1`}>Bought from: {dev.sellerName || 'N/A'}</p>}
-                        </td>
-                        <td className="p-4">
-                          {deviceTradeTab === 'buy' ? (
-                            <p className="text-sm font-bold text-rose-400">NPR {dev.buyPrice}</p>
-                          ) : (
-                            <>
-                              <p className="text-sm text-rose-400">Buy: NPR {dev.buyPrice}</p>
-                              <p className="text-sm font-bold text-emerald-400">Sale: NPR {dev.sellPrice}</p>
-                              <p className={`text-sm font-black ${Number(dev.profit) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>Profit: NPR {dev.profit}</p>
-                            </>
-                          )}
-                        </td>
-                        <td className="p-4">
-                          {deviceTradeTab === 'sell' && <p className={`text-xs ${t.textMuted}`}>Bought: {dev.purchaseDate || 'N/A'}</p>}
-                          <p className={`text-sm ${t.textMuted}`}>{deviceTradeTab === 'sell' ? (dev.saleDate || dev.date) : (dev.purchaseDate || dev.date)}</p>
-                          <span className={`text-sm font-bold ${dev.status === 'Sold' ? 'text-rose-400' : 'text-blue-400'}`}>{dev.status || 'In Stock'}</span>
-                        </td>
-                        <td className="p-4 text-right space-x-2">
-                          <button onClick={() => {
-                            setEditingDeviceId(dev.id);
-                            setNewDevice({ tradeType: dev.tradeType || 'buy', deviceCategory: dev.deviceCategory || 'Second-Hand Phone', brandModel: dev.brandModel || '', imeiOrSerial: dev.imeiOrSerial || '', imeiList: getDeviceImeis(dev), condition: dev.condition || '', partyName: dev.partyName || '', partyPhone: dev.partyPhone || '', buyPrice: String(dev.buyPrice ?? ''), sellPrice: String(dev.sellPrice ?? ''), warrantyMonths: dev.warrantyMonths || '', citizenshipNo: dev.citizenshipNo || '', citizenshipPhoto: dev.citizenshipPhoto || '' });
-                            setSelectedPurchaseId(dev.linkedPurchaseId || '');
-                            setDeviceTradeTab(dev.tradeType || 'buy');
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                          }} className="p-2 bg-amber-500/10 text-amber-400 rounded-xl hover:bg-amber-500/20"><Pencil size={14}/></button>
-                          {deviceTradeTab === 'sell' && <button onClick={() => restoreDeviceSale(dev.id)} title="Restore sale / return to stock" className="p-2 bg-blue-500/10 text-blue-400 rounded-xl hover:bg-blue-500/20"><History size={14}/></button>}
-                          {deviceTradeTab === 'buy' && <button onClick={() => generateDevicePurchaseBill(dev)} title="Generate purchase bill" className="p-2 bg-emerald-500/10 text-emerald-400 rounded-xl hover:bg-emerald-500/20"><Printer size={14}/></button>}
-                          <button onClick={() => { if(window.confirm('Delete this device record?')) deleteDevice(dev.id); }} className="p-2 bg-rose-500/10 text-rose-400 rounded-xl hover:bg-rose-500/20"><Trash2 size={14}/></button>
-                        </td>
-                      </tr>
-                    ))}
-                    {devicesStock.filter(dev => (dev.tradeType || 'buy') === deviceTradeTab).length === 0 && (
-                      <tr><td colSpan="6" className={`p-8 text-center ${t.textMuted}`}>No {deviceTradeTab === 'buy' ? 'purchase' : 'sales'} records yet.</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ACCESSORIES / POS BILLING TAB */}
-        {activeTab === 'pos' && (
-          <div className="space-y-6 animate-in fade-in duration-300">
-            <div>
-              <h2 className={`text-xl font-bold ${t.textMain}`}>Accessories & Parts Direct Billing (POS)</h2>
-              <p className={`text-sm ${t.textMuted} mt-0.5`}>Pick from stock or type custom item names and prices freely. Stock will deduct automatically.</p>
-            </div>
-
-            <form onSubmit={handleSavePosBill} className={`${t.cardBg} border ${t.border} p-6 rounded-3xl space-y-4 shadow-xl`}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <CustomerAutocomplete
-                  value={posBill.customerName}
-                  placeholder="Customer Full Name (Optional)"
-                  customers={uniqueCustomers}
-                  onChange={value => setPosBill(prev => ({ ...prev, customerName: value }))}
-                  onSelect={customer => handleCustomerSelect(customer, 'pos')}
-                  className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}
-                />
-                <input 
-                  type="text" 
-                  placeholder="Phone Number" 
-                  value={posBill.phone} 
-                  onChange={e => setPosBill({...posBill, phone: e.target.value})} 
-                  className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} 
-                />
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className={`text-sm font-bold ${t.textMain}`}>Bill Items / Accessories</label>
-                  <button type="button" onClick={handleAddPosItem} className="px-3 py-1.5 bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 rounded-xl text-xs font-bold flex items-center gap-1">
-                    <Plus size={14}/> Add Item
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">Warranty Period</label>
+                  <select
+                    value={newRepair.warrantyMonths}
+                    onChange={(e) => setNewRepair({ ...newRepair, warrantyMonths: e.target.value })}
+                    className={`w-full px-4 py-3 rounded-2xl ${t.inputBg} border text-sm outline-none focus:border-blue-500 transition`}
+                  >
+                    <option value="">No Warranty</option>
+                    <option value="1">1 Month</option>
+                    <option value="3">3 Months</option>
+                    <option value="6">6 Months</option>
+                    <option value="12">1 Year</option>
+                  </select>
+                </div>
+                <div className="md:col-span-3">
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">Issue / Remarks / Unlocking Details</label>
+                  <input
+                    type="text"
+                    value={newRepair.issue}
+                    onChange={(e) => setNewRepair({ ...newRepair, issue: e.target.value })}
+                    placeholder="e.g. iCloud unlock / Screen replacement / Dead repair"
+                    className={`w-full px-4 py-3 rounded-2xl ${t.inputBg} border text-sm outline-none focus:border-blue-500 transition`}
+                  />
+                </div>
+                <div className="flex items-end">
+                  <button type="submit" className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl shadow-lg shadow-blue-600/30 transition flex items-center justify-center gap-2">
+                    <Plus className="w-5 h-5" /> Save Job Sheet
                   </button>
                 </div>
+              </form>
+            </div>
 
-                {posBill.items.map((item, index) => (
-                  <div key={index} className={`flex flex-col sm:flex-row gap-2 items-center ${t.cardSecondary} p-3 rounded-2xl border ${t.border}`}>
-                    <select
-                      value={item.name}
-                      onChange={e => handlePosItemChange(index, 'name', e.target.value)}
-                      className={`flex-1 p-2.5 ${t.inputBg} border rounded-xl text-sm focus:outline-none`}
-                    >
-                      <option value="">Select inventory part or type custom...</option>
-                      {inventory.map(inv => (
-                        <option key={inv.id} value={inv.name}>{inv.name} (Stock: {inv.stock} | NPR {inv.price})</option>
-                      ))}
-                    </select>
+            {/* Invoices List / Table */}
+            <div className={`${t.cardBg} rounded-3xl border shadow-2xl overflow-hidden`}>
+              <div className="p-6 border-b border-slate-700 flex flex-col sm:flex-row gap-4 items-center justify-between">
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <div className="relative flex-1 sm:w-80">
+                    <Search className="w-4 h-4 text-slate-400 absolute left-4 top-3.5" />
                     <input
                       type="text"
-                      placeholder="Item name / Custom"
-                      value={item.name}
-                      onChange={e => handlePosItemChange(index, 'name', e.target.value)}
-                      className={`flex-1 p-2.5 ${t.inputBg} border rounded-xl text-sm focus:outline-none`}
+                      placeholder="Search by invoice #, customer name, phone..."
+                      value={invoiceSearch}
+                      onChange={(e) => setInvoiceSearch(e.target.value)}
+                      className={`w-full pl-11 pr-4 py-2.5 rounded-2xl ${t.inputBg} border text-xs outline-none focus:border-blue-500 transition`}
                     />
-                    <input
-                      type="number"
-                      placeholder="Price"
-                      value={item.price}
-                      onChange={e => handlePosItemChange(index, 'price', e.target.value)}
-                      className={`w-full sm:w-28 p-2.5 ${t.inputBg} border rounded-xl text-sm focus:outline-none`}
-                    />
-                    <input
-                      type="number"
-                      placeholder="Qty"
-                      min="1"
-                      value={item.qty}
-                      onChange={e => handlePosItemChange(index, 'qty', e.target.value)}
-                      className={`w-full sm:w-20 p-2.5 ${t.inputBg} border rounded-xl text-sm focus:outline-none`}
-                    />
-                    {posBill.items.length > 1 && (
-                      <button type="button" onClick={() => handleRemovePosItem(index)} className="p-2.5 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 rounded-xl">
-                        <Trash2 size={16}/>
-                      </button>
-                    )}
                   </div>
-                ))}
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                <div>
-                  <label className={`text-sm font-bold ${t.textMuted} block mb-1`}>Paid Amount (NPR)</label>
-                  <input 
-                    type="number" 
-                    placeholder={`Total: NPR ${posBill.items.reduce((sum, item) => sum + (Number(item.price || 0) * Number(item.qty || 1)), 0)}`} 
-                    value={posBill.paidAmount} 
-                    onChange={e => setPosBill({...posBill, paidAmount: e.target.value})} 
-                    className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} 
-                  />
                 </div>
-                <div>
-                  <label className={`text-sm font-bold ${t.textMuted} block mb-1`}>Warranty (Optional)</label>
-                  <input 
-                    type="text" 
-                    placeholder="e.g. 7 Days Replacement, 1 Month" 
-                    value={posBill.warrantyMonths} 
-                    onChange={e => setPosBill({...posBill, warrantyMonths: e.target.value})} 
-                    className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} 
-                  />
+
+                <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto">
+                  {['All', 'Repair', 'Accessories', 'Device Sale', 'Device Purchase', 'Parts Purchase'].map(tab => (
+                    <button
+                      key={tab}
+                      onClick={() => setInvoiceFilterTab(tab)}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition ${
+                        invoiceFilterTab === tab ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-800 text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      {tab}
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              <div className={`flex items-center justify-between p-4 ${t.cardSecondary} rounded-2xl border ${t.border}`}>
-                <div>
-                  <p className={`text-sm ${t.textMuted}`}>Total Accessories Bill</p>
-                  <p className="text-xl font-black text-emerald-400">NPR {posBill.items.reduce((sum, item) => sum + (Number(item.price || 0) * Number(item.qty || 1)), 0)}</p>
-                </div>
-                <button type="submit" className="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl transition shadow-lg shadow-emerald-600/30">
-                  Save & Complete Bill
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
-
-        {/* INVOICES & BILLS TAB */}
-        {activeTab === 'invoices' && (
-          <div className="space-y-6 animate-in fade-in duration-300">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-              <div>
-                <h2 className={`text-xl font-bold ${t.textMain}`}>Invoices, Job Sheets & Receipts</h2>
-                <p className={`text-sm ${t.textMuted} mt-0.5`}>Preview, print, download PNG, send via WhatsApp, or update payment & repair status.</p>
-              </div>
-              <div className={`flex items-center gap-2 ${t.inputBg} border ${t.border} rounded-2xl px-3 py-2.5 w-full lg:w-80`}>
-                <Search size={16} className={t.textMuted} />
-                <input
-                  type="text"
-                  placeholder="Search invoice ID, customer, phone..."
-                  value={invoiceSearch}
-                  onChange={e => setInvoiceSearch(e.target.value)}
-                  className="bg-transparent outline-none text-sm w-full"
-                />
-              </div>
-            </div>
-
-            <div className={`flex flex-wrap gap-2 ${t.cardSecondary} p-2 rounded-2xl border ${t.border}`}>
-              {['All', 'Repair', 'Accessories', 'Devices', 'Due', 'Paid'].map(tab => (
-                <button
-                  key={tab}
-                  onClick={() => setInvoiceFilterTab(tab)}
-                  className={`px-4 py-2 rounded-xl text-sm font-bold transition ${invoiceFilterTab === tab ? 'bg-blue-600 text-white shadow-md' : `${t.textMuted} hover:text-white`}`}
-                >
-                  {tab}
-                </button>
-              ))}
-            </div>
-
-            <div className={`${t.cardBg} border ${t.border} rounded-3xl overflow-hidden shadow-xl`}>
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                  <thead className={`${t.tableHeader} text-sm uppercase border-b`}>
-                    <tr>
-                      <th className="p-4">Bill ID / Date</th>
-                      <th className="p-4">Customer & Phone</th>
-                      <th className="p-4">Device / Items</th>
-                      <th className="p-4">Total / Due</th>
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className={`${t.tableHeader} text-xs font-black uppercase tracking-wider`}>
+                      <th className="p-4">Inv # & Date</th>
+                      <th className="p-4">Customer / Party</th>
+                      <th className="p-4">Device / Model</th>
+                      <th className="p-4">Total (NPR)</th>
+                      <th className="p-4">Paid (NPR)</th>
+                      <th className="p-4">Due (Baaki)</th>
                       <th className="p-4">Status</th>
                       <th className="p-4 text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className={`divide-y ${t.tableDivide}`}>
-                    {filteredInvoices.map(inv => (
-                      <tr key={inv.id}>
-                        <td className="p-4">
-                          <p className="font-mono font-bold text-blue-400">{inv.id}</p>
-                          <p className={`text-xs ${t.textMuted}`}>{inv.dateTime}</p>
-                        </td>
-                        <td className="p-4">
-                          <p className={`font-bold ${t.textMain}`}>{inv.customerName}</p>
-                          <p className={`text-sm ${t.textMuted}`}>{inv.phone}</p>
-                        </td>
-                        <td className="p-4">
-                          <p className={`font-bold ${t.textMain}`}>{inv.model || inv.deviceType}</p>
-                          <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 text-xs font-bold">{inv.billType || 'Repair'}</span>
-                        </td>
-                        <td className="p-4">
-                          <p className={`font-bold ${t.textMain}`}>NPR {inv.totalCost}</p>
-                          {Number(inv.dueAmount) > 0 ? (
-                            <p className="text-sm font-bold text-rose-400">Due: NPR {inv.dueAmount}</p>
-                          ) : (
-                            <p className="text-sm text-emerald-400 font-bold">Paid</p>
-                          )}
-                        </td>
-                        <td className="p-4">
-                          <select
-                            value={inv.status || 'Pending'}
-                            onChange={e => updateJobStatus(inv.id, e.target.value)}
-                            className={`p-2 ${t.inputBg} border rounded-xl text-xs font-bold focus:outline-none`}
-                          >
-                            <option value="Pending">Pending</option>
-                            <option value="In Progress">In Progress</option>
-                            <option value="Ready for Pickup">Ready for Pickup</option>
-                            <option value="Delivered">Delivered</option>
-                            <option value="Completed">Completed</option>
-                          </select>
-                        </td>
-                        <td className="p-4 text-right space-x-1.5">
-                          <button onClick={() => setSelectedInvoice(inv)} title="Preview Invoice" className="p-2 bg-blue-500/10 text-blue-400 rounded-xl hover:bg-blue-500/20"><Eye size={14}/></button>
-                          <button onClick={() => printInvoice(inv)} title="Print Invoice" className="p-2 bg-emerald-500/10 text-emerald-400 rounded-xl hover:bg-emerald-500/20"><Printer size={14}/></button>
-                          <button onClick={() => sendToWhatsApp(inv)} title="Send via WhatsApp" className="p-2 bg-emerald-600/20 text-emerald-400 rounded-xl hover:bg-emerald-600/30"><MessageSquare size={14}/></button>
-                          <button onClick={() => setEditingInvoice(inv)} title="Edit Invoice" className="p-2 bg-amber-500/10 text-amber-400 rounded-xl hover:bg-amber-500/20"><Pencil size={14}/></button>
-                          <button onClick={() => { if(window.confirm('Delete this invoice?')) deleteRepair(inv.id); }} title="Delete" className="p-2 bg-rose-500/10 text-rose-400 rounded-xl hover:bg-rose-500/20"><Trash2 size={14}/></button>
-                        </td>
-                      </tr>
-                    ))}
-                    {filteredInvoices.length === 0 && (
-                      <tr><td colSpan="6" className={`p-8 text-center ${t.textMuted}`}>No invoices or job sheets found.</td></tr>
-                    )}
+                  <tbody className={`divide-y ${t.tableDivide} text-sm`}>
+                    {repairs
+                      .filter(r => {
+                        if (invoiceFilterTab !== 'All' && r.billType !== invoiceFilterTab) return false;
+                        if (!invoiceSearch) return true;
+                        const q = invoiceSearch.toLowerCase();
+                        return (r.id && r.id.toLowerCase().includes(q)) ||
+                               (r.customerName && r.customerName.toLowerCase().includes(q)) ||
+                               (r.phone && r.phone.toLowerCase().includes(q)) ||
+                               (r.model && r.model.toLowerCase().includes(q));
+                      })
+                      .map(inv => {
+                        const due = Number(inv.dueAmount || 0);
+                        return (
+                          <tr key={inv.id} className="hover:bg-slate-800/30 transition">
+                            <td className="p-4 font-medium text-white">
+                              <div>{inv.id}</div>
+                              <div className="text-xs text-slate-400 font-normal">{inv.dateTime || inv.date}</div>
+                              <span className="inline-block mt-1 px-2 py-0.5 rounded-md bg-slate-800 text-[10px] font-bold text-slate-300 border border-slate-700">
+                                {inv.billType || 'Repair'}
+                              </span>
+                            </td>
+                            <td className="p-4">
+                              <div className="font-bold text-white">{inv.customerName}</div>
+                              <div className="text-xs text-slate-400">{inv.phone}</div>
+                            </td>
+                            <td className="p-4">
+                              <div className="font-semibold text-slate-200">{inv.model || inv.deviceType}</div>
+                              <div className="text-xs text-slate-400 truncate max-w-xs">{inv.issue}</div>
+                            </td>
+                            <td className="p-4 font-bold text-white">NPR {Number(inv.totalCost || 0).toLocaleString()}</td>
+                            <td className="p-4 font-bold text-emerald-400">NPR {Number(inv.paidAmount || 0).toLocaleString()}</td>
+                            <td className="p-4 font-bold">
+                              <span className={due > 0 ? 'text-amber-400 font-black' : 'text-slate-400'}>
+                                NPR {due.toLocaleString()}
+                              </span>
+                            </td>
+                            <td className="p-4">
+                              <select
+                                value={inv.status || 'Pending'}
+                                onChange={(e) => updateJobStatus(inv.id, e.target.value)}
+                                className="px-3 py-1.5 rounded-xl bg-slate-800 text-xs text-white border border-slate-700 outline-none font-semibold"
+                              >
+                                <option value="Pending">Pending</option>
+                                <option value="In Progress">In Progress</option>
+                                <option value="Ready">Ready</option>
+                                <option value="Delivered">Delivered</option>
+                                <option value="Paid">Paid</option>
+                              </select>
+                            </td>
+                            <td className="p-4 text-right space-x-2">
+                              {due > 0 && (
+                                <button
+                                  onClick={() => markInvoiceAsPaid(inv.id)}
+                                  className="px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-xl text-xs font-bold border border-emerald-500/30 transition"
+                                  title="Mark as Fully Paid"
+                                >
+                                  Settle
+                                </button>
+                              )}
+                              <button
+                                onClick={() => setSelectedInvoice(inv)}
+                                className="p-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded-xl transition"
+                                title="View & Print Invoice"
+                              >
+                                <Printer className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => setRepairs(repairs.filter(r => r.id !== inv.id))}
+                                className="p-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-xl transition"
+                                title="Delete Invoice"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
                   </tbody>
                 </table>
               </div>
@@ -2006,73 +1473,551 @@ _Thank you for choosing ${shopInfo.name}!_`;
           </div>
         )}
 
-        {/* INVENTORY / PARTS STOCK TAB */}
-        {activeTab === 'inventory' && (
-          <div className="space-y-6 animate-in fade-in duration-300">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-              <div>
-                <h2 className={`text-xl font-bold ${t.textMain}`}>Parts & Stock Inventory</h2>
-                <p className={`text-sm ${t.textMuted} mt-0.5`}>Manage spare parts, screen replacements, accessories stock levels and purchase records.</p>
+        {/* ================================= TAB 2: POS BILLING ================================= */}
+        {activeTab === 'pos' && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-6">
+              <div className={`${t.cardBg} rounded-3xl border p-6 shadow-2xl`}>
+                <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                  <ShoppingBag className="w-5 h-5 text-blue-400" /> POS Accessories & Parts Billing
+                </h2>
+                <form onSubmit={handleSavePosBill} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-400 mb-1">Customer Name</label>
+                      <CustomerAutocomplete
+                        value={posBill.customerName}
+                        onChange={(val) => setPosBill({ ...posBill, customerName: val })}
+                        onSelect={(cust) => handleCustomerSelect(cust, 'pos')}
+                        customers={uniqueCustomers}
+                        placeholder="Walk-in Customer"
+                        className={`w-full px-4 py-3 rounded-2xl ${t.inputBg} border text-sm outline-none focus:border-blue-500 transition`}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-400 mb-1">Phone Number</label>
+                      <input
+                        type="text"
+                        value={posBill.phone}
+                        onChange={(e) => setPosBill({ ...posBill, phone: e.target.value })}
+                        placeholder="98XXXXXXXX"
+                        className={`w-full px-4 py-3 rounded-2xl ${t.inputBg} border text-sm outline-none focus:border-blue-500 transition`}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-xs font-semibold text-slate-400">Bill Items</label>
+                      <button
+                        type="button"
+                        onClick={handleAddPosItem}
+                        className="px-3 py-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded-xl text-xs font-bold transition flex items-center gap-1"
+                      >
+                        <Plus className="w-3.5 h-3.5" /> Add Item
+                      </button>
+                    </div>
+
+                    <div className="space-y-3">
+                      {posBill.items.map((item, idx) => (
+                        <div key={idx} className="flex items-center gap-3 bg-[#14171f] p-3 rounded-2xl border border-slate-800">
+                          <input
+                            type="text"
+                            list={`inventory-list-${idx}`}
+                            placeholder="Item / Accessory Name"
+                            value={item.name}
+                            onChange={(e) => handlePosItemChange(idx, 'name', e.target.value)}
+                            className={`flex-1 px-3 py-2 rounded-xl ${t.inputBg} border text-xs outline-none focus:border-blue-500`}
+                          />
+                          <datalist id={`inventory-list-${idx}`}>
+                            {inventory.map(inv => (
+                              <option key={inv.id} value={inv.name}>{inv.name} (Stock: {inv.stock} | NPR {inv.price})</option>
+                            ))}
+                          </datalist>
+
+                          <input
+                            type="number"
+                            placeholder="Qty"
+                            value={item.qty}
+                            onChange={(e) => handlePosItemChange(idx, 'qty', e.target.value)}
+                            className={`w-20 px-3 py-2 rounded-xl ${t.inputBg} border text-xs outline-none focus:border-blue-500`}
+                            min="1"
+                          />
+
+                          <input
+                            type="number"
+                            placeholder="Price (NPR)"
+                            value={item.price}
+                            onChange={(e) => handlePosItemChange(idx, 'price', e.target.value)}
+                            className={`w-28 px-3 py-2 rounded-xl ${t.inputBg} border text-xs outline-none focus:border-blue-500`}
+                          />
+
+                          {posBill.items.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => handleRemovePosItem(idx)}
+                              className="p-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-xl transition"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-400 mb-1">Paid Amount (NPR)</label>
+                      <input
+                        type="number"
+                        value={posBill.paidAmount}
+                        onChange={(e) => setPosBill({ ...posBill, paidAmount: e.target.value })}
+                        placeholder="Leave blank if fully paid"
+                        className={`w-full px-4 py-3 rounded-2xl ${t.inputBg} border text-sm outline-none focus:border-blue-500 transition`}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-400 mb-1">Warranty Period</label>
+                      <select
+                        value={posBill.warrantyMonths}
+                        onChange={(e) => setPosBill({ ...posBill, warrantyMonths: e.target.value })}
+                        className={`w-full px-4 py-3 rounded-2xl ${t.inputBg} border text-sm outline-none focus:border-blue-500 transition`}
+                      >
+                        <option value="">No Warranty</option>
+                        <option value="1">1 Month</option>
+                        <option value="3">3 Months</option>
+                        <option value="6">6 Months</option>
+                        <option value="12">1 Year</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-2xl shadow-lg shadow-blue-600/30 transition flex items-center justify-center gap-2"
+                  >
+                    <Printer className="w-5 h-5" /> Generate & Save POS Bill
+                  </button>
+                </form>
               </div>
             </div>
 
-            <form onSubmit={handleAddPart} className={`${t.cardBg} border ${t.border} p-6 rounded-3xl grid grid-cols-1 md:grid-cols-3 gap-4 shadow-xl`}>
-              <select value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}>
-                {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-              </select>
-              <input type="text" placeholder="Part / Accessory Name" value={newPart.name} onChange={e => setNewPart({...newPart, name: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
-              <input type="number" placeholder="Initial Stock Quantity" value={newPart.stock} onChange={e => setNewPart({...newPart, stock: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
-              <input type="number" placeholder="Cost Price (NPR)" value={newPart.costPrice} onChange={e => setNewPart({...newPart, costPrice: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
-              <input type="number" placeholder="Selling Price (NPR)" value={newPart.price} onChange={e => setNewPart({...newPart, price: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
-              <input type="number" placeholder="Min Alert Stock (e.g. 5)" value={newPart.minStock} onChange={e => setNewPart({...newPart, minStock: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+            {/* POS Summary / Quick Inventory Sidebar */}
+            <div className="space-y-6">
+              <div className={`${t.cardBg} rounded-3xl border p-6 shadow-2xl`}>
+                <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
+                  <Package className="w-4 h-4 text-blue-400" /> Fast Inventory Select
+                </h3>
+                <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
+                  {inventory.map(item => (
+                    <div key={item.id} className="p-3 bg-[#14171f] rounded-2xl border border-slate-800 flex items-center justify-between">
+                      <div>
+                        <div className="text-sm font-bold text-white">{item.name}</div>
+                        <div className="text-xs text-slate-400">Stock: {item.stock} | NPR {item.price}</div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const last = posBill.items[posBill.items.length - 1];
+                          if (last && !last.name) {
+                            const updated = [...posBill.items];
+                            updated[updated.length - 1] = { name: item.name, price: item.price, qty: 1 };
+                            setPosBill({ ...posBill, items: updated });
+                          } else {
+                            setPosBill({ ...posBill, items: [...posBill.items, { name: item.name, price: item.price, qty: 1 }] });
+                          }
+                        }}
+                        className="px-3 py-1.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded-xl text-xs font-bold transition"
+                      >
+                        Add
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
-              <button type="submit" className="md:col-span-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-blue-600/30">
-                {editingPartId ? 'Update Stock Item' : 'Add New Part to Inventory'}
-              </button>
-            </form>
+        {/* ================================= TAB 3: DEVICE TRADE & STOCK ================================= */}
+        {activeTab === 'devices' && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className={`${t.cardBg} p-6 rounded-3xl border shadow-xl relative overflow-hidden`}>
+                <div className="absolute right-4 top-4 p-3 bg-blue-500/10 rounded-2xl text-blue-400"><Smartphone className="w-6 h-6" /></div>
+                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">In-Stock Devices</div>
+                <div className="text-3xl font-black text-white mt-2">
+                  {devicesStock.filter(d => (d.tradeType || 'buy') === 'buy' && d.status !== 'Sold').length}
+                </div>
+              </div>
+              <div className={`${t.cardBg} p-6 rounded-3xl border shadow-xl relative overflow-hidden`}>
+                <div className="absolute right-4 top-4 p-3 bg-emerald-500/10 rounded-2xl text-emerald-400"><DollarSign className="w-6 h-6" /></div>
+                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Device Sales</div>
+                <div className="text-3xl font-black text-emerald-400 mt-2">NPR {totalDeviceSales.toLocaleString()}</div>
+              </div>
+              <div className={`${t.cardBg} p-6 rounded-3xl border shadow-xl relative overflow-hidden`}>
+                <div className="absolute right-4 top-4 p-3 bg-indigo-500/10 rounded-2xl text-indigo-400"><TrendingUp className="w-6 h-6" /></div>
+                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Device Trading Profit</div>
+                <div className="text-3xl font-black text-indigo-400 mt-2">NPR {totalDeviceProfit.toLocaleString()}</div>
+              </div>
+              <div className={`${t.cardBg} p-6 rounded-3xl border shadow-xl relative overflow-hidden flex items-center justify-center`}>
+                <div className="flex bg-[#14171f] p-1.5 rounded-2xl border border-slate-700 w-full">
+                  <button
+                    onClick={() => { setDeviceTradeTab('buy'); resetDeviceForm('buy'); }}
+                    className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition ${deviceTradeTab === 'buy' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}
+                  >
+                    Buy Device
+                  </button>
+                  <button
+                    onClick={() => { setDeviceTradeTab('sell'); resetDeviceForm('sell'); }}
+                    className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition ${deviceTradeTab === 'sell' ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}
+                  >
+                    Sell Device
+                  </button>
+                </div>
+              </div>
+            </div>
 
-            <div className={`${t.cardBg} border ${t.border} rounded-3xl overflow-hidden shadow-xl`}>
-              <div className={`p-4 border-b ${t.border}`}>
-                <h3 className={`font-bold ${t.textMain}`}>Current Inventory Stock</h3>
+            {/* Device Buy / Sell Form */}
+            <div className={`${t.cardBg} rounded-3xl border p-6 shadow-2xl`}>
+              <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <Smartphone className="w-5 h-5 text-blue-400" /> 
+                {deviceTradeTab === 'buy' ? (editingDeviceId ? 'Edit Device Purchase Record' : 'Record Second-Hand Device Purchase') : (editingDeviceId ? 'Edit Device Sale Record' : 'Record Second-Hand Device Sale')}
+              </h2>
+              <form onSubmit={handleAddDevice} className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">Device Category</label>
+                  <select
+                    value={newDevice.deviceCategory}
+                    onChange={(e) => setNewDevice({ ...newDevice, deviceCategory: e.target.value })}
+                    className={`w-full px-4 py-3 rounded-2xl ${t.inputBg} border text-sm outline-none focus:border-blue-500 transition`}
+                  >
+                    <option value="Second-Hand Phone">Second-Hand Phone</option>
+                    <option value="Second-Hand Laptop">Second-Hand Laptop</option>
+                    <option value="Second-Hand Tablet">Second-Hand Tablet</option>
+                    <option value="Refurbished Device">Refurbished Device</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">Brand & Model Name</label>
+                  <input
+                    type="text"
+                    value={newDevice.brandModel}
+                    onChange={(e) => setNewDevice({ ...newDevice, brandModel: e.target.value })}
+                    placeholder="e.g. iPhone 12 Pro (128GB)"
+                    className={`w-full px-4 py-3 rounded-2xl ${t.inputBg} border text-sm outline-none focus:border-blue-500 transition`}
+                    required
+                  />
+                </div>
+
+                {deviceTradeTab === 'buy' ? (
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-semibold text-slate-400 mb-1">IMEI or Serial Number(s)</label>
+                    <div className="space-y-2">
+                      {newDevice.imeiList.map((imei, idx) => (
+                        <div key={idx} className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={imei}
+                            onChange={(e) => updateDeviceImeiField(idx, e.target.value)}
+                            placeholder={`IMEI / Serial #${idx + 1}`}
+                            className={`flex-1 px-4 py-3 rounded-2xl ${t.inputBg} border text-sm outline-none focus:border-blue-500 transition`}
+                            required={idx === 0}
+                          />
+                          {newDevice.imeiList.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removeDeviceImeiField(idx)}
+                              className="p-3 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-2xl transition"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={addDeviceImeiField}
+                        className="px-4 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded-xl text-xs font-bold transition flex items-center gap-1.5"
+                      >
+                        <Plus className="w-4 h-4" /> Add Another IMEI / Serial
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-400 mb-1">Select In-Stock Device</label>
+                    <select
+                      value={selectedPurchaseId}
+                      onChange={(e) => {
+                        const pid = e.target.value;
+                        setSelectedPurchaseId(pid);
+                        const p = devicesStock.find(d => d.id === pid);
+                        if (p) {
+                          setNewDevice({
+                            ...newDevice,
+                            brandModel: p.brandModel,
+                            deviceCategory: p.deviceCategory,
+                            imeiOrSerial: p.imeiOrSerial,
+                            buyPrice: p.buyPrice,
+                            sellPrice: p.sellPrice || '',
+                            partyName: p.partyName,
+                            partyPhone: p.partyPhone
+                          });
+                        }
+                      }}
+                      className={`w-full px-4 py-3 rounded-2xl ${t.inputBg} border text-sm outline-none focus:border-blue-500 transition`}
+                      required
+                    >
+                      <option value="">-- Choose In-Stock Device --</option>
+                      {devicesStock.filter(d => (d.tradeType || 'buy') === 'buy' && d.status !== 'Sold').map(d => (
+                        <option key={d.id} value={d.id}>{d.brandModel} [IMEI: {d.imeiOrSerial}] - Buy: NPR {d.buyPrice}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">Condition & Battery Health</label>
+                  <input
+                    type="text"
+                    value={newDevice.condition}
+                    onChange={(e) => setNewDevice({ ...newDevice, condition: e.target.value })}
+                    placeholder="e.g. Good (Battery 88%)"
+                    className={`w-full px-4 py-3 rounded-2xl ${t.inputBg} border text-sm outline-none focus:border-blue-500 transition`}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">
+                    {deviceTradeTab === 'buy' ? "Seller's Name" : "Customer's Name"}
+                  </label>
+                  <CustomerAutocomplete
+                    value={newDevice.partyName}
+                    onChange={(val) => setNewDevice({ ...newDevice, partyName: val })}
+                    onSelect={(cust) => handleCustomerSelect(cust, 'device')}
+                    customers={uniqueCustomers}
+                    placeholder="Full Name"
+                    className={`w-full px-4 py-3 rounded-2xl ${t.inputBg} border text-sm outline-none focus:border-blue-500 transition`}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">Phone Number</label>
+                  <input
+                    type="text"
+                    value={newDevice.partyPhone}
+                    onChange={(e) => setNewDevice({ ...newDevice, partyPhone: e.target.value })}
+                    placeholder="98XXXXXXXX"
+                    className={`w-full px-4 py-3 rounded-2xl ${t.inputBg} border text-sm outline-none focus:border-blue-500 transition`}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">Citizenship No. (Mandatory for Buying)</label>
+                  <input
+                    type="text"
+                    value={newDevice.citizenshipNo}
+                    onChange={(e) => setNewDevice({ ...newDevice, citizenshipNo: e.target.value })}
+                    placeholder="XX-XX-XX-XXXXX"
+                    className={`w-full px-4 py-3 rounded-2xl ${t.inputBg} border text-sm outline-none focus:border-blue-500 transition`}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">Citizenship Photo</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleDeviceImageUpload(e, 'citizenshipPhoto')}
+                    className={`w-full px-3 py-2 rounded-2xl ${t.inputBg} border text-xs outline-none`}
+                  />
+                  {newDevice.citizenshipPhoto && (
+                    <span className="text-[10px] text-emerald-400 font-bold mt-1 block">✓ Photo Attached</span>
+                  )}
+                </div>
+
+                {deviceTradeTab === 'buy' && (
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-400 mb-1">Purchase Price per unit (NPR)</label>
+                    <input
+                      type="number"
+                      value={newDevice.buyPrice}
+                      onChange={(e) => setNewDevice({ ...newDevice, buyPrice: e.target.value })}
+                      placeholder="45000"
+                      className={`w-full px-4 py-3 rounded-2xl ${t.inputBg} border text-sm outline-none focus:border-blue-500 transition`}
+                      required
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">Expected / Selling Price (NPR)</label>
+                  <input
+                    type="number"
+                    value={newDevice.sellPrice}
+                    onChange={(e) => setNewDevice({ ...newDevice, sellPrice: e.target.value })}
+                    placeholder="52000"
+                    className={`w-full px-4 py-3 rounded-2xl ${t.inputBg} border text-sm outline-none focus:border-blue-500 transition`}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">Warranty Period</label>
+                  <select
+                    value={newDevice.warrantyMonths}
+                    onChange={(e) => setNewDevice({ ...newDevice, warrantyMonths: e.target.value })}
+                    className={`w-full px-4 py-3 rounded-2xl ${t.inputBg} border text-sm outline-none focus:border-blue-500 transition`}
+                  >
+                    <option value="">No Warranty</option>
+                    <option value="1">1 Month</option>
+                    <option value="3">3 Months</option>
+                    <option value="6">6 Months</option>
+                    <option value="12">1 Year</option>
+                  </select>
+                </div>
+
+                <div className="md:col-span-4 flex justify-end gap-3">
+                  {editingDeviceId && (
+                    <button
+                      type="button"
+                      onClick={() => resetDeviceForm(deviceTradeTab)}
+                      className="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-2xl transition"
+                    >
+                      Cancel Edit
+                    </button>
+                  )}
+                  <button
+                    type="submit"
+                    className={`px-8 py-3 font-bold text-white rounded-2xl shadow-lg transition flex items-center gap-2 ${
+                      deviceTradeTab === 'buy' ? 'bg-blue-600 hover:bg-blue-500 shadow-blue-600/30' : 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/30'
+                    }`}
+                  >
+                    <Plus className="w-5 h-5" /> {deviceTradeTab === 'buy' ? (editingDeviceId ? 'Update Purchase' : 'Save Device Purchase') : (editingDeviceId ? 'Update Sale' : 'Complete Device Sale')}
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* Devices Stock & Sales History Table */}
+            <div className={`${t.cardBg} rounded-3xl border shadow-2xl overflow-hidden`}>
+              <div className="p-6 border-b border-slate-700 flex items-center justify-between">
+                <h3 className="text-lg font-bold text-white">Second-Hand Devices Inventory & Trade History</h3>
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                  <thead className={`${t.tableHeader} text-sm uppercase border-b`}>
-                    <tr>
-                      <th className="p-4">Part Name</th>
-                      <th className="p-4">Category</th>
-                      <th className="p-4">Stock Level</th>
-                      <th className="p-4">Cost / Sell Price</th>
-                      <th className="p-4 text-right">Quick Stock & Actions</th>
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className={`${t.tableHeader} text-xs font-black uppercase tracking-wider`}>
+                      <th className="p-4">Date & Type</th>
+                      <th className="p-4">Device & IMEI / Serial</th>
+                      <th className="p-4">Party / Customer</th>
+                      <th className="p-4">Condition</th>
+                      <th className="p-4">Buy Price</th>
+                      <th className="p-4">Sell Price / Profit</th>
+                      <th className="p-4">Status</th>
+                      <th className="p-4 text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className={`divide-y ${t.tableDivide}`}>
-                    {inventory.map(item => {
-                      const isLow = Number(item.stock || 0) <= Number(item.minStock || 5);
+                  <tbody className={`divide-y ${t.tableDivide} text-sm`}>
+                    {devicesStock.map(d => {
+                      const isSell = d.tradeType === 'sell';
+                      const imeis = getDeviceImeis(d);
                       return (
-                        <tr key={item.id}>
-                          <td className="p-4">
-                            <p className={`font-bold ${t.textMain}`}>{item.name}</p>
-                            {isLow && <span className="px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 text-xs font-bold">Low Stock</span>}
+                        <tr key={d.id} className="hover:bg-slate-800/30 transition">
+                          <td className="p-4 font-medium text-white">
+                            <div>{d.date || d.purchaseDate}</div>
+                            <span className={`inline-block mt-1 px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                              isSell ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                            }`}>
+                              {isSell ? 'Device Sale' : 'Device Purchase'}
+                            </span>
                           </td>
-                          <td className="p-4"><span className="px-2 py-1 rounded bg-blue-500/10 text-blue-400 text-xs font-bold">{item.category}</span></td>
                           <td className="p-4">
-                            <span className={`font-mono font-bold text-base ${isLow ? 'text-rose-400' : 'text-emerald-400'}`}>{item.stock}</span>
+                            <div className="font-bold text-white">{d.brandModel}</div>
+                            <div className="text-xs text-slate-400">
+                              IMEI/SN: {imeis.join(', ')}
+                            </div>
                           </td>
                           <td className="p-4">
-                            <p className={`text-xs ${t.textMuted}`}>Cost: NPR {item.costPrice}</p>
-                            <p className={`font-bold ${t.textMain}`}>Sell: NPR {item.price}</p>
+                            <div className="font-bold text-white">{d.partyName || d.sellerName}</div>
+                            <div className="text-xs text-slate-400">{d.partyPhone || d.sellerPhone}</div>
+                          </td>
+                          <td className="p-4 text-slate-300 text-xs">{d.condition || 'N/A'}</td>
+                          <td className="p-4 font-bold text-slate-200">NPR {Number(d.buyPrice || 0).toLocaleString()}</td>
+                          <td className="p-4">
+                            {isSell ? (
+                              <div>
+                                <div className="font-bold text-emerald-400">NPR {Number(d.sellPrice || 0).toLocaleString()}</div>
+                                <div className="text-xs text-indigo-400 font-semibold">Profit: +NPR {Number(d.profit || 0).toLocaleString()}</div>
+                              </div>
+                            ) : (
+                              <div className="text-slate-400 text-xs">Expected: NPR {Number(d.sellPrice || 0).toLocaleString()}</div>
+                            )}
+                          </td>
+                          <td className="p-4">
+                            <span className={`px-2.5 py-1 rounded-xl text-xs font-bold ${
+                              d.status === 'Sold' ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                            }`}>
+                              {d.status || 'In Stock'}
+                            </span>
                           </td>
                           <td className="p-4 text-right space-x-2">
-                            <button onClick={() => adjustStock(item.id, 1)} className="px-2.5 py-1 bg-emerald-500/10 text-emerald-400 rounded-lg font-bold">+1</button>
-                            <button onClick={() => adjustStock(item.id, -1)} className="px-2.5 py-1 bg-rose-500/10 text-rose-400 rounded-lg font-bold">-1</button>
-                            <button onClick={() => {
-                              setEditingPartId(item.id);
-                              setSelectedCategory(item.category);
-                              setNewPart({ name: item.name, stock: item.stock, costPrice: item.costPrice, price: item.price, minStock: item.minStock || '5', supplierName: item.supplierName || '', supplierPhone: item.supplierPhone || '', purchaseDate: item.lastPurchaseDate || todayKey });
-                              window.scrollTo({ top: 0, behavior: 'smooth' });
-                            }} className="p-2 bg-amber-500/10 text-amber-400 rounded-xl"><Pencil size={14}/></button>
-                            <button onClick={() => { if(window.confirm('Delete this part?')) deletePart(item.id); }} className="p-2 bg-rose-500/10 text-rose-400 rounded-xl"><Trash2 size={14}/></button>
+                            {!isSell && d.status !== 'Sold' && (
+                              <button
+                                onClick={() => {
+                                  setDeviceTradeTab('sell');
+                                  setSelectedPurchaseId(d.id);
+                                  setNewDevice({
+                                    ...newDevice,
+                                    tradeType: 'sell',
+                                    brandModel: d.brandModel,
+                                    deviceCategory: d.deviceCategory,
+                                    imeiOrSerial: d.imeiOrSerial,
+                                    buyPrice: d.buyPrice,
+                                    sellPrice: d.sellPrice || '',
+                                    warrantyMonths: d.warrantyMonths || ''
+                                  });
+                                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                                }}
+                                className="px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-xl text-xs font-bold transition"
+                              >
+                                Sell
+                              </button>
+                            )}
+                            {!isSell && (
+                              <button
+                                onClick={() => generateDevicePurchaseBill(d)}
+                                className="px-3 py-1.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded-xl text-xs font-bold transition"
+                                title="Print Buy Voucher"
+                              >
+                                Voucher
+                              </button>
+                            )}
+                            {isSell && (
+                              <button
+                                onClick={() => restoreDeviceSale(d.id)}
+                                className="px-3 py-1.5 bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 rounded-xl text-xs font-bold transition"
+                                title="Restore device to In Stock"
+                              >
+                                Restore
+                              </button>
+                            )}
+                            <button
+                              onClick={() => {
+                                if (isSell) {
+                                  restoreDeviceSale(d.id);
+                                } else {
+                                  setDevicesStock(devicesStock.filter(x => x.id !== d.id));
+                                }
+                              }}
+                              className="p-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-xl transition"
+                              title="Delete Record"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
                           </td>
                         </tr>
                       );
@@ -2084,116 +2029,452 @@ _Thank you for choosing ${shopInfo.name}!_`;
           </div>
         )}
 
-        {/* EXPENSES TAB */}
-        {activeTab === 'expenses' && (
-          <div className="space-y-6 animate-in fade-in duration-300">
-            <h2 className={`text-xl font-bold ${t.textMain}`}>Shop Expenses & Outflows</h2>
-
+        {/* ================================= TAB 4: PARTS & STOCK ================================= */}
+        {activeTab === 'inventory' && (
+          <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}>
-                <p className={`text-sm uppercase tracking-wider font-black ${t.textMuted}`}>Total Paid Out</p>
-                <p className="text-2xl font-black text-rose-400 mt-2">NPR {totalExp}</p>
-                <p className={`text-sm ${t.textMuted} mt-1`}>Cash actually paid so far</p>
+              <div className={`${t.cardBg} p-6 rounded-3xl border shadow-xl relative overflow-hidden`}>
+                <div className="absolute right-4 top-4 p-3 bg-blue-500/10 rounded-2xl text-blue-400"><Package className="w-6 h-6" /></div>
+                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Stock Items</div>
+                <div className="text-3xl font-black text-white mt-2">{inventory.reduce((sum, i) => sum + Number(i.stock || 0), 0)}</div>
               </div>
-              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}>
-                <p className={`text-sm uppercase tracking-wider font-black ${t.textMuted}`}>Baaki / Due to Suppliers</p>
-                <p className={`text-2xl font-black mt-2 ${totalSupplierDue > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>NPR {totalSupplierDue}</p>
-                <p className={`text-sm ${t.textMuted} mt-1`}>Udhaaro still to be paid</p>
+              <div className={`${t.cardBg} p-6 rounded-3xl border shadow-xl relative overflow-hidden`}>
+                <div className="absolute right-4 top-4 p-3 bg-emerald-500/10 rounded-2xl text-emerald-400"><DollarSign className="w-6 h-6" /></div>
+                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Stock Valuation</div>
+                <div className="text-3xl font-black text-emerald-400 mt-2">
+                  NPR {inventory.reduce((sum, i) => sum + (Number(i.stock || 0) * Number(i.costPrice || 0)), 0).toLocaleString()}
+                </div>
               </div>
-              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}>
-                <p className={`text-sm uppercase tracking-wider font-black ${t.textMuted}`}>Suppliers with Due</p>
-                <p className="text-2xl font-black text-blue-400 mt-2">{supplierDueList.length}</p>
-                <p className={`text-sm ${t.textMuted} mt-1`}>Parties you still owe money to</p>
+              <div className={`${t.cardBg} p-6 rounded-3xl border shadow-xl relative overflow-hidden`}>
+                <div className="absolute right-4 top-4 p-3 bg-amber-500/10 rounded-2xl text-amber-400"><AlertTriangle className="w-6 h-6" /></div>
+                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Low Stock Alerts</div>
+                <div className="text-3xl font-black text-amber-400 mt-2">
+                  {inventory.filter(i => Number(i.stock || 0) <= Number(i.minStock || 5)).length}
+                </div>
               </div>
             </div>
 
-            <form onSubmit={handleAddExpense} className={`${t.cardBg} border ${t.border} p-6 rounded-3xl grid grid-cols-1 md:grid-cols-3 gap-4 shadow-xl`}>
-              <input type="text" placeholder="Expense Description (e.g. Shop Rent)" value={newExpense.description} onChange={e => setNewExpense({...newExpense, description: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
-              <input type="number" placeholder="Total Amount / Bill (NPR)" value={newExpense.amount} onChange={e => setNewExpense({...newExpense, amount: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
-              <select value={newExpense.category} onChange={e => setNewExpense({...newExpense, category: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}>
-                <option value="General">General Expense</option>
-                <option value="Rent">Shop Rent</option>
-                <option value="Electricity">Electricity / Internet</option>
-                <option value="Parts Purchase">Parts Purchase</option>
-                <option value="Device Purchase">Device Purchase</option>
-                <option value="Salary">Staff Salary</option>
-              </select>
-              <input type="text" placeholder="Supplier / Party Name (optional)" value={newExpense.supplierName} onChange={e => setNewExpense({...newExpense, supplierName: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-              <input
-                type="number"
-                placeholder="Paid Now (leave blank = paid full)"
-                value={newExpense.paidNow}
-                onChange={e => setNewExpense({...newExpense, paidNow: e.target.value})}
-                className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}
-              />
-              <input type="date" value={newExpense.date} onChange={e => setNewExpense({...newExpense, date: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+            {/* Quick Restock / Stock Purchase Form */}
+            <div className={`${t.cardBg} rounded-3xl border p-6 shadow-2xl`}>
+              <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <PlusCircle className="w-5 h-5 text-blue-400" /> Stock Purchase / Restock Form (Supplier Udhaaro Tracking)
+              </h2>
+              <form onSubmit={handleAddStockPurchase} className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">Select Existing Part</label>
+                  <select
+                    value={newStockPurchase.partId}
+                    onChange={(e) => {
+                      const pid = e.target.value;
+                      const p = inventory.find(i => String(i.id) === pid);
+                      setNewStockPurchase({
+                        ...newStockPurchase,
+                        partId: pid,
+                        partName: p ? p.name : '',
+                        category: p ? p.category : newStockPurchase.category,
+                        unitCost: p ? p.costPrice : ''
+                      });
+                    }}
+                    className={`w-full px-4 py-3 rounded-2xl ${t.inputBg} border text-sm outline-none focus:border-blue-500 transition`}
+                  >
+                    <option value="">-- Choose Part or Create New Below --</option>
+                    {inventory.map(i => (
+                      <option key={i.id} value={i.id}>{i.name} (Stock: {i.stock})</option>
+                    ))}
+                  </select>
+                </div>
 
-              {newExpense.amount && newExpense.paidNow !== '' && Number(newExpense.paidNow) < Number(newExpense.amount) && (
-                <p className="md:col-span-3 text-sm font-bold text-amber-400 -mt-2">
-                  Baaki rahne: NPR {Number(newExpense.amount || 0) - Number(newExpense.paidNow || 0)} — this will be tracked as due until fully paid.
-                </p>
-              )}
+                {!newStockPurchase.partId && (
+                  <>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-400 mb-1">New Part Name</label>
+                      <input
+                        type="text"
+                        value={newStockPurchase.partName}
+                        onChange={(e) => setNewStockPurchase({ ...newStockPurchase, partName: e.target.value })}
+                        placeholder="e.g. iPhone 13 OLED Screen"
+                        className={`w-full px-4 py-3 rounded-2xl ${t.inputBg} border text-sm outline-none focus:border-blue-500 transition`}
+                        required={!newStockPurchase.partId}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-400 mb-1">Category</label>
+                      <select
+                        value={newStockPurchase.category}
+                        onChange={(e) => setNewStockPurchase({ ...newStockPurchase, category: e.target.value })}
+                        className={`w-full px-4 py-3 rounded-2xl ${t.inputBg} border text-sm outline-none focus:border-blue-500 transition`}
+                      >
+                        {categories.map(cat => (
+                          <option key={cat} value={cat}>{cat}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </>
+                )}
 
-              <button type="submit" className="md:col-span-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-blue-600/30">
-                {editingExpenseId ? 'Update Expense' : 'Save Expense'}
-              </button>
-            </form>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">Supplier Name</label>
+                  <input
+                    type="text"
+                    value={newStockPurchase.supplierName}
+                    onChange={(e) => setNewStockPurchase({ ...newStockPurchase, supplierName: e.target.value })}
+                    placeholder="Supplier / Distributor Name"
+                    className={`w-full px-4 py-3 rounded-2xl ${t.inputBg} border text-sm outline-none focus:border-blue-500 transition`}
+                  />
+                </div>
 
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">Supplier Phone</label>
+                  <input
+                    type="text"
+                    value={newStockPurchase.supplierPhone}
+                    onChange={(e) => setNewStockPurchase({ ...newStockPurchase, supplierPhone: e.target.value })}
+                    placeholder="98XXXXXXXX"
+                    className={`w-full px-4 py-3 rounded-2xl ${t.inputBg} border text-sm outline-none focus:border-blue-500 transition`}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">Quantity Added</label>
+                  <input
+                    type="number"
+                    value={newStockPurchase.qty}
+                    onChange={(e) => setNewStockPurchase({ ...newStockPurchase, qty: e.target.value })}
+                    placeholder="5"
+                    className={`w-full px-4 py-3 rounded-2xl ${t.inputBg} border text-sm outline-none focus:border-blue-500 transition`}
+                    required
+                    min="1"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">Unit Cost Price (NPR)</label>
+                  <input
+                    type="number"
+                    value={newStockPurchase.unitCost}
+                    onChange={(e) => setNewStockPurchase({ ...newStockPurchase, unitCost: e.target.value })}
+                    placeholder="4500"
+                    className={`w-full px-4 py-3 rounded-2xl ${t.inputBg} border text-sm outline-none focus:border-blue-500 transition`}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">Supplier Invoice / Bill No.</label>
+                  <input
+                    type="text"
+                    value={newStockPurchase.invoiceNo}
+                    onChange={(e) => setNewStockPurchase({ ...newStockPurchase, invoiceNo: e.target.value })}
+                    placeholder="INV-9921"
+                    className={`w-full px-4 py-3 rounded-2xl ${t.inputBg} border text-sm outline-none focus:border-blue-500 transition`}
+                  />
+                </div>
+
+                <div className="md:col-span-4 flex justify-end">
+                  <button
+                    type="submit"
+                    className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl shadow-lg shadow-blue-600/30 transition flex items-center gap-2"
+                  >
+                    <Plus className="w-5 h-5" /> Save Stock Purchase & Auto-Record Expense
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* Inventory Items Table */}
+            <div className={`${t.cardBg} rounded-3xl border shadow-2xl overflow-hidden`}>
+              <div className="p-6 border-b border-slate-700 flex items-center justify-between">
+                <h3 className="text-lg font-bold text-white">Parts & Inventory Stock</h3>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className={`${t.tableHeader} text-xs font-black uppercase tracking-wider`}>
+                      <th className="p-4">Part Name</th>
+                      <th className="p-4">Category</th>
+                      <th className="p-4">Stock Qty</th>
+                      <th className="p-4">Cost Price</th>
+                      <th className="p-4">Selling Price</th>
+                      <th className="p-4">Supplier</th>
+                      <th className="p-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className={`divide-y ${t.tableDivide} text-sm`}>
+                    {inventory.map(item => {
+                      const low = Number(item.stock || 0) <= Number(item.minStock || 5);
+                      return (
+                        <tr key={item.id} className="hover:bg-slate-800/30 transition">
+                          <td className="p-4 font-bold text-white">{item.name}</td>
+                          <td className="p-4 text-slate-300 text-xs">{item.category}</td>
+                          <td className="p-4">
+                            <span className={`px-2.5 py-1 rounded-xl text-xs font-bold ${
+                              low ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30 animate-pulse' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                            }`}>
+                              {item.stock} units {low && '⚠️ Low'}
+                            </span>
+                          </td>
+                          <td className="p-4 font-bold text-slate-300">NPR {Number(item.costPrice || 0).toLocaleString()}</td>
+                          <td className="p-4 font-bold text-emerald-400">NPR {Number(item.price || 0).toLocaleString()}</td>
+                          <td className="p-4 text-slate-400 text-xs">{item.supplierName || 'N/A'}</td>
+                          <td className="p-4 text-right space-x-2">
+                            <button
+                              onClick={() => adjustStock(item.id, 1)}
+                              className="px-2.5 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-lg text-xs font-bold"
+                            >
+                              +1
+                            </button>
+                            <button
+                              onClick={() => adjustStock(item.id, -1)}
+                              className="px-2.5 py-1 bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 rounded-lg text-xs font-bold"
+                            >
+                              -1
+                            </button>
+                            <button
+                              onClick={() => setInventory(inventory.filter(i => i.id !== item.id))}
+                              className="p-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-xl transition"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ================================= TAB 5: EXPENSES & SUPPLIER DUE ================================= */}
+        {activeTab === 'expenses' && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className={`${t.cardBg} p-6 rounded-3xl border shadow-xl relative overflow-hidden`}>
+                <div className="absolute right-4 top-4 p-3 bg-red-500/10 rounded-2xl text-red-400"><DollarSign className="w-6 h-6" /></div>
+                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Expenses Paid</div>
+                <div className="text-3xl font-black text-red-400 mt-2">NPR {totalExp.toLocaleString()}</div>
+              </div>
+              <div className={`${t.cardBg} p-6 rounded-3xl border shadow-xl relative overflow-hidden`}>
+                <div className="absolute right-4 top-4 p-3 bg-amber-500/10 rounded-2xl text-amber-400"><Clock3 className="w-6 h-6" /></div>
+                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Supplier Due (Udhaaro)</div>
+                <div className="text-3xl font-black text-amber-400 mt-2">NPR {totalSupplierDue.toLocaleString()}</div>
+              </div>
+              <div className={`${t.cardBg} p-6 rounded-3xl border shadow-xl relative overflow-hidden flex items-center justify-center`}>
+                <div className="text-xs text-slate-400 text-center">
+                  Track shop rent, tools, electricity, and supplier credit accounts.
+                </div>
+              </div>
+            </div>
+
+            {/* Supplier Due Summary Cards */}
             {supplierDueList.length > 0 && (
-              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl`}>
-                <h3 className={`font-bold text-sm uppercase tracking-wider ${t.textMuted} mb-3`}>Supplier-wise Baaki (Outstanding Dues)</h3>
-                <div className="flex flex-wrap gap-3">
-                  {supplierDueList.map(s => (
-                    <div key={s.name} className={`${t.cardSecondary} border ${t.border} rounded-2xl px-4 py-3`}>
-                      <p className={`text-sm font-bold ${t.textMain}`}>{s.name}{s.phone ? ` · ${s.phone}` : ''}</p>
-                      <p className="text-lg font-black text-amber-400 mt-0.5">NPR {s.due} <span className={`text-sm font-normal ${t.textMuted}`}>({s.bills} bill{s.bills > 1 ? 's' : ''})</span></p>
+              <div className={`${t.cardBg} rounded-3xl border p-6 shadow-2xl`}>
+                <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-amber-400" /> Supplier Due Accounts (Udhaaro to Pay)
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  {supplierDueList.map((sup, idx) => (
+                    <div key={idx} className="p-4 bg-[#14171f] rounded-2xl border border-slate-800 flex flex-col justify-between">
+                      <div>
+                        <div className="text-sm font-bold text-white">{sup.name}</div>
+                        {sup.phone && <div className="text-xs text-slate-400">{sup.phone}</div>}
+                      </div>
+                      <div className="mt-4 flex items-center justify-between">
+                        <div>
+                          <div className="text-[10px] text-slate-400 uppercase font-bold">Due Balance</div>
+                          <div className="text-lg font-black text-amber-400">NPR {sup.due.toLocaleString()}</div>
+                        </div>
+                        <div className="text-xs text-slate-400">{sup.bills} bill{sup.bills > 1 ? 's' : ''}</div>
+                      </div>
                     </div>
                   ))}
                 </div>
               </div>
             )}
 
-            <div className={`${t.cardBg} border ${t.border} rounded-3xl overflow-hidden shadow-xl`}>
+            {/* Add Expense Form */}
+            <div className={`${t.cardBg} rounded-3xl border p-6 shadow-2xl`}>
+              <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <DollarSign className="w-5 h-5 text-blue-400" /> 
+                {editingExpenseId ? 'Edit Expense Record' : 'Record New Expense or Supplier Credit Bill'}
+              </h2>
+              <form onSubmit={handleAddExpense} className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">Expense Category</label>
+                  <select
+                    value={newExpense.category}
+                    onChange={(e) => setNewExpense({ ...newExpense, category: e.target.value })}
+                    className={`w-full px-4 py-3 rounded-2xl ${t.inputBg} border text-sm outline-none focus:border-blue-500 transition`}
+                  >
+                    <option value="General">General / Shop Expense</option>
+                    <option value="Rent">Shop Rent</option>
+                    <option value="Electricity">Electricity / Utilities</option>
+                    <option value="Parts Purchase">Parts Purchase (Udhaaro)</option>
+                    <option value="Device Purchase">Device Purchase</option>
+                    <option value="Salary">Staff Salary</option>
+                  </select>
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">Description / Title</label>
+                  <input
+                    type="text"
+                    value={newExpense.description}
+                    onChange={(e) => setNewExpense({ ...newExpense, description: e.target.value })}
+                    placeholder="e.g. Shop Rent for June / Display Distributor Bill"
+                    className={`w-full px-4 py-3 rounded-2xl ${t.inputBg} border text-sm outline-none focus:border-blue-500 transition`}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">Supplier Name (Optional)</label>
+                  <input
+                    type="text"
+                    value={newExpense.supplierName}
+                    onChange={(e) => setNewExpense({ ...newExpense, supplierName: e.target.value })}
+                    placeholder="Distributor Name"
+                    className={`w-full px-4 py-3 rounded-2xl ${t.inputBg} border text-sm outline-none focus:border-blue-500 transition`}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">Total Amount (NPR)</label>
+                  <input
+                    type="number"
+                    value={newExpense.amount}
+                    onChange={(e) => setNewExpense({ ...newExpense, amount: e.target.value })}
+                    placeholder="15000"
+                    className={`w-full px-4 py-3 rounded-2xl ${t.inputBg} border text-sm outline-none focus:border-blue-500 transition`}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">Paid Now (NPR) [Rest is Due]</label>
+                  <input
+                    type="number"
+                    value={newExpense.paidNow}
+                    onChange={(e) => setNewExpense({ ...newExpense, paidNow: e.target.value })}
+                    placeholder="Leave blank if fully paid"
+                    className={`w-full px-4 py-3 rounded-2xl ${t.inputBg} border text-sm outline-none focus:border-blue-500 transition`}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">Date</label>
+                  <input
+                    type="date"
+                    value={newExpense.date}
+                    onChange={(e) => setNewExpense({ ...newExpense, date: e.target.value })}
+                    className={`w-full px-4 py-3 rounded-2xl ${t.inputBg} border text-sm outline-none focus:border-blue-500 transition`}
+                  />
+                </div>
+
+                <div className="md:col-span-4 flex justify-end gap-3">
+                  {editingExpenseId && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingExpenseId(null);
+                        setNewExpense({ description: '', amount: '', category: 'General', paidNow: '', itemName: '', quantity: '', unitCost: '', supplierName: '', supplierPhone: '', invoiceNo: '', paymentMethod: 'Cash', notes: '', date: todayKey });
+                      }}
+                      className="px-6 py-3 bg-slate-800 text-slate-300 font-bold rounded-2xl transition"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                  <button
+                    type="submit"
+                    className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl shadow-lg shadow-blue-600/30 transition flex items-center gap-2"
+                  >
+                    <Plus className="w-5 h-5" /> {editingExpenseId ? 'Update Expense' : 'Save Expense / Udhaaro'}
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* Expenses List Table */}
+            <div className={`${t.cardBg} rounded-3xl border shadow-2xl overflow-hidden`}>
+              <div className="p-6 border-b border-slate-700 flex items-center justify-between">
+                <h3 className="text-lg font-bold text-white">Expenses & Supplier Credit Ledger</h3>
+              </div>
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                  <thead className={`${t.tableHeader} text-sm uppercase border-b`}>
-                    <tr>
-                      <th className="p-4">Date</th>
-                      <th className="p-4">Description</th>
-                      <th className="p-4">Category</th>
-                      <th className="p-4">Total</th>
-                      <th className="p-4">Paid</th>
-                      <th className="p-4">Due</th>
-                      <th className="p-4 text-right">Action</th>
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className={`${t.tableHeader} text-xs font-black uppercase tracking-wider`}>
+                      <th className="p-4">Date & Category</th>
+                      <th className="p-4">Description / Supplier</th>
+                      <th className="p-4">Total Amount</th>
+                      <th className="p-4">Paid Amount</th>
+                      <th className="p-4">Due (Baaki)</th>
+                      <th className="p-4 text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className={`divide-y ${t.tableDivide}`}>
+                  <tbody className={`divide-y ${t.tableDivide} text-sm`}>
                     {expenses.map(exp => {
-                      const paid = Number(exp.paidAmount !== undefined ? exp.paidAmount : exp.amount || 0);
-                      const due = Number(exp.dueAmount || 0);
+                      const totalAmt = Number(exp.amount || 0);
+                      const paidAmt = Number(exp.paidAmount !== undefined ? exp.paidAmount : totalAmt);
+                      const dueAmt = Number(exp.dueAmount !== undefined ? exp.dueAmount : Math.max(0, totalAmt - paidAmt));
                       return (
-                        <tr key={exp.id}>
-                          <td className="p-4 font-mono text-slate-400">{exp.date}</td>
-                          <td className={`p-4 font-bold ${t.textMain}`}>
-                            {exp.description}
-                            {exp.supplierName && <p className={`text-sm font-normal ${t.textMuted} mt-0.5`}>{exp.supplierName}</p>}
+                        <tr key={exp.id} className="hover:bg-slate-800/30 transition">
+                          <td className="p-4 font-medium text-white">
+                            <div>{exp.date}</div>
+                            <span className="inline-block mt-1 px-2 py-0.5 rounded-md bg-slate-800 text-[10px] font-bold text-slate-300 border border-slate-700">
+                              {exp.category}
+                            </span>
                           </td>
-                          <td className="p-4"><span className="px-2 py-1 rounded bg-blue-500/10 text-blue-400 text-xs font-bold">{exp.category}</span></td>
-                          <td className="p-4 font-bold text-rose-400">NPR {exp.amount}</td>
-                          <td className="p-4 font-bold text-emerald-400">NPR {paid}</td>
+                          <td className="p-4">
+                            <div className="font-bold text-white">{exp.description}</div>
+                            {exp.supplierName && <div className="text-xs text-slate-400">Supplier: {exp.supplierName}</div>}
+                          </td>
+                          <td className="p-4 font-bold text-white">NPR {totalAmt.toLocaleString()}</td>
+                          <td className="p-4 font-bold text-emerald-400">NPR {paidAmt.toLocaleString()}</td>
                           <td className="p-4 font-bold">
-                            {due > 0 ? <span className="text-amber-400">NPR {due}</span> : <span className={t.textMuted}>—</span>}
+                            <span className={dueAmt > 0 ? 'text-amber-400 font-black' : 'text-slate-400'}>
+                              NPR {dueAmt.toLocaleString()}
+                            </span>
                           </td>
-                          <td className="p-4 text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              {due > 0 && (
-                                <button onClick={() => { setPayingExpense(exp); setPayForm({ amount: due, date: todayKey }); }} className="p-2 bg-emerald-500/10 text-emerald-400 rounded-xl hover:bg-emerald-500/20" title="Add payment (pay baaki)"><CreditCard size={14}/></button>
-                              )}
-                              {exp.payments && exp.payments.length > 0 && (
-                                <button onClick={() => setPayingExpense(exp)} className="p-2 bg-blue-500/10 text-blue-400 rounded-xl hover:bg-blue-500/20" title="View payment history"><History size={14}/></button>
-                              )}
-                              <button onClick={() => { if(window.confirm('Delete expense?')) deleteExpense(exp.id); }} className="p-2 bg-rose-500/10 text-rose-400 rounded-xl hover:bg-rose-500/20"><Trash2 size={14}/></button>
-                            </div>
+                          <td className="p-4 text-right space-x-2">
+                            {dueAmt > 0 && (
+                              <button
+                                onClick={() => {
+                                  setPayingExpense(exp);
+                                  setPayForm({ amount: dueAmt, date: todayKey });
+                                }}
+                                className="px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-xl text-xs font-bold transition"
+                              >
+                                Pay Due
+                              </button>
+                            )}
+                            <button
+                              onClick={() => {
+                                setEditingExpenseId(exp.id);
+                                setNewExpense({
+                                  description: exp.description,
+                                  amount: exp.amount,
+                                  category: exp.category,
+                                  paidNow: paidAmt,
+                                  supplierName: exp.supplierName || '',
+                                  supplierPhone: exp.supplierPhone || '',
+                                  invoiceNo: exp.invoiceNo || '',
+                                  paymentMethod: exp.paymentMethod || 'Cash',
+                                  notes: exp.notes || '',
+                                  date: exp.date || todayKey
+                                });
+                                window.scrollTo({ top: 300, behavior: 'smooth' });
+                              }}
+                              className="p-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded-xl transition"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => setExpenses(expenses.filter(e => e.id !== exp.id))}
+                              className="p-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-xl transition"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
                           </td>
                         </tr>
                       );
@@ -2205,28 +2486,174 @@ _Thank you for choosing ${shopInfo.name}!_`;
           </div>
         )}
 
-        {/* BACKUP TAB */}
-        {activeTab === 'backup' && (
-          <div className="space-y-6 animate-in fade-in duration-300">
-            <h2 className={`text-xl font-bold ${t.textMain}`}>Data Backup & Restoration</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className={`${t.cardBg} border ${t.border} p-6 rounded-3xl shadow-xl flex flex-col justify-between`}>
-                <div>
-                  <h3 className={`font-bold text-lg ${t.textMain} mb-2`}>Download Backup File</h3>
-                  <p className={`text-sm ${t.textMuted} mb-6`}>Export all your shop repairs, inventory, device trading, and expense records into a secure JSON file.</p>
-                </div>
-                <button onClick={exportData} className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl flex items-center justify-center gap-2 transition shadow-lg shadow-blue-600/30">
-                  <Download size={18}/> Export JSON Backup
-                </button>
-              </div>
+        {/* ================================= TAB 6: CUSTOMER CRM ================================= */}
+        {activeTab === 'crm' && (
+          <div className={`${t.cardBg} rounded-3xl border shadow-2xl overflow-hidden`}>
+            <div className="p-6 border-b border-slate-700 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <Users className="w-5 h-5 text-blue-400" /> Customer CRM & Repair History Directory
+              </h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className={`${t.tableHeader} text-xs font-black uppercase tracking-wider`}>
+                    <th className="p-4">Customer Name</th>
+                    <th className="p-4">Phone Number</th>
+                    <th className="p-4">Total Repairs / Orders</th>
+                    <th className="p-4">Total Spent</th>
+                    <th className="p-4 text-right">Quick Action</th>
+                  </tr>
+                </thead>
+                <tbody className={`divide-y ${t.tableDivide} text-sm`}>
+                  {uniqueCustomers.map((cust, idx) => {
+                    const custRepairs = repairs.filter(r => r.customerName && r.customerName.toLowerCase() === cust.name.toLowerCase());
+                    const spent = custRepairs.reduce((sum, r) => sum + Number(r.totalCost || 0), 0);
+                    return (
+                      <tr key={idx} className="hover:bg-slate-800/30 transition">
+                        <td className="p-4 font-bold text-white">{cust.name}</td>
+                        <td className="p-4 text-slate-300">{cust.phone || 'N/A'}</td>
+                        <td className="p-4 text-slate-300 font-semibold">{custRepairs.length} order(s)</td>
+                        <td className="p-4 font-bold text-emerald-400">NPR {spent.toLocaleString()}</td>
+                        <td className="p-4 text-right">
+                          {cust.phone && cust.phone !== 'N/A' && (
+                            <a
+                              href={`https://wa.me/977${cust.phone.replace(/\D/g, '')}?text=Hello%20${encodeURIComponent(cust.name)},%20greeting%20from%20Genuine%20Fix!`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-xl text-xs font-bold transition inline-flex items-center gap-1.5"
+                            >
+                              <MessageSquare className="w-3.5 h-3.5" /> WhatsApp
+                            </a>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
-              <div className={`${t.cardBg} border ${t.border} p-6 rounded-3xl shadow-xl flex flex-col justify-between`}>
-                <div>
-                  <h3 className={`font-bold text-lg ${t.textMain} mb-2`}>Restore from Backup</h3>
-                  <p className={`text-sm ${t.textMuted} mb-6`}>Upload a previously exported Genuine Fix backup file to restore your shop database instantly.</p>
+        {/* ================================= TAB 7: DASHBOARD & REPORTS ================================= */}
+        {activeTab === 'dashboard' && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className={`${t.cardBg} p-6 rounded-3xl border shadow-xl relative overflow-hidden`}>
+                <div className="absolute right-4 top-4 p-3 bg-blue-500/10 rounded-2xl text-blue-400"><DollarSign className="w-6 h-6" /></div>
+                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Revenue</div>
+                <div className="text-3xl font-black text-white mt-2">NPR {totalRevenue.toLocaleString()}</div>
+              </div>
+              <div className={`${t.cardBg} p-6 rounded-3xl border shadow-xl relative overflow-hidden`}>
+                <div className="absolute right-4 top-4 p-3 bg-emerald-500/10 rounded-2xl text-emerald-400"><DollarSign className="w-6 h-6" /></div>
+                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Income Received</div>
+                <div className="text-3xl font-black text-emerald-400 mt-2">NPR {totalIncome.toLocaleString()}</div>
+              </div>
+              <div className={`${t.cardBg} p-6 rounded-3xl border shadow-xl relative overflow-hidden`}>
+                <div className="absolute right-4 top-4 p-3 bg-red-500/10 rounded-2xl text-red-400"><DollarSign className="w-6 h-6" /></div>
+                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Expenses</div>
+                <div className="text-3xl font-black text-red-400 mt-2">NPR {totalExp.toLocaleString()}</div>
+              </div>
+              <div className={`${t.cardBg} p-6 rounded-3xl border shadow-xl relative overflow-hidden`}>
+                <div className="absolute right-4 top-4 p-3 bg-indigo-500/10 rounded-2xl text-indigo-400"><DollarSign className="w-6 h-6" /></div>
+                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Net Profit / Cash</div>
+                <div className="text-3xl font-black text-indigo-400 mt-2">NPR {netCash.toLocaleString()}</div>
+              </div>
+            </div>
+
+            <div className={`${t.cardBg} rounded-3xl border p-6 shadow-2xl`}>
+              <h3 className="text-lg font-bold text-white mb-4">Quick Financial Summary</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+                <div className="space-y-3 bg-[#14171f] p-4 rounded-2xl border border-slate-800">
+                  <div className="flex justify-between"><span className="text-slate-400">Total Invoices Generated:</span> <strong className="text-white">{repairs.length}</strong></div>
+                  <div className="flex justify-between"><span className="text-slate-400">Total Sales Value:</span> <strong className="text-white">NPR {totalSalesValue.toLocaleString()}</strong></div>
+                  <div className="flex justify-between"><span className="text-slate-400">Total Customer Due (Baaki):</span> <strong className="text-amber-400">NPR {totalDue.toLocaleString()}</strong></div>
+                  <div className="flex justify-between"><span className="text-slate-400">Supplier Due (Udhaaro):</span> <strong className="text-amber-400">NPR {totalSupplierDue.toLocaleString()}</strong></div>
                 </div>
-                <label className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl flex items-center justify-center gap-2 transition cursor-pointer shadow-lg shadow-emerald-600/30">
-                  <Upload size={18}/> Import Backup File
+                <div className="space-y-3 bg-[#14171f] p-4 rounded-2xl border border-slate-800">
+                  <div className="flex justify-between"><span className="text-slate-400">Device Trading Buy Total:</span> <strong className="text-white">NPR {totalDevicePurchase.toLocaleString()}</strong></div>
+                  <div className="flex justify-between"><span className="text-slate-400">Device Trading Sales Total:</span> <strong className="text-white">NPR {totalDeviceSales.toLocaleString()}</strong></div>
+                  <div className="flex justify-between"><span className="text-slate-400">Device Trading Profit:</span> <strong className="text-emerald-400">NPR {totalDeviceProfit.toLocaleString()}</strong></div>
+                  <div className="flex justify-between"><span className="text-slate-400">Parts Stock Valuation:</span> <strong className="text-emerald-400">NPR {inventory.reduce((sum, i) => sum + (Number(i.stock || 0) * Number(i.costPrice || 0)), 0).toLocaleString()}</strong></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ================================= TAB 8: SHOP SETTINGS ================================= */}
+        {activeTab === 'settings' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className={`${t.cardBg} rounded-3xl border p-6 shadow-2xl space-y-4`}>
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <Settings className="w-5 h-5 text-blue-400" /> Shop & Invoice Profile
+              </h3>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">Shop Name</label>
+                  <input
+                    type="text"
+                    value={shopInfo.name}
+                    onChange={(e) => setShopInfo({ ...shopInfo, name: e.target.value })}
+                    className={`w-full px-4 py-3 rounded-2xl ${t.inputBg} border text-sm outline-none`}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">Tagline</label>
+                  <input
+                    type="text"
+                    value={shopInfo.tagline}
+                    onChange={(e) => setShopInfo({ ...shopInfo, tagline: e.target.value })}
+                    className={`w-full px-4 py-3 rounded-2xl ${t.inputBg} border text-sm outline-none`}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">Address / Location</label>
+                  <input
+                    type="text"
+                    value={shopInfo.address}
+                    onChange={(e) => setShopInfo({ ...shopInfo, address: e.target.value })}
+                    className={`w-full px-4 py-3 rounded-2xl ${t.inputBg} border text-sm outline-none`}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">Phone Number</label>
+                  <input
+                    type="text"
+                    value={shopInfo.phone}
+                    onChange={(e) => setShopInfo({ ...shopInfo, phone: e.target.value })}
+                    className={`w-full px-4 py-3 rounded-2xl ${t.inputBg} border text-sm outline-none`}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">PAN Number</label>
+                  <input
+                    type="text"
+                    value={shopInfo.panNo}
+                    onChange={(e) => setShopInfo({ ...shopInfo, panNo: e.target.value })}
+                    className={`w-full px-4 py-3 rounded-2xl ${t.inputBg} border text-sm outline-none`}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className={`${t.cardBg} rounded-3xl border p-6 shadow-2xl space-y-6`}>
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <Download className="w-5 h-5 text-blue-400" /> Data Backup & Restore
+              </h3>
+              <p className="text-xs text-slate-400">
+                Download a complete JSON backup of all your shop repairs, inventory, devices, expenses, and settings. You can restore it anytime.
+              </p>
+              <div className="flex gap-4">
+                <button
+                  onClick={exportData}
+                  className="flex-1 py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl shadow-lg shadow-blue-600/30 transition flex items-center justify-center gap-2"
+                >
+                  <Download className="w-4 h-4" /> Export Backup
+                </button>
+                <label className="flex-1 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl shadow-lg shadow-emerald-600/30 transition flex items-center justify-center gap-2 cursor-pointer">
+                  <Upload className="w-4 h-4" /> Import Backup
                   <input type="file" accept=".json" onChange={importData} className="hidden" />
                 </label>
               </div>
@@ -2234,225 +2661,104 @@ _Thank you for choosing ${shopInfo.name}!_`;
           </div>
         )}
 
-        {/* SETTINGS TAB */}
-        {activeTab === 'settings' && (
-          <div className="space-y-6 animate-in fade-in duration-300">
-            <h2 className={`text-xl font-bold ${t.textMain}`}>Shop & GUI Settings</h2>
-            
-            <form onSubmit={(e) => { e.preventDefault(); alert('Shop information updated successfully!'); }} className={`${t.cardBg} border ${t.border} p-6 rounded-3xl grid grid-cols-1 md:grid-cols-2 gap-4 shadow-xl`}>
-              <div>
-                <label className={`text-sm font-bold ${t.textMuted} block mb-1`}>Shop Name</label>
-                <input type="text" value={shopInfo.name} onChange={e => setShopInfo({...shopInfo, name: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm`} required />
-              </div>
-              <div>
-                <label className={`text-sm font-bold ${t.textMuted} block mb-1`}>Tagline</label>
-                <input type="text" value={shopInfo.tagline} onChange={e => setShopInfo({...shopInfo, tagline: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm`} />
-              </div>
-              <div>
-                <label className={`text-sm font-bold ${t.textMuted} block mb-1`}>Address / Location</label>
-                <input type="text" value={shopInfo.address} onChange={e => setShopInfo({...shopInfo, address: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm`} />
-              </div>
-              <div>
-                <label className={`text-sm font-bold ${t.textMuted} block mb-1`}>Phone Number</label>
-                <input type="text" value={shopInfo.phone} onChange={e => setShopInfo({...shopInfo, phone: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm`} />
-              </div>
-              <div>
-                <label className={`text-sm font-bold ${t.textMuted} block mb-1`}>PAN / VAT No.</label>
-                <input type="text" value={shopInfo.panNo} onChange={e => setShopInfo({...shopInfo, panNo: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm`} />
-              </div>
-
-              <div className="md:col-span-2 pt-2">
-                <button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-6 py-3 rounded-2xl transition shadow-lg shadow-blue-600/30">Save Shop Information</button>
-              </div>
-            </form>
-
-            <div className={`${t.cardBg} border ${t.border} p-6 rounded-3xl shadow-xl space-y-4`}>
-              <h3 className={`font-bold text-lg ${t.textMain}`}>Theme / Color Mode</h3>
-              <div className="flex gap-3">
-                {[
-                  ['dim', 'Dim Dark Mode (Default)'],
-                  ['dark', 'OLED Pitch Dark'],
-                  ['light', 'Clean Light Mode']
-                ].map(([id, label]) => (
-                  <button
-                    key={id}
-                    onClick={() => setTheme(id)}
-                    className={`px-4 py-3 rounded-2xl text-sm font-bold border transition ${theme === id ? 'bg-blue-600 text-white border-blue-500' : `${t.cardSecondary} ${t.textMuted} border-slate-700`}`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
       </main>
 
-      {/* INVOICE PREVIEW MODAL */}
+      {/* INVOICE PREVIEW & PRINT MODAL */}
       {selectedInvoice && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-          <div className={`${t.cardBg} border ${t.border} rounded-3xl max-w-2xl w-full p-6 shadow-2xl space-y-6 my-8`}>
-            <div className="flex items-center justify-between border-b pb-4 border-slate-700">
-              <div>
-                <h3 className={`text-lg font-bold ${t.textMain}`}>Invoice Preview #{selectedInvoice.id}</h3>
-                <p className={`text-sm ${t.textMuted}`}>{selectedInvoice.dateTime}</p>
-              </div>
-              <button onClick={() => setSelectedInvoice(null)} className="p-2 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700"><X size={18}/></button>
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className={`${t.cardBg} rounded-3xl border max-w-3xl w-full p-6 shadow-2xl space-y-6 relative max-h-[90vh] overflow-y-auto`}>
+            <button
+              onClick={() => setSelectedInvoice(null)}
+              className="absolute right-6 top-6 p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+              <Printer className="w-5 h-5 text-blue-400" /> Invoice Preview ({selectedInvoice.id})
+            </h3>
+
+            <div className="bg-white p-4 rounded-2xl flex justify-center overflow-x-auto">
+              <img src={generateInvoiceCanvas(selectedInvoice)} alt="Invoice" className="max-w-full h-auto rounded-xl shadow-lg" />
             </div>
 
-            <div className={`${t.cardSecondary} p-4 rounded-2xl border ${t.border} space-y-3`}>
-              <div className="flex justify-between">
-                <span className={`text-sm ${t.textMuted}`}>Customer:</span>
-                <span className={`text-sm font-bold ${t.textMain}`}>{selectedInvoice.customerName} ({selectedInvoice.phone})</span>
-              </div>
-              <div className="flex justify-between">
-                <span className={`text-sm ${t.textMuted}`}>Service / Model:</span>
-                <span className={`text-sm font-bold ${t.textMain}`}>{selectedInvoice.model || selectedInvoice.deviceType}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className={`text-sm ${t.textMuted}`}>Warranty:</span>
-                <span className={`text-sm font-bold text-amber-400`}>{selectedInvoice.warrantyMonths || '—'}</span>
-              </div>
-              <div className="flex justify-between border-t pt-2 border-slate-700">
-                <span className={`text-sm ${t.textMuted}`}>Total Cost:</span>
-                <span className={`text-sm font-bold ${t.textMain}`}>NPR {selectedInvoice.totalCost}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className={`text-sm ${t.textMuted}`}>Paid:</span>
-                <span className={`text-sm font-bold text-emerald-400`}>NPR {selectedInvoice.paidAmount}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className={`text-sm ${t.textMuted}`}>Balance Due:</span>
-                <span className={`text-sm font-bold text-rose-400`}>NPR {selectedInvoice.dueAmount}</span>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap gap-3 justify-end">
-              <button onClick={() => downloadInvoiceImage(selectedInvoice)} className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-sm flex items-center gap-1.5 shadow-md">
-                <Download size={15}/> Download PNG
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => downloadInvoiceImage(selectedInvoice)}
+                className="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-2xl transition flex items-center gap-2"
+              >
+                <Download className="w-4 h-4" /> Download Image
               </button>
-              <button onClick={() => printInvoice(selectedInvoice)} className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-sm flex items-center gap-1.5 shadow-md">
-                <Printer size={15}/> Print Bill
+              <button
+                onClick={() => printInvoice(selectedInvoice)}
+                className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl shadow-lg shadow-blue-600/30 transition flex items-center gap-2"
+              >
+                <Printer className="w-4 h-4" /> Print Invoice
               </button>
-              <button onClick={() => sendToWhatsApp(selectedInvoice)} className="px-4 py-2.5 bg-emerald-700 hover:bg-emerald-600 text-white font-bold rounded-xl text-sm flex items-center gap-1.5 shadow-md">
-                <MessageSquare size={15}/> WhatsApp
-              </button>
-              {Number(selectedInvoice.dueAmount) > 0 && (
-                <button onClick={() => { markInvoiceAsPaid(selectedInvoice.id); setSelectedInvoice(null); alert('Marked as fully paid!'); }} className="px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-xl text-sm">
-                  Mark as Paid
-                </button>
-              )}
             </div>
           </div>
         </div>
       )}
 
-      {/* EDIT INVOICE MODAL */}
-      {editingInvoice && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-          <form onSubmit={handleUpdateInvoice} className={`${t.cardBg} border ${t.border} rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 my-8`}>
-            <div className="flex items-center justify-between border-b pb-4 border-slate-700">
-              <h3 className={`text-lg font-bold ${t.textMain}`}>Edit Bill #{editingInvoice.id}</h3>
-              <button type="button" onClick={() => setEditingInvoice(null)} className="p-2 rounded-xl bg-slate-800 text-slate-300"><X size={18}/></button>
-            </div>
-            <div>
-              <label className={`text-sm font-bold ${t.textMuted} block mb-1`}>Customer Name</label>
-              <input type="text" value={editingInvoice.customerName} onChange={e => setEditingInvoice({...editingInvoice, customerName: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm`} required />
-            </div>
-            <div>
-              <label className={`text-sm font-bold ${t.textMuted} block mb-1`}>Phone</label>
-              <input type="text" value={editingInvoice.phone} onChange={e => setEditingInvoice({...editingInvoice, phone: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm`} required />
-            </div>
-            <div>
-              <label className={`text-sm font-bold ${t.textMuted} block mb-1`}>Model / Description</label>
-              <input type="text" value={editingInvoice.model} onChange={e => setEditingInvoice({...editingInvoice, model: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm`} required />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className={`text-sm font-bold ${t.textMuted} block mb-1`}>Total Cost (NPR)</label>
-                <input type="number" value={editingInvoice.totalCost} onChange={e => setEditingInvoice({...editingInvoice, totalCost: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm`} required />
-              </div>
-              <div>
-                <label className={`text-sm font-bold ${t.textMuted} block mb-1`}>Paid Amount (NPR)</label>
-                <input type="number" value={editingInvoice.paidAmount} onChange={e => setEditingInvoice({...editingInvoice, paidAmount: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm`} required />
-              </div>
-            </div>
-            <div>
-              <label className={`text-sm font-bold ${t.textMuted} block mb-1`}>Warranty</label>
-              <input type="text" value={editingInvoice.warrantyMonths || ''} onChange={e => setEditingInvoice({...editingInvoice, warrantyMonths: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm`} />
-            </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <button type="button" onClick={() => setEditingInvoice(null)} className="px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-xl text-sm font-bold">Cancel</button>
-              <button type="submit" className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-bold">Save Changes</button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* SUPPLIER PAYMENT / UDHAARO TRACKING MODAL */}
+      {/* PAY DUE / INSTALLMENT MODAL */}
       {payingExpense && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-          <div className={`${t.cardBg} border ${t.border} rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5 my-8`}>
-            <div className="flex items-center justify-between border-b pb-4 border-slate-700">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className={`${t.cardBg} rounded-3xl border max-w-md w-full p-6 shadow-2xl space-y-4 relative`}>
+            <button
+              onClick={() => setPayingExpense(null)}
+              className="absolute right-6 top-6 p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h3 className="text-lg font-bold text-white">Pay Due / Installment</h3>
+            <p className="text-xs text-slate-400">
+              Record payment for: <strong className="text-white">{payingExpense.description}</strong> ({payingExpense.supplierName || 'General'})
+            </p>
+            <div className="space-y-3">
               <div>
-                <h3 className={`text-lg font-bold ${t.textMain}`}>{payingExpense.description}</h3>
-                <p className={`text-sm ${t.textMuted}`}>{payingExpense.supplierName || 'No supplier name'}{payingExpense.supplierPhone ? ` · ${payingExpense.supplierPhone}` : ''}</p>
+                <label className="block text-xs font-semibold text-slate-400 mb-1">Due Remaining</label>
+                <div className="text-xl font-black text-amber-400">NPR {Number(payingExpense.dueAmount || 0).toLocaleString()}</div>
               </div>
-              <button onClick={() => setPayingExpense(null)} className="p-2 rounded-xl bg-slate-800 text-slate-300"><X size={18}/></button>
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 mb-1">Payment Amount (NPR)</label>
+                <input
+                  type="number"
+                  value={payForm.amount}
+                  onChange={(e) => setPayForm({ ...payForm, amount: e.target.value })}
+                  className={`w-full px-4 py-3 rounded-2xl ${t.inputBg} border text-sm outline-none`}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 mb-1">Payment Date</label>
+                <input
+                  type="date"
+                  value={payForm.date}
+                  onChange={(e) => setPayForm({ ...payForm, date: e.target.value })}
+                  className={`w-full px-4 py-3 rounded-2xl ${t.inputBg} border text-sm outline-none`}
+                />
+              </div>
             </div>
-
-            <div className={`${t.cardSecondary} border ${t.border} rounded-2xl p-4 grid grid-cols-3 gap-2 text-center`}>
-              <div>
-                <p className={`text-sm ${t.textMuted}`}>Total</p>
-                <p className={`font-black ${t.textMain}`}>NPR {payingExpense.amount}</p>
-              </div>
-              <div>
-                <p className={`text-sm ${t.textMuted}`}>Paid</p>
-                <p className="font-black text-emerald-400">NPR {Number(payingExpense.paidAmount !== undefined ? payingExpense.paidAmount : payingExpense.amount || 0)}</p>
-              </div>
-              <div>
-                <p className={`text-sm ${t.textMuted}`}>Due</p>
-                <p className="font-black text-amber-400">NPR {Number(payingExpense.dueAmount || 0)}</p>
-              </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                onClick={() => setPayingExpense(null)}
+                className="px-5 py-2.5 bg-slate-800 text-slate-300 font-bold rounded-2xl text-xs transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  addExpensePayment(payingExpense.id, payForm.amount, payForm.date);
+                  setPayingExpense(null);
+                }}
+                className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl text-xs shadow-lg shadow-emerald-600/30 transition"
+              >
+                Confirm Payment
+              </button>
             </div>
-
-            {Number(payingExpense.dueAmount || 0) > 0 && (
-              <div className="space-y-3">
-                <label className={`text-sm font-bold ${t.textMuted} block`}>Add Payment (paisa tirda)</label>
-                <div className="grid grid-cols-2 gap-3">
-                  <input type="number" placeholder="Amount (NPR)" value={payForm.amount} onChange={e => setPayForm({...payForm, amount: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-                  <input type="date" value={payForm.date} onChange={e => setPayForm({...payForm, date: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-                </div>
-                <button
-                  onClick={() => {
-                    addExpensePayment(payingExpense.id, payForm.amount, payForm.date);
-                    setPayingExpense(null);
-                    setPayForm({ amount: '', date: todayKey });
-                  }}
-                  className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl p-3 transition shadow-lg shadow-emerald-600/30"
-                >
-                  Save Payment
-                </button>
-              </div>
-            )}
-
-            {payingExpense.payments && payingExpense.payments.length > 0 && (
-              <div>
-                <label className={`text-sm font-bold ${t.textMuted} block mb-2`}>Payment History</label>
-                <div className="space-y-1.5 max-h-40 overflow-y-auto">
-                  {payingExpense.payments.map((p, idx) => (
-                    <div key={idx} className={`flex justify-between text-sm ${t.cardSecondary} border ${t.border} rounded-xl px-3 py-2`}>
-                      <span className={t.textMuted}>{p.date}</span>
-                      <span className={`font-bold ${t.textMain}`}>NPR {p.amount}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </div>
       )}
+
     </div>
   );
 }
