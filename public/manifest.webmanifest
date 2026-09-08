@@ -1,0 +1,13 @@
+{
+  "name": "Genuine Fix - Repair & Sales Manager",
+  "short_name": "Genuine Fix",
+  "description": "Repair, billing, inventory, device trade and expense management for Genuine Fix.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
