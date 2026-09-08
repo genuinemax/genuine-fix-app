@@ -1,0 +1,6 @@
+/* Direct sale counter helpers. */
+(function(){
+  const style=document.createElement('style');style.textContent='.gf-sale-source{display:flex;gap:10px;flex-wrap:wrap;padding:10px;margin:8px 0;border:1px solid #475569;border-radius:10px}.gf-sale-source label{font-size:12px;font-weight:700}.gf-sale-source select{margin-left:6px;padding:7px;border-radius:7px}';document.head.appendChild(style);
+  function add(){document.querySelectorAll('form').forEach(f=>{if(f.dataset.gfSaleSource)return;const text=(f.innerText||'').toLowerCase();if(!/(direct sale|sale counter|sales|invoice)/.test(text))return;f.dataset.gfSaleSource='1';const box=document.createElement('div');box.className='gf-sale-source';box.innerHTML='<b>Sale type:</b><label><input type="radio" name="gf-sale-source-'+Math.random().toString(36).slice(2)+'" checked> Stock item</label><label><input type="radio"> Outside stock / Service</label><label>Payment: <select><option>Cash</option><option>Online</option><option>Bank Transfer</option><option>eSewa</option><option>Khalti</option><option>Card</option><option>Other</option></select></label>';f.prepend(box)})}
+  new MutationObserver(add).observe(document.body,{childList:true,subtree:true});setTimeout(add,800);setInterval(add,2000);
+})();
