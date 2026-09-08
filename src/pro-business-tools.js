@@ -1,29 +1,125 @@
-/* Optional Pro business tools. Uses the app's existing localStorage data. */
+/* Genuine Fix — inline editing tools
+ * No floating Pro/Tools icons. Adds Edit buttons directly to data rows.
+ * Updates the existing localStorage records and reloads the app so React
+ * re-reads the edited data safely.
+ */
 (function () {
-  const K = { repairs: 'gf_repairs', expenses: 'gf_expenses' };
+  const K = {
+    repairs: 'gf_repairs',
+    expenses: 'gf_expenses',
+    inventory: 'gf_inventory',
+    devices: 'gf_devices_stock',
+    purchases: 'gf_stock_purchases'
+  };
   const read = (k, d=[]) => { try { return JSON.parse(localStorage.getItem(k) || JSON.stringify(d)); } catch { return d; } };
   const save = (k, v) => localStorage.setItem(k, JSON.stringify(v));
   const esc = s => String(s ?? '').replace(/[&<>\"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]));
-  const customers = () => {
-    const m = new Map();
-    read(K.repairs).forEach(r => r.customerName && m.set(r.customerName.trim().toLowerCase(), {name:r.customerName, phone:r.phone || ''}));
-    read(K.expenses).forEach(e => e.partyName && m.set(e.partyName.trim().toLowerCase(), {name:e.partyName, phone:e.partyPhone || ''}));
-    return [...m.values()];
-  };
-  const style = document.createElement('style'); style.textContent = `
-    #gf-biz-tools{position:fixed;inset:0;z-index:95;display:none;background:rgba(2,6,23,.78);backdrop-filter:blur(7px);overflow:auto;padding:16px;font-family:system-ui,sans-serif}
-    #gf-biz-tools .box{max-width:900px;margin:4vh auto;background:#0f172a;color:#e2e8f0;border:1px solid #334155;border-radius:20px;padding:20px}
-    #gf-biz-tools .head{display:flex;justify-content:space-between;gap:12px;align-items:center}.gf-biz-actions{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.gf-biz-btn{border:1px solid #475569;background:#1e293b;color:#e2e8f0;border-radius:10px;padding:9px 12px;font-weight:800;cursor:pointer}.gf-biz-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}.gf-biz-form label{font-size:11px;color:#94a3b8;font-weight:700}.gf-biz-form input,.gf-biz-form select{width:100%;box-sizing:border-box;margin-top:5px;padding:10px;border-radius:9px;border:1px solid #475569;background:#0b1220;color:#e2e8f0}.full{grid-column:1/-1}.hint{font-size:11px;color:#94a3b8;margin:8px 0}@media(max-width:650px){#gf-biz-tools .box{padding:14px;margin:1vh auto}.gf-biz-form{grid-template-columns:1fr}}
-  `; document.head.appendChild(style);
-  const root = document.createElement('div'); root.id='gf-biz-tools'; root.innerHTML=`<div class="box"><div class="head"><div><h2 style="margin:0;font-size:20px">Business Pro Tools</h2><div class="hint">Purchase credit, jobsheet editing and non-stock sales</div></div><button class="gf-biz-btn" data-close>Close</button></div><div class="gf-biz-actions"><button class="gf-biz-btn" data-exp>+ Purchase / Expense</button><button class="gf-biz-btn" data-job>✏️ Edit Jobsheet</button><button class="gf-biz-btn" data-sale>🛍 Non-stock Sale</button></div><div data-content></div></div>`; document.body.appendChild(root);
-  const content=root.querySelector('[data-content]');
-  const open=()=>root.style.display='block', close=()=>{root.style.display='none';content.innerHTML=''};
-  function expense(){ content.innerHTML=`<div class="gf-biz-form"><label>Party / Supplier name<input id="be-party" list="be-parties"><datalist id="be-parties">${customers().map(c=>`<option value="${esc(c.name)}">`).join('')}</datalist></label><label>Party phone<input id="be-phone" inputmode="tel"></label><label>Purchase / expense details<input id="be-desc"></label><label>Date<input id="be-date" type="date" value="${new Date().toISOString().slice(0,10)}"></label><label>Total bill amount<input id="be-total" type="number" min="0"></label><label>Paid today<input id="be-paid" type="number" min="0"></label><label>Type<select id="be-type"><option>Purchase</option><option>Shop Expense</option><option>Other</option></select></label><div class="full hint">If you buy goods today and do not pay the full bill, the unpaid balance is saved as Party Payable. Existing party names are suggested automatically.</div><div class="full"><button class="gf-biz-btn" id="be-save">Save</button></div></div>`;
-    const p=content.querySelector('#be-party'), ph=content.querySelector('#be-phone'); p.onchange=()=>{const c=customers().find(x=>x.name.toLowerCase()===p.value.trim().toLowerCase());if(c&&!ph.value)ph.value=c.phone};
-    content.querySelector('#be-save').onclick=()=>{const total=+content.querySelector('#be-total').value||0,paid=+content.querySelector('#be-paid').value||0;if(!p.value.trim()||!content.querySelector('#be-desc').value.trim()||total<=0){alert('Party, details and total amount are required.');return}if(paid>total){alert('Paid cannot exceed total.');return}const a=read(K.expenses);a.push({id:Date.now(),description:content.querySelector('#be-desc').value.trim(),amount:total,totalAmount:total,paidAmount:paid,dueAmount:total-paid,partyName:p.value.trim(),partyPhone:ph.value.trim(),paymentType:content.querySelector('#be-type').value,date:content.querySelector('#be-date').value});save(K.expenses,a);alert(total-paid?'Saved. Party payable tracked.':'Saved.');location.reload()};
+
+  const style = document.createElement('style');
+  style.textContent = `
+    .gf-inline-edit-btn{border:1px solid #475569!important;background:#1e293b!important;color:#e2e8f0!important;border-radius:8px!important;padding:6px 9px!important;font-size:11px!important;font-weight:800!important;cursor:pointer!important;white-space:nowrap!important}
+    .gf-inline-edit-btn:hover{background:#334155!important}
+    #gf-edit-modal{position:fixed;inset:0;z-index:9999;display:none;background:rgba(2,6,23,.78);backdrop-filter:blur(7px);overflow:auto;padding:14px;font-family:system-ui,sans-serif}
+    #gf-edit-modal .gf-edit-box{width:min(680px,100%);margin:3vh auto;background:#0f172a;color:#e2e8f0;border:1px solid #334155;border-radius:20px;padding:18px;box-shadow:0 30px 80px rgba(0,0,0,.5)}
+    #gf-edit-modal .gf-edit-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}
+    #gf-edit-modal h2{margin:0;font-size:19px}
+    .gf-edit-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .gf-edit-grid label{font-size:11px;color:#94a3b8;font-weight:700}
+    .gf-edit-grid input,.gf-edit-grid select,.gf-edit-grid textarea{width:100%;box-sizing:border-box;margin-top:5px;padding:10px;border-radius:9px;border:1px solid #475569;background:#0b1220;color:#e2e8f0}
+    .gf-edit-grid textarea{min-height:72px;resize:vertical}.gf-edit-full{grid-column:1/-1}
+    .gf-edit-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}.gf-edit-btn{border:1px solid #475569;background:#1e293b;color:#e2e8f0;border-radius:9px;padding:9px 13px;font-weight:800;cursor:pointer}.gf-edit-save{background:#2563eb;border-color:#2563eb}
+    @media(max-width:650px){.gf-edit-grid{grid-template-columns:1fr}.gf-edit-full{grid-column:auto}}
+  `;
+  document.head.appendChild(style);
+
+  const modal = document.createElement('div');
+  modal.id = 'gf-edit-modal';
+  modal.innerHTML = `<div class="gf-edit-box"><div class="gf-edit-head"><h2 data-title>Edit record</h2><button class="gf-edit-btn" data-close type="button">Close</button></div><div class="gf-edit-grid" data-form></div><div class="gf-edit-actions"><button class="gf-edit-btn" data-cancel type="button">Cancel</button><button class="gf-edit-btn gf-edit-save" data-save type="button">Save changes</button></div></div>`;
+  document.body.appendChild(modal);
+  const form = modal.querySelector('[data-form]');
+  let current = null;
+
+  const field = (label, key, value, type='text', full=false) => `<label class="${full?'gf-edit-full':''}">${label}<input data-k="${key}" type="${type}" value="${esc(value)}"></label>`;
+  const select = (label,key,value,opts) => `<label>${label}<select data-k="${key}">${opts.map(o=>`<option ${String(o)===String(value)?'selected':''}>${esc(o)}</option>`).join('')}</select></label>`;
+
+  function openEditor(type, index) {
+    let arr = read(K[type], []);
+    const r = arr[index];
+    if (!r) return;
+    current = {type,index};
+    if (type === 'repairs') {
+      modal.querySelector('[data-title]').textContent = `Edit Invoice / Jobsheet ${r.id || ''}`;
+      form.innerHTML = [
+        field('Customer name','customerName',r.customerName), field('Phone','phone',r.phone),
+        field('Device / model','model',r.model), field('Issue / details','issue',r.issue),
+        field('Total amount','totalCost',r.totalCost,'number'), field('Paid amount','paidAmount',r.paidAmount,'number'),
+        select('Status','status',r.status || 'In Progress',['Received','In Progress','Ready','Delivered','Cancelled']),
+        field('Warranty (months)','warrantyMonths',r.warrantyMonths),
+        field('Bill type','billType',r.billType || 'Repair'), field('Date / time','dateTime',r.dateTime),
+        field('Citizenship no.','citizenshipNo',r.citizenshipNo), field('Device type','deviceType',r.deviceType),
+        `<label class="gf-edit-full">Remarks / issue<textarea data-k="issue">${esc(r.issue || '')}</textarea></label>`
+      ].join('');
+    } else if (type === 'expenses') {
+      modal.querySelector('[data-title]').textContent = 'Edit Expense / Purchase';
+      form.innerHTML = [field('Party / Supplier name','partyName',r.partyName || r.supplierName),field('Party phone','partyPhone',r.partyPhone || r.supplierPhone),field('Description','description',r.description),field('Date','date',r.date,'date'),field('Total amount','amount',r.amount,'number'),field('Paid amount','paidAmount',r.paidAmount,'number'),field('Category','category',r.category || r.paymentType || 'Other'),field('Notes','notes',r.notes)].join('');
+    } else if (type === 'inventory') {
+      modal.querySelector('[data-title]').textContent = 'Edit Stock Item';
+      form.innerHTML = [field('Item name','name',r.name),field('Category','category',r.category),field('Stock quantity','stock',r.stock,'number'),field('Cost price','costPrice',r.costPrice,'number'),field('Selling price','price',r.price,'number'),field('Minimum stock','minStock',r.minStock,'number'),field('Supplier name','supplierName',r.supplierName),field('Supplier phone','supplierPhone',r.supplierPhone)].join('');
+    } else if (type === 'devices') {
+      modal.querySelector('[data-title]').textContent = `Edit Device ${r.id || ''}`;
+      form.innerHTML = [field('Brand / model','brandModel',r.brandModel),field('IMEI / Serial','imeiOrSerial',r.imeiOrSerial),field('Party name','partyName',r.partyName),field('Party phone','partyPhone',r.partyPhone),field('Buy price','buyPrice',r.buyPrice,'number'),field('Sell price','sellPrice',r.sellPrice,'number'),field('Condition','condition',r.condition),select('Status','status',r.status || 'In Stock',['In Stock','Sold','Reserved','Returned']),field('Date','date',r.date,'date')].join('');
+    }
+    modal.style.display='block';
   }
-  function job(){const a=read(K.repairs);if(!a.length){content.innerHTML='<div class="hint">No jobsheet records found.</div>';return}content.innerHTML=`<div class="gf-biz-form"><label>Select jobsheet<select id="bj-sel">${a.map((r,i)=>`<option value="${i}">${esc(r.id||('Job '+(i+1)))} — ${esc(r.customerName||'Walk-in')} — ${esc(r.model||'')}</option>`).join('')}</select></label><div></div><label>Customer name<input id="bj-name"></label><label>Phone<input id="bj-phone"></label><label>Device / model<input id="bj-model"></label><label>Issue<input id="bj-issue"></label><label>Total cost<input id="bj-total" type="number" min="0"></label><label>Paid amount<input id="bj-paid" type="number" min="0"></label><label>Status<select id="bj-status"><option>Received</option><option>In Progress</option><option>Ready</option><option>Delivered</option><option>Cancelled</option></select></label><label>Warranty<input id="bj-war"></label><div class="full"><button class="gf-biz-btn" id="bj-save">Save Jobsheet</button></div></div>`;const s=content.querySelector('#bj-sel');const fill=()=>{const r=a[+s.value];content.querySelector('#bj-name').value=r.customerName||'';content.querySelector('#bj-phone').value=r.phone||'';content.querySelector('#bj-model').value=r.model||'';content.querySelector('#bj-issue').value=r.issue||'';content.querySelector('#bj-total').value=r.totalCost??'';content.querySelector('#bj-paid').value=r.paidAmount??'';content.querySelector('#bj-war').value=r.warrantyMonths||'';content.querySelector('#bj-status').value=r.status||'In Progress'};s.onchange=fill;fill();content.querySelector('#bj-save').onclick=()=>{const i=+s.value,r={...a[i]},total=+content.querySelector('#bj-total').value||0,paid=+content.querySelector('#bj-paid').value||0;if(paid>total){alert('Paid cannot exceed total.');return}Object.assign(r,{customerName:content.querySelector('#bj-name').value.trim(),phone:content.querySelector('#bj-phone').value.trim(),model:content.querySelector('#bj-model').value.trim(),issue:content.querySelector('#bj-issue').value.trim(),totalCost:total,paidAmount:paid,dueAmount:total-paid,status:content.querySelector('#bj-status').value,warrantyMonths:content.querySelector('#bj-war').value.trim()});a[i]=r;save(K.repairs,a);alert('Jobsheet updated.');location.reload()}};
-  function sale(){content.innerHTML=`<div class="gf-biz-form"><label>Customer name<input id="bs-name" list="bs-list"><datalist id="bs-list">${customers().map(c=>`<option value="${esc(c.name)}">`).join('')}</datalist></label><label>Phone<input id="bs-phone"></label><label>Item / service name<input id="bs-item" placeholder="Back cover, cable, software, cleaning etc."></label><label>Quantity<input id="bs-qty" type="number" min="1" value="1"></label><label>Unit sale price<input id="bs-price" type="number" min="0"></label><label>Paid amount<input id="bs-paid" type="number" min="0"></label><div class="full hint">Non-stock sale: does NOT reduce inventory. Use for accessories/services/other items not entered in stock.</div><div class="full"><button class="gf-biz-btn" id="bs-save">Create Sale Entry</button></div></div>`;const n=content.querySelector('#bs-name'),ph=content.querySelector('#bs-phone');n.onchange=()=>{const c=customers().find(x=>x.name.toLowerCase()===n.value.trim().toLowerCase());if(c)ph.value=c.phone};content.querySelector('#bs-save').onclick=()=>{const item=content.querySelector('#bs-item').value.trim(),q=Math.max(1,+content.querySelector('#bs-qty').value||1),price=+content.querySelector('#bs-price').value||0,paid=+content.querySelector('#bs-paid').value||0,total=q*price;if(!item||price<=0){alert('Item/service and price are required.');return}if(paid>total){alert('Paid cannot exceed total.');return}const a=read(K.repairs);a.push({id:'SALE-'+Date.now().toString().slice(-7),customerName:n.value.trim()||'Walk-in Customer',phone:ph.value.trim(),deviceType:'Accessory / Other Sale',model:item,totalCost:total,paidAmount:paid,dueAmount:total-paid,issue:'Non-stock sale',warrantyMonths:'No Warranty',status:'Delivered',dateTime:new Date().toISOString().replace('T',' ').slice(0,19),billType:'Sale',items:[{name:item,price,qty:q,remarks:'Non-stock item'}]});save(K.repairs,a);alert('Sale entry added. Inventory was not reduced.');location.reload()}};
-  root.querySelector('[data-close]').onclick=close;root.querySelector('[data-exp]').onclick=expense;root.querySelector('[data-job]').onclick=job;root.querySelector('[data-sale]').onclick=sale;
-  const launcher=document.createElement('button');launcher.id='gf-biz-launcher';launcher.type='button';launcher.textContent='🧾 Tools';launcher.style='position:fixed;right:18px;bottom:68px;z-index:70;border:0;border-radius:999px;padding:10px 14px;background:#334155;color:white;font:800 12px system-ui;box-shadow:0 8px 25px rgba(0,0,0,.25);cursor:pointer';launcher.onclick=open;document.body.appendChild(launcher);
+
+  function close(){modal.style.display='none';current=null;form.innerHTML='';}
+  function saveCurrent(){
+    if(!current) return;
+    const arr=read(K[current.type],[]), r={...arr[current.index]};
+    form.querySelectorAll('[data-k]').forEach(el=>{ const k=el.dataset.k; if(k) r[k]=el.type==='number' ? (Number(el.value)||0) : el.value; });
+    if(current.type==='repairs'){
+      r.dueAmount=Math.max(0,Number(r.totalCost||0)-Number(r.paidAmount||0));
+      if(Number(r.paidAmount||0)>Number(r.totalCost||0)){alert('Paid amount cannot exceed total amount.');return;}
+    }
+    if(current.type==='expenses'){
+      r.totalAmount=Number(r.amount||0);r.dueAmount=Math.max(0,Number(r.amount||0)-Number(r.paidAmount||0));
+      if(r.partyName!==undefined){r.supplierName=r.partyName;} if(r.partyPhone!==undefined){r.supplierPhone=r.partyPhone;}
+      if(Number(r.paidAmount||0)>Number(r.amount||0)){alert('Paid amount cannot exceed total amount.');return;}
+    }
+    arr[current.index]=r;save(K[current.type],arr);close();location.reload();
+  }
+
+  modal.querySelector('[data-close]').onclick=close;modal.querySelector('[data-cancel]').onclick=close;modal.querySelector('[data-save]').onclick=saveCurrent;modal.addEventListener('click',e=>{if(e.target===modal)close();});
+
+  function textOf(row){return (row.innerText||row.textContent||'').replace(/\s+/g,' ').trim();}
+  function findIndex(type,row){
+    const text=textOf(row), arr=read(K[type],[]);
+    return arr.findIndex(r=>{
+      const id=String(r.id||'');
+      if(id && text.includes(id)) return true;
+      const name=String(r.customerName||r.partyName||r.supplierName||r.name||r.brandModel||'');
+      const model=String(r.model||r.brandModel||r.description||'');
+      return name && text.includes(name) && (!model || text.includes(model));
+    });
+  }
+
+  function addButtons(){
+    document.querySelectorAll('table tbody tr').forEach(row=>{
+      if(row.dataset.gfEditAdded==='1') return;
+      const text=textOf(row); if(!text) return;
+      let type=null,index=-1;
+      const candidates=[['repairs',['GF-','SALE-','Invoice','Repair','Jobsheet']],['inventory',['Stock','Inventory']],['devices',['DEV-','Device']],['expenses',['Expense','Purchase','Payable']]];
+      // Prefer an exact ID match because IDs are unique.
+      for(const [t,keys] of candidates){const arr=read(K[t],[]);const i=arr.findIndex(r=>{const id=String(r.id||'');return id && text.includes(id);});if(i>=0){type=t;index=i;break;}}
+      if(!type){
+        // Match common customer/description rows when no ID is displayed.
+        for(const t of ['repairs','inventory','devices','expenses']){const i=findIndex(t,row);if(i>=0){type=t;index=i;break;}}
+      }
+      if(!type || index<0) return;
+      const cell=document.createElement('td');cell.style.cssText='white-space:nowrap;padding:6px;';
+      const b=document.createElement('button');b.type='button';b.className='gf-inline-edit-btn';b.textContent='Edit';b.onclick=()=>openEditor(type,index);cell.appendChild(b);row.appendChild(cell);row.dataset.gfEditAdded='1';
+    });
+  }
+  const observer=new MutationObserver(()=>addButtons());observer.observe(document.body,{childList:true,subtree:true});
+  setTimeout(addButtons,800);setTimeout(addButtons,2000);setInterval(addButtons,2500);
 })();
