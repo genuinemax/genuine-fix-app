@@ -331,7 +331,7 @@ export default function App() {
   const [posBill, setPosBill] = useState({
     customerName: '',
     phone: '',
-    items: [{ name: '', price: '', qty: 1 }],
+    items: [{ name: '', price: '', qty: 1, nonStock: false }],
     paidAmount: '',
     warrantyMonths: ''
   });
@@ -1739,15 +1739,25 @@ _Thank you for choosing ${shopInfo.name}!_`;
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <h3 className={`text-sm font-bold uppercase tracking-wider ${t.textMuted}`}>Bill Items & Parts Selection</h3>
-<div id="walk-in-bill-actions" className="flex flex-wrap items-center gap-2 mt-2 mb-3">
-                    <button type="button" onClick={() => setPosBill(prev => ({ ...prev, customerName: 'Walk-in Customer', phone: '' }))} className="px-4 py-2 bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-600/30 rounded-xl text-xs font-black transition">Walk-in Customer</button>
-                    <button type="button" onClick={() => setPosBill(prev => ({ ...prev, customerName: 'Walk-in Customer', phone: '', paidAmount: '' }))} className="px-4 py-2 bg-blue-600/20 text-blue-400 border border-blue-500/30 hover:bg-blue-600/30 rounded-xl text-xs font-black transition">Walk-in Bill</button>
-                  </div>
-                  <button type="button" onClick={() => setPosBill({...posBill, items: [...posBill.items, { name: '', price: '', qty: 1 }]})} className="px-3 py-1.5 bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 rounded-xl text-xs font-bold">+ Add Item</button>
+<button type="button" onClick={() => setPosBill({...posBill, items: [...posBill.items, { name: '', price: '', qty: 1, nonStock: false }]})} className="px-3 py-1.5 bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 rounded-xl text-xs font-bold">+ Add Item</button>
                 </div>
                 {posBill.items.map((item, idx) => (
                   <div key={idx} className="flex gap-3 items-center">
-                    <select
+                    {item.nonStock ? (
+    <input
+      type="text"
+      value={item.name}
+      onChange={e => {
+        const nextItems = [...posBill.items];
+        nextItems[idx].name = e.target.value;
+        setPosBill({ ...posBill, items: nextItems });
+      }}
+      placeholder="Non-stock item / service name"
+      className={`flex-1 p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}
+      required
+    />
+  ) : (
+    <select
                       value={item.name}
                       onChange={e => {
                         const val = e.target.value;
@@ -1765,6 +1775,22 @@ _Thank you for choosing ${shopInfo.name}!_`;
                         <option key={inv.id} value={inv.name}>{inv.name} (Stock: {inv.stock} — NPR {inv.price})</option>
                       ))}
                     </select>
+  )}
+  <button
+    type="button"
+    onClick={() => {
+      const nextItems = [...posBill.items];
+      nextItems[idx].nonStock = !nextItems[idx].nonStock;
+      if (nextItems[idx].nonStock) {
+        nextItems[idx].name = '';
+        nextItems[idx].price = '';
+      }
+      setPosBill({ ...posBill, items: nextItems });
+    }}
+    className={`px-3 py-2 rounded-xl text-xs font-black border transition ${item.nonStock ? 'bg-blue-600/20 text-blue-400 border-blue-500/30' : 'bg-amber-600/20 text-amber-400 border-amber-500/30'}`}
+  >
+    {item.nonStock ? 'Stock Item' : 'Non-stock'}
+  </button>
                     <input type="number" placeholder="Qty" value={item.qty} onChange={e => {
                       const nextItems = [...posBill.items];
                       nextItems[idx].qty = e.target.value;
