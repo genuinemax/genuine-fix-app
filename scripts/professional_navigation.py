@@ -7,7 +7,9 @@ old_state = "  const [mobileNavOpen, setMobileNavOpen] = useState(false);"
 if "const [openNavGroup" not in text:
     if old_state not in text:
         raise SystemExit('mobileNavOpen state not found; refusing to patch.')
-    text = text.replace(old_state, old_state + "\n  const [openNavGroup, setOpenNavGroup] = useState('MAIN');", 1)
+    text = text.replace(old_state, old_state + "\n  const [openNavGroup, setOpenNavGroup] = useState('');", 1)
+else:
+    text = text.replace("const [openNavGroup, setOpenNavGroup] = useState('MAIN');", "const [openNavGroup, setOpenNavGroup] = useState('');", 1)
 
 start_marker = "      {/* Premium Top Navigation */}"
 end_marker = "      {/* Main Container */}"
@@ -101,4 +103,4 @@ nav = '''      {/* Premium Top Navigation — stable brand + responsive overlay 
 '''
 text = text[:start] + nav + text[end:]
 path.write_text(text, encoding='utf-8')
-print('Responsive professional navigation applied.')
+print('Responsive professional navigation applied with collapsed default state.')
