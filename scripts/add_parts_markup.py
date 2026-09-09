@@ -23,8 +23,8 @@ if old_edit in s:
     s = s.replace(old_edit, new_edit, 1)
 
 old_ui = '<input type="number" placeholder="Selling Price (NPR)" value={newPart.price} onChange={e => setNewPart({...newPart, price: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />'
-new_ui = '''<input type="number" min="0" step="0.01" placeholder="Profit / Markup %" value={newPart.markupPercent} onChange={e => setNewPart(prev => ({ ...prev, markupPercent: e.target.value, price: Number(prev.costPrice || 0) > 0 ? String(Math.round((Number(prev.costPrice || 0) * (1 + Number(e.target.value || 0) / 100)) * 100) / 100) : '' }))} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
-              <div className={`p-3 ${t.cardSecondary} border ${t.border} rounded-2xl flex items-center justify-between gap-3`}>
+new_ui = '''<input type="number" min="0" step="0.01" placeholder="Profit / Markup %" value={newPart.markupPercent} onChange={e => setNewPart(prev => ({ ...prev, markupPercent: e.target.value, price: Number(prev.costPrice || 0) > 0 ? String(Math.round((Number(prev.costPrice || 0) * (1 + Number(e.target.value || 0) / 100)) * 100) / 100) : '' }))} className={`p-2.5 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
+              <div className={`p-2.5 ${t.cardSecondary} border ${t.border} rounded-2xl flex items-center justify-between gap-3`}>
                 <div>
                   <div className={`text-xs font-bold uppercase tracking-wide ${t.textMuted}`}>Selling Price (SP)</div>
                   <div className={`text-lg font-black ${t.textMain}`}>NPR {Number(newPart.price || 0).toLocaleString()}</div>
@@ -35,9 +35,13 @@ if old_ui in s:
     s = s.replace(old_ui, new_ui, 1)
 
 old_cost_ui = '<input type="number" placeholder="Cost Price (NPR)" value={newPart.costPrice} onChange={e => setNewPart({...newPart, costPrice: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />'
-new_cost_ui = '<input type="number" min="0" step="0.01" placeholder="Cost Price (NPR)" value={newPart.costPrice} onChange={e => setNewPart(prev => ({ ...prev, costPrice: e.target.value, price: Number(e.target.value || 0) > 0 ? String(Math.round((Number(e.target.value || 0) * (1 + Number(prev.markupPercent || 0) / 100)) * 100) / 100) : "" }))} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />'
+new_cost_ui = '<input type="number" min="0" step="0.01" placeholder="Cost Price (NPR)" value={newPart.costPrice} onChange={e => setNewPart(prev => ({ ...prev, costPrice: e.target.value, price: Number(e.target.value || 0) > 0 ? String(Math.round((Number(e.target.value || 0) * (1 + Number(prev.markupPercent || 0) / 100)) * 100) / 100) : "" }))} className={`p-2.5 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />'
 if old_cost_ui in s:
     s = s.replace(old_cost_ui, new_cost_ui, 1)
+
+# Keep these two fields compact/normal-sized, not oversized.
+s = s.replace('placeholder="Cost Price (NPR)" value={newPart.costPrice}', 'placeholder="Cost Price (NPR)" value={newPart.costPrice}', 1)
+s = s.replace('placeholder="Profit / Markup %" value={newPart.markupPercent}', 'placeholder="Profit / Markup %" value={newPart.markupPercent}', 1)
 
 if 'placeholder="Profit / Markup %"' not in s:
     raise SystemExit('Markup percentage UI was not added')
