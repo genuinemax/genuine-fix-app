@@ -357,7 +357,7 @@ export default function App() {
   const [editingDeviceId, setEditingDeviceId] = useState(null);
 
   const [selectedCategory, setSelectedCategory] = useState(categories[0] || 'Mobile Parts');
-  const [newPart, setNewPart] = useState({ name: '', stock: '', costPrice: '', price: '', minStock: '5', supplierName: '', supplierPhone: '', purchaseDate: getLocalDateKey() });
+  const [newPart, setNewPart] = useState({ name: '', stock: '', costPrice: '', markupPercent: '', price: '', minStock: '5', supplierName: '', supplierPhone: '', purchaseDate: getLocalDateKey() });
   const [editingPartId, setEditingPartId] = useState(null);
   const [newStockPurchase, setNewStockPurchase] = useState({ partId: '', partName: '', category: categories[0] || 'Mobile Parts', supplierName: '', supplierPhone: '', qty: '', unitCost: '', date: getLocalDateKey(), invoiceNo: '', notes: '', paymentMethod: 'Cash' });
   
@@ -871,18 +871,19 @@ const supplierDueList = Object.values(expenses.filter(e => Number(e.dueAmount ||
 
   const handleAddPart = (e) => {
     e.preventDefault();
-    const qty = Number(newPart.stock || 0), cost = Number(newPart.costPrice || 0);
+    const qty = Number(newPart.stock || 0), cost = Number(newPart.costPrice || 0), markupPercent = Number(newPart.markupPercent || 0);
+    const sellingPrice = Math.round((cost * (1 + markupPercent / 100)) * 100) / 100;
     if (editingPartId) {
-      setInventory(inventory.map(item => item.id === editingPartId ? { ...item, category: selectedCategory, name: newPart.name || item.name, stock: qty, costPrice: cost, price: Number(newPart.price || 0), minStock: Number(newPart.minStock || 5), supplierName: newPart.supplierName || '', supplierPhone: newPart.supplierPhone || '', lastPurchaseDate: newPart.purchaseDate || todayKey } : item));
+      setInventory(inventory.map(item => item.id === editingPartId ? { ...item, category: selectedCategory, name: newPart.name || item.name, stock: qty, costPrice: cost, markupPercent, price: sellingPrice, minStock: Number(newPart.minStock || 5), supplierName: newPart.supplierName || '', supplierPhone: newPart.supplierPhone || '', lastPurchaseDate: newPart.purchaseDate || todayKey } : item));
       setEditingPartId(null);
-      setNewPart({ name: '', stock: '', costPrice: '', price: '', minStock: '5', supplierName: '', supplierPhone: '', purchaseDate: todayKey });
+      setNewPart({ name: '', stock: '', costPrice: '', markupPercent: '', price: '', minStock: '5', supplierName: '', supplierPhone: '', purchaseDate: todayKey });
       alert('Stock item updated successfully!'); return;
     }
     const id = Date.now();
     const itemName = newPart.name || 'Unnamed Part';
-    setInventory([...inventory, { id, category: selectedCategory, name: itemName, stock: qty, costPrice: cost, price: Number(newPart.price || 0), minStock: Number(newPart.minStock || 5), supplierName: newPart.supplierName || '', supplierPhone: newPart.supplierPhone || '', lastPurchaseDate: newPart.purchaseDate || todayKey }]);
+    setInventory([...inventory, { id, category: selectedCategory, name: itemName, stock: qty, costPrice: cost, markupPercent, price: sellingPrice, minStock: Number(newPart.minStock || 5), supplierName: newPart.supplierName || '', supplierPhone: newPart.supplierPhone || '', lastPurchaseDate: newPart.purchaseDate || todayKey }]);
     if (qty > 0 && cost > 0) setStockPurchases([{ id: `SP-${Date.now()}`, partId: id, partName: itemName, supplierName: newPart.supplierName || 'N/A', supplierPhone: newPart.supplierPhone || '', qty, unitCost: cost, total: qty * cost, date: newPart.purchaseDate || todayKey, invoiceNo: '', notes: 'Initial stock entry' }, ...stockPurchases]);
-    setNewPart({ name: '', stock: '', costPrice: '', price: '', minStock: '5', supplierName: '', supplierPhone: '', purchaseDate: todayKey });
+    setNewPart({ name: '', stock: '', costPrice: '', markupPercent: '', price: '', minStock: '5', supplierName: '', supplierPhone: '', purchaseDate: todayKey });
   };
 
   const handleAddStockPurchase = (e) => {
@@ -1932,8 +1933,15 @@ _Thank you for choosing ${shopInfo.name}!_`;
               </select>
               <input type="text" placeholder="Part Name (e.g. iPhone 13 Screen)" value={newPart.name} onChange={e => setNewPart({...newPart, name: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
               <input type="number" placeholder="Stock Qty" value={newPart.stock} onChange={e => setNewPart({...newPart, stock: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
-              <input type="number" placeholder="Cost Price (NPR)" value={newPart.costPrice} onChange={e => setNewPart({...newPart, costPrice: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
-              <input type="number" placeholder="Selling Price (NPR)" value={newPart.price} onChange={e => setNewPart({...newPart, price: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
+              <input type="number" min="0" step="0.01" placeholder="Cost Price (NPR)" value={newPart.costPrice} onChange={e => setNewPart(prev => ({ ...prev, costPrice: e.target.value, price: Number(e.target.value || 0) > 0 ? String(Math.round((Number(e.target.value || 0) * (1 + Number(prev.markupPercent || 0) / 100)) * 100) / 100) : "" }))} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
+              <input type="number" min="0" step="0.01" placeholder="Profit / Markup %" value={newPart.markupPercent} onChange={e => setNewPart(prev => ({ ...prev, markupPercent: e.target.value, price: Number(prev.costPrice || 0) > 0 ? String(Math.round((Number(prev.costPrice || 0) * (1 + Number(e.target.value || 0) / 100)) * 100) / 100) : '' }))} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
+              <div className={`p-3 ${t.cardSecondary} border ${t.border} rounded-2xl flex items-center justify-between gap-3`}>
+                <div>
+                  <div className={`text-xs font-bold uppercase tracking-wide ${t.textMuted}`}>Selling Price (SP)</div>
+                  <div className={`text-lg font-black ${t.textMain}`}>NPR {Number(newPart.price || 0).toLocaleString()}</div>
+                </div>
+                <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-black">Auto</span>
+              </div>
               <input type="number" placeholder="Min Stock Warning" value={newPart.minStock} onChange={e => setNewPart({...newPart, minStock: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
 
               <button type="submit" className="md:col-span-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-blue-600/35">
@@ -1963,7 +1971,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
                         <td className={`p-4 ${t.textMuted}`}>NPR {item.costPrice}</td>
                         <td className={`p-4 font-bold ${t.textMain}`}>NPR {item.price}</td>
                         <td className="p-4 text-right space-x-2">
-                          <button onClick={() => { setEditingPartId(item.id); setSelectedCategory(item.category); setNewPart({ name: item.name, stock: item.stock, costPrice: item.costPrice, price: item.price, minStock: item.minStock || '5', supplierName: item.supplierName || '', supplierPhone: item.supplierPhone || '', purchaseDate: item.lastPurchaseDate || todayKey }); }} className="px-3 py-1.5 bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 rounded-xl font-bold">Edit</button>
+                          <button onClick={() => { setEditingPartId(item.id); setSelectedCategory(item.category); setNewPart({ name: item.name, stock: item.stock, costPrice: item.costPrice, markupPercent: Number(item.costPrice) > 0 ? Math.round(((Number(item.price || 0) - Number(item.costPrice || 0)) / Number(item.costPrice || 1)) * 10000) / 100 : '', price: item.price, minStock: item.minStock || '5', supplierName: item.supplierName || '', supplierPhone: item.supplierPhone || '', purchaseDate: item.lastPurchaseDate || todayKey }); }} className="px-3 py-1.5 bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 rounded-xl font-bold">Edit</button>
                           <button onClick={() => setInventory(inventory.filter(i => i.id !== item.id))} className="px-3 py-1.5 bg-rose-500/20 text-rose-400 hover:bg-rose-500/30 rounded-xl font-bold"><Trash2 size={14}/></button>
                         </td>
                       </tr>
