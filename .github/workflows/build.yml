@@ -16,7 +16,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Apply non-stock POS billing patch
+      - name: Apply billing and supplier ledger updates
         shell: bash
         run: |
           python - <<'PY'
@@ -25,10 +25,14 @@ jobs:
           p = Path('src/App.jsx')
           s = p.read_text()
           original = s
+
+          # Remove any old temporary walk-in billing injection.
           s = re.sub(r'\s*<div id="walk-in-bill-actions"[\s\S]*?</div>\s*', '\n', s, count=1)
+
+          # Non-stock POS billing support.
           if 'item.nonStock' not in s:
               heading_pos = s.find('Bill Items & Parts Selection')
-              if heading_pos < 0: raise SystemExit('Bill Items heading not found')
+              if heading_pos < 0: raise SystemExit('POS bill items heading not found')
               select_start = s.find('<select', heading_pos)
               if select_start < 0: raise SystemExit('POS item selector not found')
               select_end = s.find('</select>', select_start)
@@ -41,15 +45,108 @@ jobs:
           s = s.replace('!invItem ||', 'invItem &&', 1)
           s = s.replace("items: [{ name: '', price: '', qty: 1 }]", "items: [{ name: '', price: '', qty: 1, nonStock: false }]", 1)
           s = s.replace("items: [...posBill.items, { name: '', price: '', qty: 1 }]", "items: [...posBill.items, { name: '', price: '', qty: 1, nonStock: false }]", 1)
-          if s != original: p.write_text(s)
+
+          # Supplier weekly/monthly ledger state.
+          if 'supplierPeriodFilter' not in s:
+              marker = "  const [viewingExpenseDetails, setViewingExpenseDetails] = useState(null);"
+              insert = marker + "\n  const [supplierPeriodFilter, setSupplierPeriodFilter] = useState('month');\n  const [supplierMonthFilter, setSupplierMonthFilter] = useState(getLocalDateKey().slice(0, 7));"
+              if marker not in s: raise SystemExit('expense state marker not found')
+              s = s.replace(marker, insert, 1)
+
+          # Supplier ledger calculations: every expense/purchase remains as an individual dated transaction.
+          if 'supplierLedgerRows' not in s:
+              marker = "  const totalSupplierDue = expenses.reduce((acc, curr) => acc + Number(curr.dueAmount || 0), 0);"
+              insert = marker + r'''
+
+  const supplierLedgerRows = (() => {
+    const now = new Date();
+    const currentMonth = supplierMonthFilter || getLocalDateKey().slice(0, 7);
+    const start = new Date(`${currentMonth}-01T00:00:00`);
+    let end = new Date(start);
+    if (supplierPeriodFilter === 'week') {
+      const day = start.getDay();
+      const mondayOffset = day === 0 ? -6 : 1 - day;
+      start.setDate(start.getDate() + mondayOffset);
+      end = new Date(start);
+      end.setDate(end.getDate() + 7);
+    } else if (supplierPeriodFilter === 'month') {
+      end.setMonth(end.getMonth() + 1);
+    } else {
+      start.setTime(new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime());
+      end = new Date(start);
+      end.setDate(end.getDate() + 1);
+    }
+    const rows = expenses.filter(e => e.supplierName && e.supplierName !== 'N/A' && e.supplierName !== 'Unknown Supplier').filter(e => {
+      const d = new Date(`${String(e.date || '').slice(0, 10)}T00:00:00`);
+      return !Number.isNaN(d.getTime()) && d >= start && d < end;
+    }).reduce((map, e) => {
+      const key = e.supplierName.trim();
+      if (!map[key]) map[key] = { name: key, phone: e.supplierPhone || '', purchases: 0, paid: 0, due: 0, entries: 0 };
+      map[key].purchases += Number(e.amount !== undefined ? e.amount : e.paidAmount || 0);
+      map[key].paid += Number(e.paidAmount || 0);
+      map[key].due += Number(e.dueAmount || 0);
+      map[key].entries += 1;
+      return map;
+    }, {});
+    return Object.values(rows).sort((a, b) => b.purchases - a.purchases);
+  })();
+  const supplierPeriodPurchaseTotal = supplierLedgerRows.reduce((sum, r) => sum + r.purchases, 0);
+  const supplierPeriodPaidTotal = supplierLedgerRows.reduce((sum, r) => sum + r.paid, 0);
+  const supplierPeriodDueTotal = supplierLedgerRows.reduce((sum, r) => sum + r.due, 0);'''
+              if marker not in s: raise SystemExit('supplier due metric marker not found')
+              s = s.replace(marker, insert, 1)
+
+          # Supplier ledger UI directly above the expense entry form.
+          if 'id="supplier-ledger-summary"' not in s:
+              marker = '            <form onSubmit={handleAddExpense}'
+              ui = r'''            <div id="supplier-ledger-summary" className="space-y-4">
+              <div className={`${t.cardBg} border ${t.border} p-4 rounded-3xl shadow-xl`}>
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-4">
+                  <div>
+                    <h3 className={`text-base font-black ${t.textMain}`}>Supplier Purchase Ledger</h3>
+                    <p className={`text-xs ${t.textMuted}`}>Daily entries automatically total by supplier for this week or month.</p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button type="button" onClick={() => setSupplierPeriodFilter('day')} className={`px-3 py-2 rounded-xl text-xs font-bold border ${supplierPeriodFilter === 'day' ? 'bg-blue-600 text-white border-blue-500' : `${t.cardSecondary} ${t.textMuted}`}`}>Today</button>
+                    <button type="button" onClick={() => setSupplierPeriodFilter('week')} className={`px-3 py-2 rounded-xl text-xs font-bold border ${supplierPeriodFilter === 'week' ? 'bg-blue-600 text-white border-blue-500' : `${t.cardSecondary} ${t.textMuted}`}`}>This Week</button>
+                    <button type="button" onClick={() => setSupplierPeriodFilter('month')} className={`px-3 py-2 rounded-xl text-xs font-bold border ${supplierPeriodFilter === 'month' ? 'bg-blue-600 text-white border-blue-500' : `${t.cardSecondary} ${t.textMuted}`}`}>This Month</button>
+                    <input type="month" value={supplierMonthFilter} onChange={e => setSupplierMonthFilter(e.target.value)} className={`px-3 py-2 ${t.inputBg} border rounded-xl text-xs`} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+                  <div className={`${t.cardSecondary} border ${t.border} rounded-2xl p-3`}><div className={`text-xs ${t.textMuted}`}>Purchase Total</div><div className="text-lg font-black text-blue-400">NPR {supplierPeriodPurchaseTotal.toLocaleString()}</div></div>
+                  <div className={`${t.cardSecondary} border ${t.border} rounded-2xl p-3`}><div className={`text-xs ${t.textMuted}`}>Paid</div><div className="text-lg font-black text-emerald-400">NPR {supplierPeriodPaidTotal.toLocaleString()}</div></div>
+                  <div className={`${t.cardSecondary} border ${t.border} rounded-2xl p-3`}><div className={`text-xs ${t.textMuted}`}>Supplier Due</div><div className="text-lg font-black text-rose-400">NPR {supplierPeriodDueTotal.toLocaleString()}</div></div>
+                </div>
+                {supplierLedgerRows.length === 0 ? (
+                  <div className={`p-4 rounded-2xl ${t.cardSecondary} ${t.textMuted} text-sm`}>No supplier transactions found for this period.</div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className={`${t.tableHeader} border-b`}><tr><th className="p-3 text-left">Supplier</th><th className="p-3 text-right">Purchase</th><th className="p-3 text-right">Paid</th><th className="p-3 text-right">Due</th><th className="p-3 text-right">Entries</th></tr></thead>
+                      <tbody className={`divide-y ${t.tableDivide}`}>
+                        {supplierLedgerRows.map(row => <tr key={row.name}><td className={`p-3 font-bold ${t.textMain}`}>{row.name}<div className={`text-xs ${t.textMuted}`}>{row.phone}</div></td><td className="p-3 text-right font-bold">NPR {row.purchases.toLocaleString()}</td><td className="p-3 text-right text-emerald-400 font-bold">NPR {row.paid.toLocaleString()}</td><td className="p-3 text-right text-rose-400 font-bold">NPR {row.due.toLocaleString()}</td><td className={`p-3 text-right ${t.textMuted}`}>{row.entries}</td></tr>)}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+
+'''
+              if marker not in s: raise SystemExit('expense form marker not found')
+              s = s.replace(marker, ui + marker, 1)
+
+          p.write_text(s)
+          print('supplier/billing patch changed source:', s != original)
           PY
-      - name: Commit non-stock POS patch
+      - name: Commit application updates
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/App.jsx
-          if git diff --cached --quiet; then echo "No non-stock POS changes needed"; else git commit -m "feat: allow billing non-stock POS items"; git push; fi
+          if git diff --cached --quiet; then echo "No application changes needed"; else git commit -m "feat: add supplier weekly monthly ledger"; git push; fi
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
