@@ -1474,18 +1474,61 @@ _Thank you for choosing ${shopInfo.name}!_`;
           
           <div className={`w-full lg:w-auto flex flex-wrap items-center gap-1.5 ${t.cardSecondary} p-1.5 rounded-2xl border ${t.border} shadow-inner`}>
             {[
-              { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-              { id: 'customers', icon: Users, label: 'Customers' },
-              { id: 'orders', icon: ClipboardList, label: 'Orders' },
-              { id: 'repairs', icon: ShieldCheck, label: 'Job Sheets' },
-              { id: 'devices', icon: Smartphone, label: 'Device Buy/Sell' },
-              { id: 'pos', icon: ShoppingBag, label: 'Accessories Bill' },
-              { id: 'invoices', icon: FileText, label: 'Invoices' },
-              { id: 'inventory', icon: Package, label: 'Parts Stock' },
-              { id: 'expenses', icon: DollarSign, label: 'Expenses' },
-              { id: 'backup', icon: Download, label: 'Backup' },
-              { id: 'settings', icon: Settings, label: 'Settings' },
-            ].map(item => (
+              {
+                title: 'MAIN',
+                items: [
+                  { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+                  { id: 'customers', icon: Users, label: 'Customers' },
+                  { id: 'orders', icon: ClipboardList, label: 'Orders' },
+                ],
+              },
+              {
+                title: 'SALES',
+                items: [
+                  { id: 'invoices', icon: FileText, label: 'Invoices' },
+                  { id: 'pos', icon: ShoppingBag, label: 'Accessories Bill' },
+                  { id: 'repairs', icon: ShieldCheck, label: 'Job Sheets' },
+                  { id: 'devices', icon: Smartphone, label: 'Device Buy/Sell' },
+                ],
+              },
+              {
+                title: 'INVENTORY',
+                items: [
+                  { id: 'inventory', icon: Package, label: 'Parts Stock' },
+                ],
+              },
+              {
+                title: 'FINANCE',
+                items: [
+                  { id: 'expenses', icon: DollarSign, label: 'Expenses' },
+                ],
+              },
+              {
+                title: 'SYSTEM',
+                items: [
+                  { id: 'backup', icon: Download, label: 'Backup' },
+                  { id: 'settings', icon: Settings, label: 'Settings' },
+                ],
+              },
+            ].map(group => (
+              <div key={group.title} className="flex flex-wrap items-center gap-1.5 px-1">
+                <span className={`hidden xl:block px-1.5 text-[9px] font-black tracking-widest ${t.textMuted} opacity-70`}>{group.title}</span>
+                {group.items.map(item => (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveTab(item.id)}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold transition-all duration-200 ${
+                      activeTab === item.id
+                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 scale-[1.01]'
+                        : `${t.textMuted} hover:text-white hover:bg-blue-600/10 hover:-translate-y-0.5`
+                    }`}
+                  >
+                    <item.icon size={15} />
+                    <span>{item.label}</span>
+                  </button>
+                ))}
+              </div>
+            ))
               <button 
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
