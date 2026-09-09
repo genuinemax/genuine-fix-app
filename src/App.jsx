@@ -825,7 +825,7 @@ export default function App() {
     };
 
     setRepairs([newBill, ...repairs]);
-    setPosBill({ customerName: '', phone: '', items: [{ name: '', price: '', qty: 1 }], paidAmount: '', warrantyMonths: '' });
+    setPosBill({ customerName: '', phone: '', items: [{ name: '', price: '', qty: 1, nonStock: false }], paidAmount: '', warrantyMonths: '' });
     alert('Accessories Bill saved successfully!');
   };
 
