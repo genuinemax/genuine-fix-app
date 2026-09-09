@@ -145,13 +145,14 @@ function SupplierAutocomplete({ value, onChange, onSelect, suppliers, placeholde
 }
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('invoices');
+  const [activeTab, setActiveTab] = useState(() => localStorage.getItem('gf_active_tab_v2') || 'dashboard');
   const [customerSearch, setCustomerSearch] = useState('');
   const [selectedCustomerName, setSelectedCustomerName] = useState('');
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [clockTick, setClockTick] = useState(Date.now());
+  useEffect(() => { localStorage.setItem('gf_active_tab_v2', activeTab); }, [activeTab]);
 
   // Shop Settings / Business Rules State (PAN/VAT, Name, etc.)
   const [shopInfo, setShopInfo] = useState(() => {
