@@ -1,0 +1,134 @@
+from pathlib import Path
+import re
+
+p = Path('src/App.jsx')
+s = p.read_text()
+original = s
+
+# Remove old temporary walk-in billing injection.
+s = re.sub(r'\s*<div id="walk-in-bill-actions"[\s\S]*?</div>\s*', '\n', s, count=1)
+
+# Non-stock POS billing support.
+if 'item.nonStock' not in s:
+    h = s.find('Bill Items & Parts Selection')
+    a = s.find('<select', h)
+    b = s.find('</select>', a) + len('</select>')
+    if h < 0 or a < 0 or b <= a:
+        raise SystemExit('POS bill item selector not found')
+    old = s[a:b]
+    new = '''{item.nonStock ? (<input type="text" value={item.name} onChange={e => { const n=[...posBill.items]; n[idx].name=e.target.value; setPosBill({...posBill,items:n}); }} placeholder="Non-stock item / service name" className={`flex-1 p-3 ${t.inputBg} border rounded-2xl text-sm`} required />) : (''' + old + ''')}
+            <button type="button" onClick={() => { const n=[...posBill.items]; n[idx].nonStock=!n[idx].nonStock; if(n[idx].nonStock){n[idx].name='';n[idx].price='';} setPosBill({...posBill,items:n}); }} className={`px-3 py-2 rounded-xl text-xs font-black border ${item.nonStock ? 'bg-blue-600/20 text-blue-400' : 'bg-amber-600/20 text-amber-400'}`}>{item.nonStock ? 'Stock Item' : 'Non-stock'}</button>'''
+    s = s[:a] + new + s[b:]
+s = s.replace('!invItem ||', 'invItem &&', 1)
+s = s.replace("items: [{ name: '', price: '', qty: 1 }]", "items: [{ name: '', price: '', qty: 1, nonStock: false }]")
+s = s.replace("items: [...posBill.items, { name: '', price: '', qty: 1 }]", "items: [...posBill.items, { name: '', price: '', qty: 1, nonStock: false }]")
+
+# Supplier tracker state.
+if 'supplierPeriodFilter' not in s:
+    marker = "  const [viewingExpenseDetails, setViewingExpenseDetails] = useState(null);"
+    if marker not in s:
+        raise SystemExit('expense state marker not found')
+    s = s.replace(marker, marker + "\n  const [supplierPeriodFilter, setSupplierPeriodFilter] = useState('month');\n  const [supplierMonthFilter, setSupplierMonthFilter] = useState(getLocalDateKey().slice(0, 7));\n  const [selectedSupplierLedger, setSelectedSupplierLedger] = useState('');", 1)
+elif 'selectedSupplierLedger' not in s:
+    marker = "  const [supplierMonthFilter, setSupplierMonthFilter] = useState(getLocalDateKey().slice(0, 7));"
+    if marker not in s:
+        raise SystemExit('supplier month state marker not found')
+    s = s.replace(marker, marker + "\n  const [selectedSupplierLedger, setSelectedSupplierLedger] = useState('');", 1)
+
+# Replace previous supplier summary calculation with accurate period tracking.
+s = re.sub(r'\n\s*const supplierLedgerRows = \(\(\) => \{[\s\S]*?const supplierPeriodDueTotal=.*?;\s*', '\n', s, count=1)
+if 'const supplierTrackerTransactions' not in s:
+    marker = "  const totalSupplierDue = expenses.reduce((acc, curr) => acc + Number(curr.dueAmount || 0), 0);"
+    code = r'''
+
+  const supplierTrackerRange = (() => {
+    const now = new Date();
+    if (supplierPeriodFilter === 'day') {
+      const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const end = new Date(start); end.setDate(end.getDate() + 1);
+      return { start, end };
+    }
+    if (supplierPeriodFilter === 'week') {
+      const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const day = start.getDay();
+      start.setDate(start.getDate() + (day === 0 ? -6 : 1 - day));
+      const end = new Date(start); end.setDate(end.getDate() + 7);
+      return { start, end };
+    }
+    const ym = supplierMonthFilter || getLocalDateKey().slice(0, 7);
+    const start = new Date(`${ym}-01T00:00:00`);
+    const end = new Date(start); end.setMonth(end.getMonth() + 1);
+    return { start, end };
+  })();
+
+  const supplierTrackerTransactions = expenses
+    .filter(e => e.supplierName && e.supplierName !== 'N/A' && e.supplierName !== 'Unknown Supplier')
+    .filter(e => {
+      const d = new Date(`${String(e.date || '').slice(0, 10)}T00:00:00`);
+      return !Number.isNaN(d.getTime()) && d >= supplierTrackerRange.start && d < supplierTrackerRange.end;
+    });
+
+  const supplierTrackerNames = Array.from(new Set(supplierTrackerTransactions.map(e => e.supplierName.trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b));
+  const activeSupplierLedgerName = selectedSupplierLedger || supplierTrackerNames[0] || '';
+  const selectedSupplierTransactions = supplierTrackerTransactions
+    .filter(e => !activeSupplierLedgerName || e.supplierName.trim() === activeSupplierLedgerName)
+    .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+  const selectedSupplierPurchaseTotal = selectedSupplierTransactions.reduce((sum, e) => sum + Number(e.amount || e.paidAmount || 0), 0);
+  const selectedSupplierPaidTotal = selectedSupplierTransactions.reduce((sum, e) => sum + Number(e.paidAmount || 0), 0);
+  const selectedSupplierDueTotal = selectedSupplierTransactions.reduce((sum, e) => sum + Number(e.dueAmount || 0), 0);
+'''
+    if marker not in s:
+        raise SystemExit('supplier due metric marker not found')
+    s = s.replace(marker, marker + code, 1)
+
+# Remove the old supplier summary card; it will be rendered at the bottom of Expenses.
+s = re.sub(r'\s*<div id="supplier-ledger-summary"[\s\S]*?</div>\s*(?=<form onSubmit=\{handleAddExpense\})', '\n', s, count=1)
+
+# Put the particular supplier tracker at the very bottom of Expenses, after the expense table.
+if 'id="particular-supplier-tracker"' not in s:
+    end_marker = '''          </div>\n        )}\n\n        {/* BACKUP TAB */}'''
+    if end_marker not in s:
+        raise SystemExit('Expenses tab end marker not found')
+    ui = r'''          <div id="particular-supplier-tracker" className={`${t.cardBg} border ${t.border} rounded-3xl p-5 shadow-xl space-y-4`}>
+            <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+              <div>
+                <p className={`text-xs uppercase tracking-[0.2em] font-black ${t.textMuted}`}>Supplier Account Tracker</p>
+                <h3 className={`text-lg font-black ${t.textMain}`}>Particular Supplier Ko Pura Hisab</h3>
+                <p className={`text-sm ${t.textMuted} mt-1`}>Select one supplier and see every purchase, payment and remaining udhaaro for the selected period.</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button type="button" onClick={() => setSupplierPeriodFilter('day')} className={`px-3 py-2 rounded-xl text-xs font-bold border ${supplierPeriodFilter === 'day' ? 'bg-blue-600 text-white border-blue-500' : `${t.cardSecondary} ${t.textMuted}`}`}>Today</button>
+                <button type="button" onClick={() => setSupplierPeriodFilter('week')} className={`px-3 py-2 rounded-xl text-xs font-bold border ${supplierPeriodFilter === 'week' ? 'bg-blue-600 text-white border-blue-500' : `${t.cardSecondary} ${t.textMuted}`}`}>This Week</button>
+                <button type="button" onClick={() => setSupplierPeriodFilter('month')} className={`px-3 py-2 rounded-xl text-xs font-bold border ${supplierPeriodFilter === 'month' ? 'bg-blue-600 text-white border-blue-500' : `${t.cardSecondary} ${t.textMuted}`}`}>This Month</button>
+                {supplierPeriodFilter === 'month' && <input type="month" value={supplierMonthFilter} onChange={e => setSupplierMonthFilter(e.target.value)} className={`px-3 py-2 ${t.inputBg} border rounded-xl text-xs`} />}
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <SupplierAutocomplete value={activeSupplierLedgerName} placeholder="Select particular supplier..." suppliers={uniqueSuppliers} onChange={value => setSelectedSupplierLedger(value)} onSelect={supplier => setSelectedSupplierLedger(supplier.name)} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+              <select value={activeSupplierLedgerName} onChange={e => setSelectedSupplierLedger(e.target.value)} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}>
+                <option value="">Select supplier from period...</option>
+                {supplierTrackerNames.map(name => <option key={name} value={name}>{name}</option>)}
+              </select>
+            </div>
+            {activeSupplierLedgerName && (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className={`${t.cardSecondary} border ${t.border} rounded-2xl p-4`}><div className={`text-xs ${t.textMuted}`}>Purchase Total</div><div className="text-xl font-black text-blue-400">NPR {selectedSupplierPurchaseTotal.toLocaleString()}</div></div>
+                  <div className={`${t.cardSecondary} border ${t.border} rounded-2xl p-4`}><div className={`text-xs ${t.textMuted}`}>Paid</div><div className="text-xl font-black text-emerald-400">NPR {selectedSupplierPaidTotal.toLocaleString()}</div></div>
+                  <div className={`${t.cardSecondary} border ${t.border} rounded-2xl p-4`}><div className={`text-xs ${t.textMuted}`}>Remaining Udhaaro</div><div className="text-xl font-black text-rose-400">NPR {selectedSupplierDueTotal.toLocaleString()}</div></div>
+                </div>
+                {selectedSupplierTransactions.length === 0 ? (
+                  <div className={`p-5 rounded-2xl ${t.cardSecondary} ${t.textMuted} text-sm`}>No transactions for {activeSupplierLedgerName} in this period.</div>
+                ) : (
+                  <div className="overflow-x-auto"><table className="w-full text-sm"><thead className={`${t.tableHeader} border-b`}><tr><th className="p-3 text-left">Date</th><th className="p-3 text-left">Purchase / Description</th><th className="p-3 text-right">Total</th><th className="p-3 text-right">Paid</th><th className="p-3 text-right">Due</th><th className="p-3 text-right">Action</th></tr></thead><tbody className={`divide-y ${t.tableDivide}`}>
+                    {selectedSupplierTransactions.map(exp => <tr key={exp.id} className="hover:bg-blue-600/5 transition"><td className={`p-3 ${t.textMuted}`}>{exp.date}</td><td className={`p-3 font-bold ${t.textMain}`}>{exp.description}<div className={`text-xs ${t.textMuted}`}>{exp.itemName || exp.category}{exp.invoiceNo ? ` • Invoice ${exp.invoiceNo}` : ''}</div></td><td className="p-3 text-right font-bold">NPR {Number(exp.amount || exp.paidAmount || 0).toLocaleString()}</td><td className="p-3 text-right text-emerald-400 font-bold">NPR {Number(exp.paidAmount || 0).toLocaleString()}</td><td className="p-3 text-right text-rose-400 font-bold">NPR {Number(exp.dueAmount || 0).toLocaleString()}</td><td className="p-3 text-right">{Number(exp.dueAmount || 0) > 0 ? <button type="button" onClick={() => setPayingExpense(exp)} className="px-3 py-1.5 bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 rounded-xl font-bold text-xs">Pay Due</button> : <span className={`text-xs ${t.textMuted}`}>Paid</span>}</td></tr>)}
+                  </tbody></table></div>
+                )}
+              </>
+            )}
+          </div>
+'''
+    s = s.replace(end_marker, ui + end_marker, 1)
+
+p.write_text(s)
+print('supplier tracker patch changed source:', s != original)
