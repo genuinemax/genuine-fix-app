@@ -10,48 +10,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Repair malformed helper
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          p=Path('src/App.jsx')
-          s=p.read_text(encoding='utf-8')
-          marker='const normalizePartsStockNotes = (value) => {'
-          start=s.find(marker)
-          if start>=0:
-              end=s.find('const getLocalDateKey = () => {', start)
-              if end>=0:
-                  line_start=s.rfind('\n',0,start)
-                  line_start=0 if line_start<0 else line_start+1
-                  helper=r'''const normalizePartsStockNotes = (value) => {
-            const text = String(value || '').replace(/\r\n?/g, '\n');
-            const lines = text.split('\n');
-            const output = [];
-            for (let i = 0; i < lines.length; i += 1) {
-              const line = lines[i].trim();
-              if (!line) continue;
-              if (/^[•▪*-]$/.test(line)) {
-                let next = i + 1;
-                while (next < lines.length && !lines[next].trim()) next += 1;
-                if (next < lines.length) { output.push(`${line}${lines[next].trim()}`); i = next; }
-                else output.push(line);
-              } else output.push(line);
-            }
-            return output.join('\n');
-          };
-          '''
-                  s=s[:line_start]+helper+'\n'+s[end:]
-          p.write_text(s,encoding='utf-8')
-          PY
-      - name: Verify production build
+      - name: Verify App syntax
         run: |
           npm ci
           npm run build
-      - name: Commit repair
-        run: |
-          if git diff --quiet; then echo 'No repair needed'; exit 0; fi
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add src/App.jsx
-          git commit -m 'fix: repair malformed App JSX helper'
-          git push
+      - name: Report
+        run: echo 'App syntax/build verified; no source mutation required.'
