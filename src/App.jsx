@@ -357,6 +357,7 @@ export default function App() {
   });
 
   const [selectedStockPurchase, setSelectedStockPurchase] = useState(null);
+  const [editingStockPurchaseId, setEditingStockPurchaseId] = useState(null);
 
   const [stockPurchases, setStockPurchases] = useState(() => {
     const saved = localStorage.getItem('gf_stock_purchases');
@@ -1049,10 +1050,82 @@ const supplierDueList = Object.values(expenses.filter(e => Number(e.dueAmount ||
     setNewPart({ name: '', stock: '', costPrice: '', markupPercent: '', price: '', minStock: '5', supplierName: '', supplierPhone: '', purchaseDate: todayKey, notes: '' });
   };
 
+  const startEditStockPurchase = (purchase) => {
+    setEditingStockPurchaseId(purchase.id);
+    setNewStockPurchase({
+      partId: purchase.partId || '',
+      partName: purchase.partName || '',
+      category: purchase.category || categories[0] || 'Mobile Parts',
+      supplierName: purchase.supplierName || '',
+      supplierPhone: purchase.supplierPhone || '',
+      qty: purchase.qty ?? '',
+      unitCost: purchase.unitCost ?? '',
+      date: purchase.date || todayKey,
+      invoiceNo: purchase.invoiceNo || '',
+      notes: purchase.notes || '',
+      paymentMethod: purchase.paymentMethod || 'Cash'
+    });
+    setSelectedStockPurchase(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const deleteStockPurchase = (purchase) => {
+    if (!window.confirm(`Delete stock purchase for ${purchase.partName || 'this item'}? This will also remove the recorded purchase expense, but it will not automatically reverse current stock.`)) return;
+    setStockPurchases(stockPurchases.filter(p => p.id !== purchase.id));
+    setExpenses(expenses.filter(e => e.linkedStockPurchaseId !== purchase.id));
+    if (editingStockPurchaseId === purchase.id) {
+      setEditingStockPurchaseId(null);
+      setNewStockPurchase({ partId: '', partName: '', category: categories[0] || 'Mobile Parts', supplierName: '', supplierPhone: '', qty: '', unitCost: '', date: todayKey, invoiceNo: '', notes: '', paymentMethod: 'Cash' });
+    }
+  };
+
   const handleAddStockPurchase = (e) => {
     e.preventDefault();
     const qty = Number(newStockPurchase.qty || 0), unitCost = Number(newStockPurchase.unitCost || 0);
     if (qty <= 0 || unitCost < 0) { alert('Enter valid quantity and cost.'); return; }
+
+    if (editingStockPurchaseId) {
+      const existing = stockPurchases.find(p => p.id === editingStockPurchaseId);
+      if (!existing) { alert('Stock purchase record not found.'); return; }
+      const purchaseTotal = qty * unitCost;
+      const updatedPurchase = {
+        ...existing,
+        partId: newStockPurchase.partId || existing.partId,
+        partName: newStockPurchase.partName || existing.partName,
+        category: newStockPurchase.category || existing.category,
+        supplierName: newStockPurchase.supplierName || 'N/A',
+        supplierPhone: newStockPurchase.supplierPhone || '',
+        qty,
+        unitCost,
+        total: purchaseTotal,
+        date: newStockPurchase.date || existing.date,
+        invoiceNo: newStockPurchase.invoiceNo || '',
+        notes: newStockPurchase.notes || '',
+        paymentMethod: newStockPurchase.paymentMethod || existing.paymentMethod || 'Cash'
+      };
+      setStockPurchases(stockPurchases.map(p => p.id === editingStockPurchaseId ? updatedPurchase : p));
+      setExpenses(expenses.map(exp => exp.linkedStockPurchaseId === editingStockPurchaseId ? {
+        ...exp,
+        description: `Parts Purchase - ${updatedPurchase.partName}`,
+        amount: purchaseTotal,
+        paidAmount: purchaseTotal,
+        dueAmount: 0,
+        quantity: qty,
+        unitCost,
+        itemName: updatedPurchase.partName,
+        supplierName: updatedPurchase.supplierName,
+        supplierPhone: updatedPurchase.supplierPhone,
+        invoiceNo: updatedPurchase.invoiceNo,
+        paymentMethod: updatedPurchase.paymentMethod,
+        notes: updatedPurchase.notes,
+        date: updatedPurchase.date
+      } : exp));
+      setEditingStockPurchaseId(null);
+      setNewStockPurchase({ partId: '', partName: '', category: categories[0] || 'Mobile Parts', supplierName: '', supplierPhone: '', qty: '', unitCost: '', date: todayKey, invoiceNo: '', notes: '', paymentMethod: 'Cash' });
+      alert('Stock purchase history updated. Current stock was not changed.');
+      return;
+    }
+
     let part = inventory.find(i => String(i.id) === String(newStockPurchase.partId));
     let partId = part?.id;
     if (!part) {
@@ -2484,9 +2557,17 @@ _Thank you for choosing ${shopInfo.name}!_`;
                           <td className={`p-4 text-right font-black ${t.textMain}`}>NPR {Number(p.total || 0).toLocaleString()}</td>
                           <td className={`p-4 ${t.textMuted}`}>{p.invoiceNo || '—'}</td>
                           <td className="p-4 text-right">
-                            <button type="button" onClick={() => setSelectedStockPurchase(p)} className="px-3 py-1.5 bg-blue-600/15 text-blue-400 hover:bg-blue-600/25 rounded-xl font-bold inline-flex items-center gap-1.5">
-                              <Eye size={14}/> View
-                            </button>
+                            <div className="flex justify-end items-center gap-1.5">
+                              <button type="button" onClick={() => startEditStockPurchase(p)} className="px-3 py-1.5 bg-amber-500/15 text-amber-400 hover:bg-amber-500/25 rounded-xl font-bold inline-flex items-center gap-1.5">
+                                <Pencil size={14}/> Edit
+                              </button>
+                              <button type="button" onClick={() => deleteStockPurchase(p)} className="p-2 bg-rose-500/15 text-rose-400 hover:bg-rose-500/25 rounded-xl" title="Delete purchase">
+                                <Trash2 size={14}/>
+                              </button>
+                              <button type="button" onClick={() => setSelectedStockPurchase(p)} className="px-3 py-1.5 bg-blue-600/15 text-blue-400 hover:bg-blue-600/25 rounded-xl font-bold inline-flex items-center gap-1.5">
+                                <Eye size={14}/> View
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
