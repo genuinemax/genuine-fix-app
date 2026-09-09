@@ -1,0 +1,39 @@
+name: Fix invoice-only refresh
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  fix-active-tab:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Fix initial tab and persist tab selection
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('src/App.jsx')
+          s = p.read_text(encoding='utf-8')
+          old = "  const [activeTab, setActiveTab] = useState('invoices');"
+          new = "  const [activeTab, setActiveTab] = useState(() => localStorage.getItem('gf_active_tab_v2') || 'dashboard');"
+          if old in s:
+              s = s.replace(old, new, 1)
+          marker = "  const [clockTick, setClockTick] = useState(Date.now());"
+          effect = "\n  useEffect(() => { localStorage.setItem('gf_active_tab_v2', activeTab); }, [activeTab]);"
+          if effect.strip() not in s and marker in s:
+              s = s.replace(marker, marker + effect, 1)
+          p.write_text(s, encoding='utf-8')
+
+      - name: Commit fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/App.jsx
+          git diff --cached --quiet || git commit -m "fix: preserve active tab on refresh"
+          git push
