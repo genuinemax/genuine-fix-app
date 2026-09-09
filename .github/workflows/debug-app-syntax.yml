@@ -1,0 +1,13 @@
+name: Debug App Syntax
+on:
+  push:
+    paths:
+      - '.github/workflows/debug-app-syntax.yml'
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show suspicious App lines
+        run: |
+          nl -ba src/App.jsx | sed -n '680,755p'
