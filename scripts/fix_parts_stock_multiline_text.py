@@ -4,29 +4,38 @@ p = Path('src/App.jsx')
 s = p.read_text(encoding='utf-8')
 original = s
 
+# Replace the malformed helper previously injected with a real JavaScript helper.
+malformed_start = "\\nconst normalizePartsStockNotes = (value) => {\\n"
+if malformed_start in s:
+    start = s.index(malformed_start)
+    end_marker = "\\nconst getLocalDateKey = () => {"
+    end = s.index(end_marker, start)
+    s = s[:start] + s[end + 1:]
+
 helper = '''
 const normalizePartsStockNotes = (value) => {
   const text = String(value || '').replace(/\r\n?/g, '\n');
-  const lines = text.split('\n').map(line => line.trimEnd());
+  const lines = text.split('\n');
   const output = [];
 
-  lines.forEach(line => {
-    const trimmed = line.trim();
-    if (!trimmed) return;
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i].trim();
+    if (!line) continue;
 
-    // Some clipboard sources put the bullet on one line and its text on the next.
-    if (trimmed === '•' || trimmed === '-' || trimmed === '*' || trimmed === '▪') {
-      output.push(trimmed);
-      return;
-    }
-
-    const previous = output[output.length - 1];
-    if (previous === '•' || previous === '-' || previous === '*' || previous === '▪') {
-      output[output.length - 1] = `${previous}${trimmed}`;
+    // Clipboard sources can put a bullet on one line and its text on the next.
+    if (/^[•▪*-]$/.test(line)) {
+      let next = i + 1;
+      while (next < lines.length && !lines[next].trim()) next += 1;
+      if (next < lines.length) {
+        output.push(`${line}${lines[next].trim()}`);
+        i = next;
+      } else {
+        output.push(line);
+      }
     } else {
       output.push(line);
     }
-  });
+  }
 
   return output.join('\n');
 };
@@ -38,6 +47,7 @@ if 'const normalizePartsStockNotes = ' not in s:
         raise SystemExit('Could not find App.jsx insertion point.')
     s = s.replace(marker, helper + '\n' + marker, 1)
 
+# Preserve multiline note display in the stock detail modals.
 s = s.replace(
     'className={`text-sm ${t.textMain} mt-1 whitespace-pre-wrap break-words`}',
     'className={`text-sm ${t.textMain} mt-1 whitespace-pre-wrap break-words leading-6`}',
@@ -54,6 +64,7 @@ s = s.replace(
     1,
 )
 
+# Normalize the actual pasted value in the Parts Stock Notes textarea.
 old = '''              <textarea
                 rows="3"
                 placeholder="Notes / Remarks (optional) — e.g. quality, supplier detail, location, warranty..."
@@ -63,7 +74,7 @@ old = '''              <textarea
               />'''
 new = '''              <textarea
                 rows="5"
-                placeholder="Notes / Remarks (optional) — paste bullets here; each • bullet will stay with its text on the same line."
+                placeholder="Notes / Remarks (optional) — paste bullets here; each bullet stays with its text on the same line."
                 value={newPart.notes}
                 onChange={e => setNewPart({...newPart, notes: normalizePartsStockNotes(e.target.value)})}
                 onPaste={e => {
@@ -78,12 +89,11 @@ new = '''              <textarea
                 }}
                 className={`md:col-span-3 p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none resize-y leading-6`}
               />'''
-if old not in s:
-    raise SystemExit('Parts Stock notes textarea target not found; refusing a no-op patch.')
-s = s.replace(old, new, 1)
+if old in s:
+    s = s.replace(old, new, 1)
 
 if s == original:
-    raise SystemExit('No Parts Stock multiline formatting target found; refusing a no-op patch.')
+    raise SystemExit('No Parts Stock formatting target found; refusing a no-op patch.')
 
 p.write_text(s, encoding='utf-8')
-print('Parts Stock paste normalization patch applied.')
+print('Parts Stock paste formatting repaired.')
