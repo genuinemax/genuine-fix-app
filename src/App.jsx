@@ -453,7 +453,7 @@ export default function App() {
   const [expenseSearch, setExpenseSearch] = useState('');
   const [orderSearch, setOrderSearch] = useState('');
   const [orderStatusFilter, setOrderStatusFilter] = useState('All');
-  const [newOrder, setNewOrder] = useState({ customerName: '', phone: '', items: [{ name: '', price: '', qty: 1, notes: '', mode: 'stock' }], expectedDate: '', notes: '' });
+  const [newOrder, setNewOrder] = useState({ customerName: '', phone: '', items: [{ name: '', price: '', qty: 1, notes: '', mode: 'stock' }], expectedDate: getLocalDateKey(), notes: '' });
   const [editingOrderId, setEditingOrderId] = useState(null);
   const [expenseCategoryFilter, setExpenseCategoryFilter] = useState('All');
   const [expenseStatusFilter, setExpenseStatusFilter] = useState('All');
@@ -660,7 +660,7 @@ const supplierDueList = Object.values(expenses.filter(e => Number(e.dueAmount ||
   };
 
   const resetOrderForm = () => {
-    setNewOrder({ customerName: '', phone: '', items: [{ name: '', price: '', qty: 1, notes: '', mode: 'stock' }], expectedDate: '', notes: '' });
+    setNewOrder({ customerName: '', phone: '', items: [{ name: '', price: '', qty: 1, notes: '', mode: 'stock' }], expectedDate: getLocalDateKey(), notes: '' });
     setEditingOrderId(null);
   };
 
