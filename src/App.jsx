@@ -144,6 +144,35 @@ function SupplierAutocomplete({ value, onChange, onSelect, suppliers, placeholde
   );
 }
 
+
+function PaymentMethodPicker({ value, onChange, label = 'Payment Method' }) {
+  const methods = [
+    { value: 'Cash', label: 'Cash', icon: '💵' },
+    { value: 'eSewa', label: 'eSewa', icon: '📱' },
+    { value: 'Khalti', label: 'Khalti', icon: '📱' },
+    { value: 'Bank Transfer', label: 'Bank', icon: '🏦' },
+    { value: 'Card', label: 'Card', icon: '💳' },
+    { value: 'Other', label: 'Other', icon: '•••' }
+  ];
+  return (
+    <div className="md:col-span-3 space-y-2">
+      <div className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">{label}</div>
+      <div className="flex flex-wrap gap-2">
+        {methods.map(method => (
+          <button
+            key={method.value}
+            type="button"
+            onClick={() => onChange(method.value)}
+            className={`px-3 py-2 rounded-xl border text-xs font-black transition ${value === method.value ? 'bg-blue-600 text-white border-blue-500 shadow-md shadow-blue-600/20' : 'bg-transparent border-slate-700 text-slate-400 hover:text-white hover:border-slate-500'}`}
+          >
+            <span className="mr-1.5">{method.icon}</span>{method.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem('gf_active_tab_v2') || 'dashboard');
   const [customerSearch, setCustomerSearch] = useState('');
@@ -358,7 +387,7 @@ export default function App() {
   const [selectedCategory, setSelectedCategory] = useState(categories[0] || 'Mobile Parts');
   const [newPart, setNewPart] = useState({ name: '', stock: '', costPrice: '', price: '', minStock: '5', supplierName: '', supplierPhone: '', purchaseDate: getLocalDateKey() });
   const [editingPartId, setEditingPartId] = useState(null);
-  const [newStockPurchase, setNewStockPurchase] = useState({ partId: '', partName: '', category: categories[0] || 'Mobile Parts', supplierName: '', supplierPhone: '', qty: '', unitCost: '', date: getLocalDateKey(), invoiceNo: '', notes: '' });
+  const [newStockPurchase, setNewStockPurchase] = useState({ partId: '', partName: '', category: categories[0] || 'Mobile Parts', supplierName: '', supplierPhone: '', qty: '', unitCost: '', date: getLocalDateKey(), invoiceNo: '', notes: '', paymentMethod: 'Cash' });
   
   // Enhanced Expenses States with Payment Status & Autoname suggest
   const [newExpense, setNewExpense] = useState({ 
@@ -368,7 +397,7 @@ export default function App() {
   });
   const [editingExpenseId, setEditingExpenseId] = useState(null);
   const [payingExpense, setPayingExpense] = useState(null);
-  const [payForm, setPayForm] = useState({ amount: '', date: getLocalDateKey() });
+  const [payForm, setPayForm] = useState({ amount: '', date: getLocalDateKey(), paymentMethod: 'Cash' });
   const [expenseSearch, setExpenseSearch] = useState('');
   const [expenseCategoryFilter, setExpenseCategoryFilter] = useState('All');
   const [expenseStatusFilter, setExpenseStatusFilter] = useState('All');
@@ -902,8 +931,8 @@ const supplierDueList = Object.values(expenses.filter(e => Number(e.dueAmount ||
     const purchaseTotal = qty * unitCost;
     setInventory(inventory.some(i => i.id === partId) ? inventory.map(i => i.id === partId ? updatedPart : i) : [updatedPart, ...inventory]);
     setStockPurchases([{ id: purchaseId, partId, partName: updatedPart.name, supplierName: newStockPurchase.supplierName || 'N/A', supplierPhone: newStockPurchase.supplierPhone || '', qty, unitCost, total: purchaseTotal, date: newStockPurchase.date, invoiceNo: newStockPurchase.invoiceNo, notes: newStockPurchase.notes }, ...stockPurchases]);
-    setExpenses([{ id: `EXP-${purchaseId}`, description: `Parts Purchase - ${updatedPart.name}`, category: 'Parts Purchase', amount: purchaseTotal, paidAmount: purchaseTotal, dueAmount: 0, payments: [{ amount: purchaseTotal, date: newStockPurchase.date }], quantity: qty, unitCost, itemName: updatedPart.name, supplierName: newStockPurchase.supplierName || 'N/A', supplierPhone: newStockPurchase.supplierPhone || '', invoiceNo: newStockPurchase.invoiceNo || '', paymentMethod: 'Cash', notes: newStockPurchase.notes || '', date: newStockPurchase.date, linkedStockPurchaseId: purchaseId }, ...expenses]);
-    setNewStockPurchase({ partId: '', partName: '', category: categories[0] || 'Mobile Parts', supplierName: '', supplierPhone: '', qty: '', unitCost: '', date: todayKey, invoiceNo: '', notes: '' });
+    setExpenses([{ id: `EXP-${purchaseId}`, description: `Parts Purchase - ${updatedPart.name}`, category: 'Parts Purchase', amount: purchaseTotal, paidAmount: purchaseTotal, dueAmount: 0, payments: [{ amount: purchaseTotal, date: newStockPurchase.date }], quantity: qty, unitCost, itemName: updatedPart.name, supplierName: newStockPurchase.supplierName || 'N/A', supplierPhone: newStockPurchase.supplierPhone || '', invoiceNo: newStockPurchase.invoiceNo || '', paymentMethod: newStockPurchase.paymentMethod || 'Cash', notes: newStockPurchase.notes || '', date: newStockPurchase.date, linkedStockPurchaseId: purchaseId }, ...expenses]);
+    setNewStockPurchase({ partId: '', partName: '', category: categories[0] || 'Mobile Parts', supplierName: '', supplierPhone: '', qty: '', unitCost: '', date: todayKey, invoiceNo: '', notes: '', paymentMethod: 'Cash' });
     alert(`Stock purchase saved. Total: NPR ${qty * unitCost}`);
   };
 
@@ -982,7 +1011,7 @@ const supplierDueList = Object.values(expenses.filter(e => Number(e.dueAmount ||
     alert(`Expense saved successfully. Paid: NPR ${paidNowVal}${dueVal > 0 ? ` | Due Udhaaro: NPR ${dueVal}` : ''}`);
   };
 
-  const addExpensePayment = (id, amount, date) => {
+  const addExpensePayment = (id, amount, date, paymentMethod = 'Cash') => {
     const payAmt = Number(amount || 0);
     if (payAmt <= 0) { alert('Enter a valid payment amount.'); return; }
     let overpaid = false;
@@ -993,11 +1022,11 @@ const supplierDueList = Object.values(expenses.filter(e => Number(e.dueAmount ||
       if (payAmt > currentDue) overpaid = true;
       const newPaid = Number(exp.paidAmount || 0) + applied;
       const newDue = Math.max(0, currentDue - applied);
-      const newPayments = [...(exp.payments || []), { amount: applied, date: date || todayKey }];
+      const newPayments = [...(exp.payments || []), { amount: applied, date: date || todayKey, paymentMethod: paymentMethod || 'Cash' }];
       return { ...exp, paidAmount: newPaid, dueAmount: newDue, payments: newPayments };
     }));
     setPayingExpense(null);
-    setPayForm({ amount: '', date: todayKey });
+    setPayForm({ amount: '', date: todayKey, paymentMethod: 'Cash' });
     if (overpaid) alert('Entered amount exceeded remaining due — only the due amount was applied.');
     else alert('Payment recorded successfully!');
   };
@@ -2016,6 +2045,10 @@ _Thank you for choosing ${shopInfo.name}!_`;
                 <input type="number" placeholder="Amount Paid Now (NPR)" value={newExpense.paidNow} onChange={e => setNewExpense({...newExpense, paidNow: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} required />
               )}
 
+              {newExpense.paymentStatus !== 'Unpaid' && (
+                <PaymentMethodPicker value={newExpense.paymentMethod} onChange={method => setNewExpense({...newExpense, paymentMethod: method})} />
+              )}
+
               <SupplierAutocomplete
                 value={newExpense.supplierName}
                 placeholder="Supplier / Party Name (Optional)"
@@ -2255,8 +2288,9 @@ _Thank you for choosing ${shopInfo.name}!_`;
             <div className="space-y-3">
               <input type="number" placeholder="Payment Amount (NPR)" value={payForm.amount} onChange={e => setPayForm({...payForm, amount: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} autoFocus />
               <input type="date" value={payForm.date} onChange={e => setPayForm({...payForm, date: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+              <PaymentMethodPicker value={payForm.paymentMethod} onChange={method => setPayForm({...payForm, paymentMethod: method})} />
             </div>
-            <button onClick={() => addExpensePayment(payingExpense.id, payForm.amount, payForm.date)} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-emerald-600/30">
+            <button onClick={() => addExpensePayment(payingExpense.id, payForm.amount, payForm.date, payForm.paymentMethod)} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-emerald-600/30">
               Confirm Payment
             </button>
           </div>
