@@ -9,7 +9,33 @@ import {
 } from 'lucide-react';
 
 
-\nconst normalizePartsStockNotes = (value) => {\n  const text = String(value || '').replace(/\\r\\n?/g, '\\n');\n  const lines = text.split('\\n').map(line => line.trimEnd());\n  const output = [];\n\n  lines.forEach(line => {\n    const trimmed = line.trim();\n    if (!trimmed) {\n      if (output.length && output[output.length - 1] !== '') output.push('');\n      return;\n    }\n\n    // Some clipboard sources put the bullet on one line and its text on the next.\n    if (trimmed === '•' || trimmed === '-' || trimmed === '*' || trimmed === '▪') {\n      output.push(trimmed);\n      return;\n    }\n\n    const previous = output[output.length - 1];\n    if (previous === '•' || previous === '-' || previous === '*' || previous === '▪') {\n      output[output.length - 1] = `${previous}${trimmed}`;\n    } else {\n      output.push(line);\n    }\n  });\n\n  // A bullet followed by blank lines should remain a clean single bullet entry.\n  return output\n    .filter((line, index, arr) => line !== '' || (index > 0 && index < arr.length - 1 && arr[index - 1] !== ''))\n    .join('\\n')\n    .replace(/(^|\\n)\\s*(•|[-*▪])\\s*\\n\\s*/g, '$1$2');\n};\n
+
+const normalizePartsStockNotes = (value) => {
+  const text = String(value || '').replace(/\r\n?/g, '\n');
+  const lines = text.split('\n');
+  const output = [];
+
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i].trim();
+    if (!line) continue;
+
+    if (/^[•▪*-]$/.test(line)) {
+      let next = i + 1;
+      while (next < lines.length && !lines[next].trim()) next += 1;
+      if (next < lines.length) {
+        output.push(`${line}${lines[next].trim()}`);
+        i = next;
+      } else {
+        output.push(line);
+      }
+    } else {
+      output.push(line);
+    }
+  }
+
+  return output.join('\n');
+};
+
 const getLocalDateKey = () => {
   const d = new Date();
   const y = d.getFullYear();
