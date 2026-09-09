@@ -15,4 +15,4 @@ jobs:
           npm ci
           npm run build
       - name: Report
-        run: echo 'App syntax/build verified; no source mutation required.'
+        run: echo 'Verified main after Jobsheet history edit fix.'
