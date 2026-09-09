@@ -1474,8 +1474,8 @@ _Thank you for choosing ${shopInfo.name}!_`;
               </div>
             </div>
 
-            <div className={`relative w-full min-w-0 ${t.cardSecondary} p-1 rounded-2xl border ${t.border} shadow-inner`}>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1">
+            <div className={`relative w-full min-w-0 ${t.cardSecondary} p-1.5 rounded-2xl border ${t.border} shadow-inner overflow-visible`}>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                 {[
                   { title: 'MAIN', items: [
                     { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -1510,7 +1510,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
                         <ChevronRight size={15} className={`shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-90 text-blue-400' : ''}`} />
                       </button>
                       {isOpen && (
-                        <div className={`absolute left-0 right-0 top-[calc(100%+6px)] z-50 p-2 rounded-2xl border ${t.border} ${t.cardBg} shadow-2xl ring-1 ring-black/10`}>
+                        <div className={`absolute left-0 right-0 top-full mt-1 z-50 p-2 rounded-2xl border ${t.border} ${t.cardBg} shadow-2xl ring-1 ring-black/10`}>
                           <div className="flex flex-col sm:flex-row sm:flex-wrap gap-1.5">
                             {group.items.map(item => (
                               <button
