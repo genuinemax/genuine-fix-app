@@ -301,6 +301,12 @@ export default function App() {
     ).values()
   );
 
+
+  const posCustomers = [
+  { name: 'Walk-in Customer', phone: 'N/A' },
+  ...uniqueCustomers
+];
+  
   // Unique Suppliers List extracted from existing expenses and stock purchases
   const uniqueSuppliers = Array.from(
     new Map(
