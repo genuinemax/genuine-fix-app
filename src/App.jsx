@@ -357,6 +357,7 @@ export default function App() {
   });
 
   const [selectedStockPurchase, setSelectedStockPurchase] = useState(null);
+  const [selectedInventoryItem, setSelectedInventoryItem] = useState(null);
   const [editingStockPurchaseId, setEditingStockPurchaseId] = useState(null);
 
   const [stockPurchases, setStockPurchases] = useState(() => {
@@ -2501,9 +2502,12 @@ _Thank you for choosing ${shopInfo.name}!_`;
                         <td className={`p-4 font-bold ${Number(item.stock) <= Number(item.minStock || 5) ? 'text-rose-400' : 'text-emerald-400'}`}>{item.stock} units</td>
                         <td className={`p-4 ${t.textMuted}`}>NPR {item.costPrice}</td>
                         <td className={`p-4 font-bold ${t.textMain}`}>NPR {item.price}</td>
-                        <td className="p-4 text-right space-x-2">
-                          <button onClick={() => { setEditingPartId(item.id); setSelectedCategory(item.category); setNewPart({ name: item.name, stock: item.stock, costPrice: item.costPrice, markupPercent: Number(item.costPrice) > 0 ? Math.round(((Number(item.price || 0) - Number(item.costPrice || 0)) / Number(item.costPrice || 1)) * 10000) / 100 : '', price: item.price, minStock: item.minStock || '5', supplierName: item.supplierName || '', supplierPhone: item.supplierPhone || '', purchaseDate: item.lastPurchaseDate || todayKey }); }} className="px-3 py-1.5 bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 rounded-xl font-bold">Edit</button>
-                          <button onClick={() => setInventory(inventory.filter(i => i.id !== item.id))} className="px-3 py-1.5 bg-rose-500/20 text-rose-400 hover:bg-rose-500/30 rounded-xl font-bold"><Trash2 size={14}/></button>
+                        <td className="p-4 text-right">
+                          <div className="flex justify-end items-center gap-1.5">
+                            <button type="button" onClick={() => { setEditingPartId(item.id); setSelectedCategory(item.category); setNewPart({ name: item.name, stock: item.stock, costPrice: item.costPrice, markupPercent: Number(item.costPrice) > 0 ? Math.round(((Number(item.price || 0) - Number(item.costPrice || 0)) / Number(item.costPrice || 1)) * 10000) / 100 : '', price: item.price, minStock: item.minStock || '5', supplierName: item.supplierName || '', supplierPhone: item.supplierPhone || '', purchaseDate: item.lastPurchaseDate || todayKey, notes: item.notes || '' }); }} className="px-3 py-1.5 bg-amber-500/15 text-amber-400 hover:bg-amber-500/25 rounded-xl font-bold inline-flex items-center gap-1.5"><Pencil size={14}/> Edit</button>
+                            <button type="button" onClick={() => setInventory(inventory.filter(i => i.id !== item.id))} className="p-2 bg-rose-500/15 text-rose-400 hover:bg-rose-500/25 rounded-xl" title="Delete item"><Trash2 size={14}/></button>
+                            <button type="button" onClick={() => setSelectedInventoryItem(item)} className="px-3 py-1.5 bg-blue-600/15 text-blue-400 hover:bg-blue-600/25 rounded-xl font-bold inline-flex items-center gap-1.5"><Eye size={14}/> View</button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -2512,6 +2516,41 @@ _Thank you for choosing ${shopInfo.name}!_`;
               </div>
             </div>
 
+
+            {selectedInventoryItem && (
+              <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedInventoryItem(null)}>
+                <div className={`${t.cardBg} border ${t.border} rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden`} onClick={e => e.stopPropagation()}>
+                  <div className={`p-5 border-b ${t.border} flex items-center justify-between gap-3`}>
+                    <div>
+                      <p className={`text-xs uppercase tracking-[0.2em] font-black ${t.textMuted}`}>Inventory Item Detail</p>
+                      <h3 className={`text-xl font-black ${t.textMain}`}>{selectedInventoryItem.name}</h3>
+                    </div>
+                    <button type="button" onClick={() => setSelectedInventoryItem(null)} className={`p-2 rounded-xl ${t.cardSecondary} ${t.textMuted} hover:text-white`}><X size={18}/></button>
+                  </div>
+                  <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {[
+                      ['Category', selectedInventoryItem.category || '—'],
+                      ['Stock Qty', `${Number(selectedInventoryItem.stock || 0).toLocaleString()} units`],
+                      ['Cost Price', `NPR ${Number(selectedInventoryItem.costPrice || 0).toLocaleString()}`],
+                      ['Selling Price', `NPR ${Number(selectedInventoryItem.price || 0).toLocaleString()}`],
+                      ['Min Stock Warning', `${Number(selectedInventoryItem.minStock || 5).toLocaleString()} units`],
+                      ['Supplier', selectedInventoryItem.supplierName || '—'],
+                      ['Supplier Phone', selectedInventoryItem.supplierPhone || '—'],
+                      ['Last Purchase Date', selectedInventoryItem.lastPurchaseDate || '—'],
+                    ].map(([label, value]) => (
+                      <div key={label} className={`${t.cardSecondary} border ${t.border} rounded-2xl p-4`}>
+                        <div className={`text-xs uppercase tracking-wide font-black ${t.textMuted}`}>{label}</div>
+                        <div className={`text-sm font-bold ${t.textMain} mt-1 break-words`}>{value}</div>
+                      </div>
+                    ))}
+                    <div className={`sm:col-span-2 ${t.cardSecondary} border ${t.border} rounded-2xl p-4`}>
+                      <div className={`text-xs uppercase tracking-wide font-black ${t.textMuted}`}>Notes / Remarks</div>
+                      <div className={`text-sm ${t.textMain} mt-1 whitespace-pre-wrap break-words`}>{selectedInventoryItem.notes || 'No notes added.'}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className={`${t.cardBg} border ${t.border} rounded-3xl overflow-hidden shadow-xl`}>
               <div className="p-5 border-b border-slate-700/50 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
