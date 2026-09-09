@@ -1,18 +1,25 @@
 from pathlib import Path
+import re
 
 p = Path('src/App.jsx')
 s = p.read_text(encoding='utf-8')
 original = s
 
-# Replace the malformed helper previously injected with a real JavaScript helper.
-malformed_start = "\\nconst normalizePartsStockNotes = (value) => {\\n"
-if malformed_start in s:
-    start = s.index(malformed_start)
-    end_marker = "\\nconst getLocalDateKey = () => {"
-    end = s.index(end_marker, start)
-    s = s[:start] + s[end + 1:]
+# Remove any previously injected malformed helper, including literal \\n escapes.
+start = s.find(r'\nconst normalizePartsStockNotes = (value) => {')
+if start >= 0:
+    end = s.find(r'\nconst getLocalDateKey = () => {', start)
+    if end >= 0:
+        s = s[:start] + s[end + 1:]
 
-helper = '''
+# Also remove a real-newline helper if one was partially written by an older script.
+real_start = s.find('\nconst normalizePartsStockNotes = (value) => {')
+if real_start >= 0:
+    real_end = s.find('\nconst getLocalDateKey = () => {', real_start)
+    if real_end >= 0:
+        s = s[:real_start] + s[real_end + 1:]
+
+helper = r'''
 const normalizePartsStockNotes = (value) => {
   const text = String(value || '').replace(/\r\n?/g, '\n');
   const lines = text.split('\n');
@@ -22,7 +29,6 @@ const normalizePartsStockNotes = (value) => {
     const line = lines[i].trim();
     if (!line) continue;
 
-    // Clipboard sources can put a bullet on one line and its text on the next.
     if (/^[•▪*-]$/.test(line)) {
       let next = i + 1;
       while (next < lines.length && !lines[next].trim()) next += 1;
@@ -42,7 +48,7 @@ const normalizePartsStockNotes = (value) => {
 '''
 
 if 'const normalizePartsStockNotes = ' not in s:
-    marker = "const getLocalDateKey = () => {"
+    marker = 'const getLocalDateKey = () => {'
     if marker not in s:
         raise SystemExit('Could not find App.jsx insertion point.')
     s = s.replace(marker, helper + '\n' + marker, 1)
@@ -64,7 +70,6 @@ s = s.replace(
     1,
 )
 
-# Normalize the actual pasted value in the Parts Stock Notes textarea.
 old = '''              <textarea
                 rows="3"
                 placeholder="Notes / Remarks (optional) — e.g. quality, supplier detail, location, warranty..."
