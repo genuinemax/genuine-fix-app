@@ -1,32 +1,42 @@
-// Genuine Fix Business Tools
-// Dedicated Profit & Loss navigation + Walk-in Customer billing inside Accessories POS.
-// Walk-in bills never change inventory stock.
+// Genuine Fix — business navigation and POS UI polish
 (() => {
-  const read=(key,fallback=[])=>{try{const v=JSON.parse(localStorage.getItem(key)||JSON.stringify(fallback));return Array.isArray(v)?v:fallback;}catch{return fallback;}};
-  const money=v=>Number.isFinite(Number(v))?Number(v):0;
-  const fmt=v=>`NPR ${Math.round(money(v)).toLocaleString('en-IN')}`;
-  const dateNow=()=>{const d=new Date();return `${d.toISOString().split('T')[0]} ${d.toTimeString().split(' ')[0]}`;};
-
-  const style=()=>{if(document.getElementById('gf-business-tools-style'))return;const s=document.createElement('style');s.id='gf-business-tools-style';s.textContent=`
-    #gf-pl-launcher{display:none!important}
-    .gf-biz-modal-backdrop{position:fixed;inset:0;z-index:100000;background:rgba(2,6,23,.82);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;padding:12px}
-    .gf-biz-modal{width:min(900px,100%);max-height:94vh;overflow:auto;background:#111827;color:#e5e7eb;border:1px solid #334155;border-radius:22px;box-shadow:0 30px 90px rgba(0,0,0,.5);padding:20px}
-    .gf-biz-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px}.gf-biz-head h2{margin:2px 0;font-size:22px;font-weight:900}.gf-biz-sub{color:#94a3b8;font-size:12px}.gf-biz-close{border:1px solid #475569;background:#1e293b;color:#fff;border-radius:11px;width:36px;height:36px;font-size:22px;cursor:pointer}
-    .gf-biz-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.gf-biz-form input{width:100%;box-sizing:border-box;padding:11px 12px;border-radius:11px;border:1px solid #334155;background:#0b1220;color:#fff;outline:none}.gf-biz-full{grid-column:1/-1}.gf-biz-items{display:flex;flex-direction:column;gap:8px;margin-top:10px}.gf-biz-item{display:grid;grid-template-columns:1fr 130px 80px 38px;gap:7px}.gf-biz-btn{border:0;border-radius:11px;padding:11px 14px;background:#2563eb;color:#fff;font-weight:800;cursor:pointer}.gf-biz-btn.green{background:#059669}.gf-biz-btn.red{background:#dc2626}.gf-biz-btn.gray{background:#334155}.gf-biz-note{font-size:11px;color:#94a3b8;margin-top:9px;line-height:1.5}
-    .gf-pos-walkin{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:12px 0;padding:12px 14px;border:1px solid #f59e0b55;border-radius:14px;background:#451a03}.gf-pos-walkin strong{color:#fbbf24}.gf-pos-walkin span{font-size:12px;color:#fde68a}.gf-pos-walkin button{border:0;border-radius:10px;padding:10px 14px;background:#f59e0b;color:#111827;font-weight:900;cursor:pointer}
-    @media(max-width:760px){.gf-biz-form{grid-template-columns:1fr}.gf-biz-full{grid-column:auto}.gf-biz-item{grid-template-columns:1fr 100px 70px 38px}.gf-biz-modal{padding:14px;border-radius:17px}.gf-pos-walkin{align-items:flex-start;flex-direction:column}}
-  `;document.head.appendChild(s);};
-  const close=()=>document.getElementById('gf-biz-backdrop')?.remove();
-  const modal=html=>{close();document.body.insertAdjacentHTML('beforeend',`<div id="gf-biz-backdrop" class="gf-biz-modal-backdrop"><div class="gf-biz-modal">${html}</div></div>`);document.getElementById('gf-biz-backdrop').addEventListener('click',e=>{if(e.target.id==='gf-biz-backdrop')close();});document.getElementById('gf-biz-close')?.addEventListener('click',close);};
-
-  const openPL=()=>{const launcher=document.getElementById('gf-pl-launcher');if(launcher){launcher.click();return;}const repairs=read('gf_repairs'),expenses=read('gf_expenses');const revenue=repairs.reduce((s,r)=>s+money(r.totalCost),0);const cogs=repairs.reduce((s,r)=>s+(Array.isArray(r.items)?r.items.reduce((a,i)=>a+money(i.qty||1)*money(i.costPrice),0):0),0);const exp=expenses.reduce((s,e)=>s+money(e.amount),0);const net=revenue-cogs-exp;modal(`<div class="gf-biz-head"><div><h2>Profit & Loss</h2><div class="gf-biz-sub">Business financial summary</div></div><button id="gf-biz-close" class="gf-biz-close">×</button></div><div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px"><div><small>Revenue</small><h3>${fmt(revenue)}</h3></div><div><small>COGS</small><h3>${fmt(cogs)}</h3></div><div><small>Expenses</small><h3>${fmt(exp)}</h3></div><div><small>Net</small><h3>${fmt(net)}</h3></div></div>`);};
-
-  const openWalkIn=()=>{modal(`<div class="gf-biz-head"><div><h2>Walking Customer Bill — Non-Stock</h2><div class="gf-biz-sub">Direct sale / service — <b>NO STOCK DEDUCTION</b></div></div><button id="gf-biz-close" class="gf-biz-close">×</button></div><form id="gf-walkin-form"><div class="gf-biz-form"><input id="gf-walk-name" placeholder="Customer Name (optional)"/><input id="gf-walk-phone" placeholder="Phone (optional)"/><div class="gf-biz-full"><div class="gf-biz-items" id="gf-walk-items"><div class="gf-biz-item"><input placeholder="Item / Service"/><input type="number" min="0" placeholder="Price"/><input type="number" min="1" value="1"/><button type="button" class="gf-biz-btn red gf-remove-walk">×</button></div></div><button type="button" id="gf-add-walk" class="gf-biz-btn gray" style="margin-top:8px">+ Add Item</button></div><input id="gf-walk-paid" type="number" min="0" placeholder="Paid Amount"/><input id="gf-walk-note" placeholder="Note / Remarks"/><button class="gf-biz-btn green gf-biz-full" type="submit">Save Walking Bill</button></div></form><div class="gf-biz-note">This bill is saved in billing history but does not reduce Accessories Stock or Parts Stock.</div>`);const items=document.getElementById('gf-walk-items');const add=()=>{const row=document.createElement('div');row.className='gf-biz-item';row.innerHTML='<input placeholder="Item / Service"/><input type="number" min="0" placeholder="Price"/><input type="number" min="1" value="1"/><button type="button" class="gf-biz-btn red gf-remove-walk">×</button>';items.appendChild(row);};document.getElementById('gf-add-walk')?.addEventListener('click',add);items.addEventListener('click',e=>{if(e.target.closest('.gf-remove-walk')&&items.children.length>1)e.target.closest('.gf-biz-item').remove();});document.getElementById('gf-walkin-form')?.addEventListener('submit',e=>{e.preventDefault();const billItems=[...items.children].map(r=>{const x=r.querySelectorAll('input');return{name:x[0].value.trim()||'Walking Sale',price:money(x[1].value),qty:Math.max(1,money(x[2].value))};}).filter(x=>x.price>0);if(!billItems.length){alert('कम्तीमा एउटा item र price राख्नुहोस्।');return;}const total=billItems.reduce((s,x)=>s+x.price*x.qty,0);const paid=money(document.getElementById('gf-walk-paid').value||total);const bill={id:`WALK-${Date.now().toString().slice(-7)}`,customerName:document.getElementById('gf-walk-name').value.trim()||'Walking Customer',phone:document.getElementById('gf-walk-phone').value.trim()||'N/A',deviceType:'Walking Sale',model:billItems.map(x=>`${x.name} (x${x.qty})`).join(', '),totalCost:total,paidAmount:Math.min(paid,total),dueAmount:Math.max(0,total-paid),issue:document.getElementById('gf-walk-note').value.trim()||'Walking Customer Non-Stock Sale',warrantyMonths:'N/A',status:'Delivered',dateTime:dateNow(),billType:'Walking Customer',stockDeducted:false,items:billItems.map(x=>({...x,costPrice:0,remarks:'Walking / Non-stock Bill'}))};const repairs=read('gf_repairs');repairs.unshift(bill);localStorage.setItem('gf_repairs',JSON.stringify(repairs));alert(`Walking Bill ${bill.id} save भयो। Stock deduct गरिएको छैन।`);close();setTimeout(()=>window.location.reload(),250);});};
-
-  const injectNav=()=>{const nav=[...document.querySelectorAll('nav button')];if(!nav.length)return;const marker=nav.find(b=>b.textContent.includes('Settings'));if(!marker)return;const addNav=(id,label,handler)=>{if(document.getElementById(id))return;const b=document.createElement('button');b.id=id;b.type='button';b.className=marker.className;b.innerHTML=`<span>${label}</span>`;b.addEventListener('click',handler);marker.parentElement.insertBefore(b,marker);};addNav('gf-nav-pl','📊 P&L',openPL);document.getElementById('gf-nav-customers')?.remove();document.getElementById('gf-nav-walkin')?.remove();};
-
-  const injectPosWalkIn=()=>{const nodes=[...document.querySelectorAll('h1,h2,h3,h4,div,p,span')];const heading=nodes.find(el=>el.children.length===0&&/Accessories\s*&\s*Direct Sales Counter\s*\(POS\)/i.test(el.textContent.trim()));if(!heading)return;const host=heading.parentElement?.parentElement||heading.parentElement;if(!host||host.querySelector('#gf-pos-walkin'))return;const box=document.createElement('div');box.id='gf-pos-walkin';box.className='gf-pos-walkin';box.innerHTML='<div><strong>🧾 Walking Customer / Non-Stock</strong><br><span>For outside/walking sales. Inventory stock will NOT be deducted.</span></div><button type="button" id="gf-pos-walkin-btn">Create Non-Stock Bill</button>';box.querySelector('button').addEventListener('click',openWalkIn);host.insertBefore(box,host.children[1]||null);};
-
-  const hideLegacyWalkIn=()=>document.getElementById('gf-accessories-walkin')?.remove();
-  const init=()=>{style();injectNav();hideLegacyWalkIn();injectPosWalkIn();setInterval(()=>{injectNav();hideLegacyWalkIn();injectPosWalkIn();},1200);};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+  const STYLE_ID='gf-business-tools-style-v2';
+  function injectStyles(){
+    if(document.getElementById(STYLE_ID)) return;
+    const s=document.createElement('style');s.id=STYLE_ID;s.textContent=`
+      #gf-pl-launcher{display:none!important}
+      .gf-pos-mode-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;padding:12px 14px;border:1px solid rgba(96,165,250,.22);border-radius:16px;background:rgba(30,41,59,.52)}
+      .gf-pos-mode-copy{min-width:0}.gf-pos-mode-title{font-size:12px;font-weight:900;color:#f8fafc}.gf-pos-mode-sub{font-size:11px;color:#94a3b8;margin-top:3px}
+      .gf-pos-mode-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}.gf-pos-mode-btn{border:1px solid rgba(100,116,139,.5);background:#1e293b;color:#cbd5e1;border-radius:10px;padding:8px 11px;font-size:11px;font-weight:900;cursor:pointer;white-space:nowrap}.gf-pos-mode-btn:hover{filter:brightness(1.12)}.gf-pos-mode-btn.active{background:#2563eb;border-color:#2563eb;color:#fff;box-shadow:0 5px 16px rgba(37,99,235,.22)}.gf-pos-mode-btn.walkin.active{background:#b45309;border-color:#b45309;color:#fff;box-shadow:0 5px 16px rgba(180,83,9,.2)}
+      .gf-pos-walkin-note{display:none;margin-top:9px;padding:9px 11px;border-radius:11px;background:rgba(180,83,9,.10);border:1px solid rgba(245,158,11,.2);color:#fbbf24;font-size:11px;font-weight:700}.gf-pos-walkin-note.show{display:block}
+      @media(max-width:700px){.gf-pos-mode-bar{align-items:flex-start;flex-direction:column}.gf-pos-mode-actions{width:100%;justify-content:flex-start}.gf-pos-mode-btn{flex:1 1 auto}}
+    `;document.head.appendChild(s);
+  }
+  function hideDuplicateWalkingUI(){
+    document.querySelectorAll('body *').forEach(el=>{
+      if(el.closest('#gf-final-pos-panel')||el.id==='gf-pl-launcher') return;
+      const text=(el.innerText||'').replace(/\s+/g,' ').trim();if(!text||text.length>180)return;
+      if(/Walking Customer\s*\/\s*Non-Stock|Create Non-Stock Bill/i.test(text)){
+        const parent=el.parentElement;const pt=(parent?.innerText||'').replace(/\s+/g,' ').trim();
+        if(parent&&/Walking Customer\s*\/\s*Non-Stock|Create Non-Stock Bill/i.test(pt)&&(parent.children.length<=4||el.tagName==='BUTTON')) el.style.display='none';
+      }
+    });
+    document.querySelectorAll('#gf-accessories-walkin,.gf-biz-modal-backdrop').forEach(el=>el.remove());
+  }
+  function ensureNav(){
+    const nav=[...document.querySelectorAll('nav button')];if(!nav.length)return;const marker=nav.find(b=>/Settings/i.test(b.textContent||''));if(!marker)return;
+    if(!document.getElementById('gf-nav-pl')){const b=document.createElement('button');b.id='gf-nav-pl';b.type='button';b.className=marker.className;b.innerHTML='<span>📊 P&L</span>';b.addEventListener('click',()=>{const launcher=document.getElementById('gf-pl-launcher');if(launcher)launcher.click()});marker.parentElement.insertBefore(b,marker)}
+  }
+  function ensurePosWalkingMode(){
+    const panel=document.getElementById('gf-final-pos-panel');if(!panel||panel.dataset.gfWalkingUi==='1')return;panel.dataset.gfWalkingUi='1';
+    const bar=document.createElement('div');bar.className='gf-pos-mode-bar';bar.innerHTML='<div class="gf-pos-mode-copy"><div class="gf-pos-mode-title">Sale Mode</div><div class="gf-pos-mode-sub">Choose how this POS bill should handle stock.</div></div><div class="gf-pos-mode-actions"><button type="button" class="gf-pos-mode-btn active" data-mode="stock">📦 Stock Sale</button><button type="button" class="gf-pos-mode-btn walkin" data-mode="walkin">🧾 Walking Customer · Non-Stock</button></div>';
+    const note=document.createElement('div');note.className='gf-pos-walkin-note';note.textContent='Walking Customer mode: inventory will NOT be deducted. Use this for outside/non-stock sales.';
+    const items=panel.querySelector('[data-gf="items"]');if(items?.parentElement)items.parentElement.before(bar,note);
+    const setMode=(mode)=>{const selects=[...panel.querySelectorAll('[data-gf="items"] .gf-final-name-wrap select')];selects.forEach(sel=>{sel.value=mode==='walkin'?'outside':'stock';sel.dispatchEvent(new Event('change',{bubbles:true}))});bar.querySelectorAll('.gf-pos-mode-btn').forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));note.classList.toggle('show',mode==='walkin')};
+    bar.querySelector('[data-mode="stock"]').addEventListener('click',()=>setMode('stock'));bar.querySelector('[data-mode="walkin"]').addEventListener('click',()=>setMode('walkin'));
+    panel.querySelectorAll('select').forEach(sel=>[...sel.options].forEach(opt=>{if(opt.value==='outside')opt.textContent='Walking Customer / Non-Stock'}));
+  }
+  function init(){injectStyles();ensureNav();hideDuplicateWalkingUI();ensurePosWalkingMode()}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+  new MutationObserver(init).observe(document.documentElement,{childList:true,subtree:true});setInterval(init,1500);
 })();
