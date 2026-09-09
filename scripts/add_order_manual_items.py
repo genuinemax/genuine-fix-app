@@ -5,12 +5,14 @@ text = APP.read_text(encoding='utf-8')
 
 # Add an explicit per-line Stock/Manual mode so orders can include items that are not in inventory.
 state_anchor = "  const [newOrder, setNewOrder] = useState({ customerName: '', phone: '', items: [{ name: '', price: '', qty: 1, notes: '' }], expectedDate: '', notes: '' });"
-state_new = "  const [newOrder, setNewOrder] = useState({ customerName: '', phone: '', items: [{ name: '', price: '', qty: 1, notes: '', mode: 'stock' }], expectedDate: '', notes: '' });"
+state_new = "  const [newOrder, setNewOrder] = useState({ customerName: '', phone: '', items: [{ name: '', price: '', qty: 1, notes: '', mode: 'stock' }], expectedDate: getLocalDateKey(), notes: '' });"
 if state_anchor in text:
     text = text.replace(state_anchor, state_new, 1)
 
-text = text.replace("setNewOrder({ customerName: '', phone: '', items: [{ name: '', price: '', qty: 1, notes: '' }], expectedDate: '', notes: '' });", "setNewOrder({ customerName: '', phone: '', items: [{ name: '', price: '', qty: 1, notes: '', mode: 'stock' }], expectedDate: '', notes: '' });", 1)
-text = text.replace("items: [...prev.items, { name: '', price: '', qty: 1, notes: '' }]", "items: [...prev.items, { name: '', price: '', qty: 1, notes: '', mode: 'stock' }]", 1)
+# Existing version with manual mode but blank date: make today's date automatic.
+text = text.replace("items: [{ name: '', price: '', qty: 1, notes: '', mode: 'stock' }], expectedDate: '', notes: ''", "items: [{ name: '', price: '', qty: 1, notes: '', mode: 'stock' }], expectedDate: getLocalDateKey(), notes: ''", 2)
+text = text.replace("items: [...prev.items, { name: '', price: '', qty: 1, notes: '' }]", "items: [...prev.items, { name: '', price: '', qty: 1, notes: '', mode: 'stock' } ]", 1)
+text = text.replace("items: [...prev.items, { name: '', price: '', qty: 1, notes: '', mode: 'stock' } ], expectedDate: '',", "items: [...prev.items, { name: '', price: '', qty: 1, notes: '', mode: 'stock' } ], expectedDate: getLocalDateKey(),", 1)
 text = text.replace("items: (order.items || []).map(i => ({ name: i.name || '', price: i.price || '', qty: i.qty || 1, notes: i.notes || '' }))", "items: (order.items || []).map(i => ({ name: i.name || '', price: i.price || '', qty: i.qty || 1, notes: i.notes || '', mode: i.mode || 'stock' }))", 1)
 
 # Make manual items explicit in the saved order data. Existing stock/manual data remains backward compatible.
@@ -49,4 +51,4 @@ if 'Stock Item' not in row or 'Manual Item' not in row:
     text = text[:start_i] + replacement + text[end_i + len("                  </div>"):]
 
 APP.write_text(text, encoding='utf-8')
-print('Order manual-item mode patch applied.')
+print('Order manual-item mode + automatic date patch applied.')
