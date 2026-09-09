@@ -1582,46 +1582,101 @@ _Thank you for choosing ${shopInfo.name}!_`;
               </div>
             </div>
 
-            <div className={`${t.cardBg} border ${t.border} rounded-3xl p-6 shadow-xl`}>
-              <div className="flex items-center justify-between mb-6">
-                <h2 className={`text-lg font-bold ${t.textMain}`}>Recent Bills & Job Sheets</h2>
-                <button onClick={() => setActiveTab('invoices')} className="text-blue-400 text-sm font-bold flex items-center gap-1 hover:text-blue-300">
-                  View All <ChevronRight size={15}/>
-                </button>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-6 shadow-xl`}>
+                <div className="flex items-center justify-between mb-5">
+                  <div>
+                    <p className={`text-sm uppercase tracking-[0.18em] font-black ${t.textMuted}`}>Business Analytics</p>
+                    <h3 className={`text-lg font-black ${t.textMain}`}>Income vs Expense</h3>
+                  </div>
+                  <DollarSign size={20} className="text-emerald-400" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className={`${t.cardSecondary} border ${t.border} rounded-2xl p-4`}>
+                    <p className={`text-sm font-bold ${t.textMuted}`}>Income received</p>
+                    <p className="text-2xl font-black text-emerald-400 mt-2">NPR {totalIncome}</p>
+                    <div className="mt-3 h-3 rounded-full bg-slate-800 overflow-hidden">
+                      <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${Math.min(100, totalIncome > 0 ? (totalIncome / Math.max(totalIncome, totalExpensePaid)) * 100 : 0)}%` }} />
+                    </div>
+                  </div>
+                  <div className={`${t.cardSecondary} border ${t.border} rounded-2xl p-4`}>
+                    <p className={`text-sm font-bold ${t.textMuted}`}>Expense paid</p>
+                    <p className="text-2xl font-black text-rose-400 mt-2">NPR {totalExpensePaid}</p>
+                    <div className="mt-3 h-3 rounded-full bg-slate-800 overflow-hidden">
+                      <div className="h-full bg-rose-500 rounded-full" style={{ width: `${Math.min(100, totalExpensePaid > 0 ? (totalExpensePaid / Math.max(totalIncome, totalExpensePaid)) * 100 : 0)}%` }} />
+                    </div>
+                  </div>
+                </div>
+                <div className={`mt-4 rounded-2xl border ${t.border} ${t.cardSecondary} p-4 flex items-center justify-between`}>
+                  <span className={`text-sm font-bold ${t.textMuted}`}>Net cash</span>
+                  <span className={`text-xl font-black ${netCash >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>NPR {netCash}</span>
+                </div>
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className={`${t.tableHeader} font-bold uppercase text-sm border-b`}>
-                    <tr>
-                      <th className="pb-4 text-left">Bill ID</th>
-                      <th className="pb-4 text-left">Customer</th>
-                      <th className="pb-4 text-left">Type / Model</th>
-                      <th className="pb-4 text-left">Due Amount</th>
-                      <th className="pb-4 text-left">Status</th>
-                      <th className="pb-4 text-right">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className={`divide-y ${t.tableDivide}`}>
-                    {repairs.slice(0, 5).map(r => (
-                      <tr key={r.id}>
-                        <td className="py-4 font-mono font-bold text-blue-400">{r.id}</td>
-                        <td className={`py-4 ${t.textMain} font-medium`}>{r.customerName}</td>
-                        <td className={`py-4 ${t.textMuted}`}>{r.model}</td>
-                        <td className="py-4 font-bold text-rose-400">NPR {r.dueAmount}</td>
-                        <td className="py-4">
-                          <span className={`px-3 py-1 rounded-full ${t.cardSecondary} ${t.textMuted} text-sm font-bold border ${t.border}`}>
-                            {r.status}
-                          </span>
-                        </td>
-                        <td className="py-4 text-right">
-                          <button onClick={() => setSelectedInvoice(r)} className="px-3 py-1.5 bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 rounded-xl text-sm font-bold inline-flex items-center gap-1">
-                            <Eye size={14}/> Preview
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+
+              <div className={`${t.cardBg} border ${t.border} rounded-3xl p-6 shadow-xl`}>
+                <div className="flex items-center justify-between mb-5">
+                  <div>
+                    <p className={`text-sm uppercase tracking-[0.18em] font-black ${t.textMuted}`}>Repair Analytics</p>
+                    <h3 className={`text-lg font-black ${t.textMain}`}>Job Status Overview</h3>
+                  </div>
+                  <ShieldCheck size={20} className="text-blue-400" />
+                </div>
+                <div className="space-y-4">
+                  {['Pending', 'In Progress', 'Ready for Pickup', 'Completed', 'Cancelled'].map(status => {
+                    const count = repairs.filter(r => String(r.status || '').toLowerCase() === status.toLowerCase()).length;
+                    const maxCount = Math.max(1, ...['Pending', 'In Progress', 'Ready for Pickup', 'Completed', 'Cancelled'].map(s => repairs.filter(r => String(r.status || '').toLowerCase() === s.toLowerCase()).length));
+                    return (
+                      <div key={status}>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className={`text-sm font-bold ${t.textMuted}`}>{status}</span>
+                          <span className={`text-sm font-black ${t.textMain}`}>{count}</span>
+                        </div>
+                        <div className="h-3 rounded-full bg-slate-800 overflow-hidden">
+                          <div className="h-full bg-blue-500 rounded-full transition-all" style={{ width: `${(count / maxCount) * 100}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <div className={`${t.cardBg} border ${t.border} rounded-3xl p-6 shadow-xl`}>
+              <div className="flex items-center justify-between mb-5">
+                <div>
+                  <p className={`text-sm uppercase tracking-[0.18em] font-black ${t.textMuted}`}>Performance Trend</p>
+                  <h3 className={`text-lg font-black ${t.textMain}`}>Last 6 Months — Jobs & Income</h3>
+                </div>
+                <History size={20} className="text-violet-400" />
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 items-end min-h-[190px]">
+                {Array.from({ length: 6 }, (_, index) => {
+                  const monthDate = new Date();
+                  monthDate.setDate(1);
+                  monthDate.setMonth(monthDate.getMonth() - (5 - index));
+                  const year = monthDate.getFullYear();
+                  const month = monthDate.getMonth();
+                  const monthName = monthDate.toLocaleString('en-NP', { month: 'short' });
+                  const monthRepairs = repairs.filter(r => {
+                    const raw = String(r.dateTime || r.date || '');
+                    const d = new Date(raw.replace(' ', 'T'));
+                    return !Number.isNaN(d.getTime()) && d.getFullYear() === year && d.getMonth() === month;
+                  });
+                  const income = monthRepairs.reduce((sum, r) => sum + Number(r.paidAmount || 0), 0);
+                  const maxIncome = Math.max(1, ...Array.from({ length: 6 }, (_, i) => {
+                    const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - (5 - i));
+                    return repairs.filter(r => { const x = new Date(String(r.dateTime || r.date || '').replace(' ', 'T')); return !Number.isNaN(x.getTime()) && x.getFullYear() === d.getFullYear() && x.getMonth() === d.getMonth(); }).reduce((s, r) => s + Number(r.paidAmount || 0), 0);
+                  }));
+                  return (
+                    <div key={`${year}-${month}`} className="flex flex-col justify-end h-[170px]">
+                      <div className="flex-1 flex items-end justify-center">
+                        <div className="w-full max-w-[58px] rounded-t-xl bg-violet-500/70 hover:bg-violet-500 transition" style={{ height: `${Math.max(8, (income / maxIncome) * 100)}%` }} title={`NPR ${income}`} />
+                      </div>
+                      <p className={`text-center text-sm font-black ${t.textMain} mt-2`}>{monthName}</p>
+                      <p className={`text-center text-xs ${t.textMuted}`}>{monthRepairs.length} jobs</p>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
