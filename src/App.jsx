@@ -356,6 +356,8 @@ export default function App() {
     ];
   });
 
+  const [selectedStockPurchase, setSelectedStockPurchase] = useState(null);
+
   const [stockPurchases, setStockPurchases] = useState(() => {
     const saved = localStorage.getItem('gf_stock_purchases');
     return saved ? JSON.parse(saved) : [];
@@ -2481,6 +2483,11 @@ _Thank you for choosing ${shopInfo.name}!_`;
                           <td className="p-4 text-right">NPR {Number(p.unitCost || 0).toLocaleString()}</td>
                           <td className={`p-4 text-right font-black ${t.textMain}`}>NPR {Number(p.total || 0).toLocaleString()}</td>
                           <td className={`p-4 ${t.textMuted}`}>{p.invoiceNo || '—'}</td>
+                          <td className="p-4 text-right">
+                            <button type="button" onClick={() => setSelectedStockPurchase(p)} className="px-3 py-1.5 bg-blue-600/15 text-blue-400 hover:bg-blue-600/25 rounded-xl font-bold inline-flex items-center gap-1.5">
+                              <Eye size={14}/> View
+                            </button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -2488,6 +2495,39 @@ _Thank you for choosing ${shopInfo.name}!_`;
                 )}
               </div>
             </div>
+
+            {selectedStockPurchase && (
+              <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedStockPurchase(null)}>
+                <div className={`${t.cardBg} border ${t.border} rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden`} onClick={e => e.stopPropagation()}>
+                  <div className={`p-5 border-b ${t.border} flex items-center justify-between gap-3`}>
+                    <div>
+                      <p className={`text-xs uppercase tracking-[0.2em] font-black ${t.textMuted}`}>Stock Purchase Detail</p>
+                      <h3 className={`text-xl font-black ${t.textMain}`}>{selectedStockPurchase.partName || 'Stock Item'}</h3>
+                    </div>
+                    <button type="button" onClick={() => setSelectedStockPurchase(null)} className={`p-2 rounded-xl ${t.cardSecondary} ${t.textMuted} hover:text-white`}><X size={18}/></button>
+                  </div>
+                  <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {[
+                      ['Date', selectedStockPurchase.date || '—'],
+                      ['Supplier', selectedStockPurchase.supplierName || '—'],
+                      ['Quantity', String(selectedStockPurchase.qty || 0)],
+                      ['Unit Cost', `NPR ${Number(selectedStockPurchase.unitCost || 0).toLocaleString()}`],
+                      ['Total', `NPR ${Number(selectedStockPurchase.total || 0).toLocaleString()}`],
+                      ['Invoice', selectedStockPurchase.invoiceNo || '—'],
+                    ].map(([label, value]) => (
+                      <div key={label} className={`${t.cardSecondary} border ${t.border} rounded-2xl p-4`}>
+                        <div className={`text-xs uppercase tracking-wide font-black ${t.textMuted}`}>{label}</div>
+                        <div className={`text-sm font-bold ${t.textMain} mt-1 break-words`}>{value}</div>
+                      </div>
+                    ))}
+                    <div className={`sm:col-span-2 ${t.cardSecondary} border ${t.border} rounded-2xl p-4`}>
+                      <div className={`text-xs uppercase tracking-wide font-black ${t.textMuted}`}>Notes / Remarks</div>
+                      <div className={`text-sm ${t.textMain} mt-1 whitespace-pre-wrap break-words`}>{selectedStockPurchase.notes || 'No notes added.'}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
