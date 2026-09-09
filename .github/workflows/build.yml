@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -17,6 +17,34 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Apply Walk-in POS UI patch
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('src/App.jsx')
+          s = p.read_text()
+          heading = '<h3 className={`text-sm font-bold uppercase tracking-wider ${t.textMuted}`}>Bill Items & Parts Selection</h3>'
+          if 'id="walk-in-bill-actions"' not in s:
+              if heading not in s:
+                  raise SystemExit('Bill Items & Parts Selection heading not found')
+              actions = '''<div id="walk-in-bill-actions" className="flex flex-wrap items-center gap-2 mt-2 mb-3">\n                    <button type="button" onClick={() => setPosBill(prev => ({ ...prev, customerName: 'Walk-in Customer', phone: '' }))} className="px-4 py-2 bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-600/30 rounded-xl text-xs font-black transition">Walk-in Customer</button>\n                    <button type="button" onClick={() => setPosBill(prev => ({ ...prev, customerName: 'Walk-in Customer', phone: '', paidAmount: '' }))} className="px-4 py-2 bg-blue-600/20 text-blue-400 border border-blue-500/30 hover:bg-blue-600/30 rounded-xl text-xs font-black transition">Walk-in Bill</button>\n                  </div>'''
+              p.write_text(s.replace(heading, heading + '\n' + actions, 1))
+          PY
+
+      - name: Commit Walk-in UI patch
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/App.jsx
+          if git diff --cached --quiet; then
+            echo "No Walk-in UI changes needed"
+          else
+            git commit -m "feat: add walk-in actions to bill items"
+            git push
+          fi
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
