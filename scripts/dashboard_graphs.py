@@ -2,6 +2,12 @@ from pathlib import Path
 
 path = Path('src/App.jsx')
 text = path.read_text(encoding='utf-8')
+
+# The graph block may already have been applied by another concurrent workflow.
+if 'Business Analytics' in text and 'Last 6 Months — Jobs & Income' in text:
+    print('Dashboard graphs already present; nothing to do.')
+    raise SystemExit(0)
+
 start_marker = "            <div className={`${t.cardBg} border ${t.border} rounded-3xl p-6 shadow-xl`}>\n              <div className=\"flex items-center justify-between mb-6\">\n                <h2 className={`text-lg font-bold ${t.textMain}`}>Recent Bills & Job Sheets</h2>"
 start = text.find(start_marker)
 if start < 0:
@@ -10,6 +16,7 @@ end_marker = "\n            <div className=\"grid grid-cols-1 md:grid-cols-3 gap
 end = text.find(end_marker, start)
 if end < 0:
     raise SystemExit('Dashboard income summary block not found')
+
 replacement = r'''            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
               <div className={`${t.cardBg} border ${t.border} rounded-3xl p-6 shadow-xl`}>
                 <div className="flex items-center justify-between mb-5">
