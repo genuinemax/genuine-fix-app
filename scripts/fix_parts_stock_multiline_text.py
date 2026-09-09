@@ -5,19 +5,20 @@ p = Path('src/App.jsx')
 s = p.read_text(encoding='utf-8')
 original = s
 
-# Remove any previously injected malformed helper, including literal \\n escapes.
-start = s.find(r'\nconst normalizePartsStockNotes = (value) => {')
+# Remove any old/malformed helper by semantic anchors, regardless of whether
+# literal "\\n" escapes or real newlines were written into App.jsx.
+marker = 'const normalizePartsStockNotes = (value) => {'
+start = s.find(marker)
 if start >= 0:
-    end = s.find(r'\nconst getLocalDateKey = () => {', start)
+    end_marker = 'const getLocalDateKey = () => {'
+    end = s.find(end_marker, start)
     if end >= 0:
-        s = s[:start] + s[end + 1:]
-
-# Also remove a real-newline helper if one was partially written by an older script.
-real_start = s.find('\nconst normalizePartsStockNotes = (value) => {')
-if real_start >= 0:
-    real_end = s.find('\nconst getLocalDateKey = () => {', real_start)
-    if real_end >= 0:
-        s = s[:real_start] + s[real_end + 1:]
+        line_start = s.rfind('\n', 0, start)
+        if line_start < 0:
+            line_start = start
+        else:
+            line_start += 1
+        s = s[:line_start] + s[end:]
 
 helper = r'''
 const normalizePartsStockNotes = (value) => {
@@ -47,13 +48,13 @@ const normalizePartsStockNotes = (value) => {
 };
 '''
 
-if 'const normalizePartsStockNotes = ' not in s:
-    marker = 'const getLocalDateKey = () => {'
-    if marker not in s:
+if marker not in s:
+    insertion = 'const getLocalDateKey = () => {'
+    if insertion not in s:
         raise SystemExit('Could not find App.jsx insertion point.')
-    s = s.replace(marker, helper + '\n' + marker, 1)
+    s = s.replace(insertion, helper + '\n' + insertion, 1)
 
-# Preserve multiline note display in the stock detail modals.
+# Keep stock detail notes readable as multiline text.
 s = s.replace(
     'className={`text-sm ${t.textMain} mt-1 whitespace-pre-wrap break-words`}',
     'className={`text-sm ${t.textMain} mt-1 whitespace-pre-wrap break-words leading-6`}',
@@ -70,6 +71,7 @@ s = s.replace(
     1,
 )
 
+# Normalize actual pasted value in Parts Stock Notes.
 old = '''              <textarea
                 rows="3"
                 placeholder="Notes / Remarks (optional) — e.g. quality, supplier detail, location, warranty..."
@@ -97,8 +99,5 @@ new = '''              <textarea
 if old in s:
     s = s.replace(old, new, 1)
 
-if s == original:
-    raise SystemExit('No Parts Stock formatting target found; refusing a no-op patch.')
-
 p.write_text(s, encoding='utf-8')
-print('Parts Stock paste formatting repaired.')
+print('Parts Stock paste formatting repaired.' if s != original else 'No source changes needed; syntax helper is already clean.')
