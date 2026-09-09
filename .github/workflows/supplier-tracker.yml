@@ -34,9 +34,7 @@ jobs:
         run: python scripts/fix_jobsheet_delete.py
       - name: Apply dashboard graphs
         run: python scripts/dashboard_graphs.py
-      - name: Apply organized navigation groups
-        run: python scripts/organize_navigation.py
-      - name: Repair navigation build syntax
+      - name: Repair grouped navigation build syntax
         run: python scripts/fix_navigation_build.py
       - name: Commit application update
         run: |
