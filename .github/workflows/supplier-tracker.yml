@@ -36,6 +36,8 @@ jobs:
         run: python scripts/dashboard_graphs.py
       - name: Apply professional four-section navigation
         run: python scripts/professional_navigation.py
+      - name: Apply mobile-first header navigation
+        run: python scripts/professional_navigation.py
       - name: Repair grouped navigation build syntax
         run: python scripts/fix_navigation_build.py
       - name: Collapse navigation after selecting a tab
