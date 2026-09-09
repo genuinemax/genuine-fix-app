@@ -1457,7 +1457,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
 
   return (
     <div className={`min-h-screen ${t.appBg} font-sans transition-colors duration-200`}>
-      {/* Premium Top Navigation — stable brand + overlay navigation */}
+      {/* Premium Top Navigation — responsive in-flow navigation */}
       <nav className={`border-b ${t.border} ${t.navBg} backdrop-blur-xl sticky top-0 z-30 shadow-2xl`}>
         <div className="max-w-7xl mx-auto px-2.5 sm:px-6 py-2 sm:py-2.5">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4 min-h-[58px]">
@@ -1474,7 +1474,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
               </div>
             </div>
 
-            <div className={`relative w-full min-w-0 ${t.cardSecondary} p-1.5 rounded-2xl border ${t.border} shadow-inner overflow-visible`}>
+            <div className={`w-full min-w-0 ${t.cardSecondary} p-1.5 rounded-2xl border ${t.border} shadow-inner`}>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                 {[
                   { title: 'MAIN', items: [
@@ -1500,40 +1500,64 @@ _Thank you for choosing ${shopInfo.name}!_`;
                   const isOpen = openNavGroup === group.title;
                   const hasActive = group.items.some(item => item.id === activeTab);
                   return (
-                    <div key={group.title} className="relative">
-                      <button
-                        type="button"
-                        onClick={() => setOpenNavGroup(isOpen ? '' : group.title)}
-                        className={`w-full h-9 sm:h-10 flex items-center justify-between gap-1.5 sm:gap-2 px-2.5 sm:px-3 rounded-xl text-left transition-all ${hasActive ? 'bg-blue-600/10 text-blue-400' : t.textMuted} hover:bg-blue-600/10`}
-                      >
-                        <span className="text-[10px] sm:text-sm font-black tracking-wide truncate">{group.title}</span>
-                        <ChevronRight size={15} className={`shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-90 text-blue-400' : ''}`} />
-                      </button>
-                      {isOpen && (
-                        <div className={`absolute left-0 right-0 top-full mt-1 z-50 p-2 rounded-2xl border ${t.border} ${t.cardBg} shadow-2xl ring-1 ring-black/10`}>
-                          <div className="flex flex-col sm:flex-row sm:flex-wrap gap-1.5">
-                            {group.items.map(item => (
-                              <button
-                                key={item.id}
-                                type="button"
-                                onClick={() => { setActiveTab(item.id); setOpenNavGroup(''); }}
-                                className={`w-full sm:w-auto flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-bold transition-all ${
-                                  activeTab === item.id
-                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
-                                    : `${t.textMuted} hover:text-white hover:bg-blue-600/10`
-                                }`}
-                              >
-                                <item.icon size={15} />
-                                <span>{item.label}</span>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                    <button
+                      key={group.title}
+                      type="button"
+                      onClick={() => setOpenNavGroup(isOpen ? '' : group.title)}
+                      className={`w-full h-9 sm:h-10 flex items-center justify-between gap-1.5 sm:gap-2 px-2.5 sm:px-3 rounded-xl text-left transition-all ${hasActive ? 'bg-blue-600/10 text-blue-400' : t.textMuted} hover:bg-blue-600/10`}
+                    >
+                      <span className="text-[10px] sm:text-sm font-black tracking-wide truncate">{group.title}</span>
+                      <ChevronRight size={15} className={`shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-90 text-blue-400' : ''}`} />
+                    </button>
                   );
                 })}
               </div>
+
+              {openNavGroup && (() => {
+                const group = [
+                  { title: 'MAIN', items: [
+                    { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+                    { id: 'customers', icon: Users, label: 'Customers' },
+                    { id: 'orders', icon: ClipboardList, label: 'Orders' },
+                  ]},
+                  { title: 'SALES & SERVICE', items: [
+                    { id: 'invoices', icon: FileText, label: 'Invoices' },
+                    { id: 'pos', icon: ShoppingBag, label: 'Accessories Bill' },
+                    { id: 'repairs', icon: ShieldCheck, label: 'Job Sheets' },
+                    { id: 'devices', icon: Smartphone, label: 'Device Buy/Sell' },
+                  ]},
+                  { title: 'INVENTORY', items: [
+                    { id: 'inventory', icon: Package, label: 'Parts Stock' },
+                  ]},
+                  { title: 'FINANCE & SYSTEM', items: [
+                    { id: 'expenses', icon: DollarSign, label: 'Expenses' },
+                    { id: 'backup', icon: Download, label: 'Backup' },
+                    { id: 'settings', icon: Settings, label: 'Settings' },
+                  ]},
+                ].find(g => g.title === openNavGroup);
+                if (!group) return null;
+                return (
+                  <div className={`mt-1.5 p-2 rounded-2xl border ${t.border} ${t.cardBg} shadow-inner`}>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-1.5">
+                      {group.items.map(item => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => { setActiveTab(item.id); setOpenNavGroup(''); }}
+                          className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                            activeTab === item.id
+                              ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+                              : `${t.textMuted} hover:text-white hover:bg-blue-600/10`
+                          }`}
+                        >
+                          <item.icon size={15} />
+                          <span className="truncate">{item.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </div>
