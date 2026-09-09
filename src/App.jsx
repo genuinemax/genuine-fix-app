@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 
 
+\nconst normalizePartsStockNotes = (value) => {\n  const text = String(value || '').replace(/\\r\\n?/g, '\\n');\n  const lines = text.split('\\n').map(line => line.trimEnd());\n  const output = [];\n\n  lines.forEach(line => {\n    const trimmed = line.trim();\n    if (!trimmed) {\n      if (output.length && output[output.length - 1] !== '') output.push('');\n      return;\n    }\n\n    // Some clipboard sources put the bullet on one line and its text on the next.\n    if (trimmed === '•' || trimmed === '-' || trimmed === '*' || trimmed === '▪') {\n      output.push(trimmed);\n      return;\n    }\n\n    const previous = output[output.length - 1];\n    if (previous === '•' || previous === '-' || previous === '*' || previous === '▪') {\n      output[output.length - 1] = `${previous}${trimmed}`;\n    } else {\n      output.push(line);\n    }\n  });\n\n  // A bullet followed by blank lines should remain a clean single bullet entry.\n  return output\n    .filter((line, index, arr) => line !== '' || (index > 0 && index < arr.length - 1 && arr[index - 1] !== ''))\n    .join('\\n')\n    .replace(/(^|\\n)\\s*(•|[-*▪])\\s*\\n\\s*/g, '$1$2');\n};\n
 const getLocalDateKey = () => {
   const d = new Date();
   const y = d.getFullYear();
@@ -2457,11 +2458,21 @@ _Thank you for choosing ${shopInfo.name}!_`;
               </div>
               <input type="number" placeholder="Min Stock Warning" value={newPart.minStock} onChange={e => setNewPart({...newPart, minStock: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
               <textarea
-                rows="3"
-                placeholder="Notes / Remarks (optional) — e.g. quality, supplier detail, location, warranty..."
+                rows="5"
+                placeholder="Notes / Remarks (optional) — paste bullets here; each • bullet will stay with its text on the same line."
                 value={newPart.notes}
-                onChange={e => setNewPart({...newPart, notes: e.target.value})}
-                className={`md:col-span-3 p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none resize-y`}
+                onChange={e => setNewPart({...newPart, notes: normalizePartsStockNotes(e.target.value)})}
+                onPaste={e => {
+                  const pasted = e.clipboardData?.getData('text') || '';
+                  if (!pasted) return;
+                  e.preventDefault();
+                  const el = e.currentTarget;
+                  const start = el.selectionStart ?? newPart.notes.length;
+                  const end = el.selectionEnd ?? start;
+                  const next = `${newPart.notes.slice(0, start)}${pasted}${newPart.notes.slice(end)}`;
+                  setNewPart(prev => ({ ...prev, notes: normalizePartsStockNotes(next) }));
+                }}
+                className={`md:col-span-3 p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none resize-y leading-6`}
               />
 
               <button type="submit" className="md:col-span-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-blue-600/35">
@@ -2642,7 +2653,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
                     ))}
                     <div className={`sm:col-span-2 ${t.cardSecondary} border ${t.border} rounded-2xl p-4`}>
                       <div className={`text-xs uppercase tracking-wide font-black ${t.textMuted}`}>Notes / Remarks</div>
-                      <div className={`text-sm ${t.textMain} mt-1 whitespace-pre-wrap break-words`}>{selectedStockPurchase.notes || 'No notes added.'}</div>
+                      <div className={`text-sm ${t.textMain} mt-1 whitespace-pre-wrap break-words leading-6`}>{selectedStockPurchase.notes || 'No notes added.'}</div>
                     </div>
                   </div>
                 </div>
