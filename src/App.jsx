@@ -453,7 +453,7 @@ export default function App() {
   const [expenseSearch, setExpenseSearch] = useState('');
   const [orderSearch, setOrderSearch] = useState('');
   const [orderStatusFilter, setOrderStatusFilter] = useState('All');
-  const [newOrder, setNewOrder] = useState({ customerName: '', phone: '', items: [{ name: '', price: '', qty: 1, notes: '' }], expectedDate: '', notes: '' });
+  const [newOrder, setNewOrder] = useState({ customerName: '', phone: '', items: [{ name: '', price: '', qty: 1, notes: '', mode: 'stock' }], expectedDate: '', notes: '' });
   const [editingOrderId, setEditingOrderId] = useState(null);
   const [expenseCategoryFilter, setExpenseCategoryFilter] = useState('All');
   const [expenseStatusFilter, setExpenseStatusFilter] = useState('All');
@@ -660,7 +660,7 @@ const supplierDueList = Object.values(expenses.filter(e => Number(e.dueAmount ||
   };
 
   const resetOrderForm = () => {
-    setNewOrder({ customerName: '', phone: '', items: [{ name: '', price: '', qty: 1, notes: '' }], expectedDate: '', notes: '' });
+    setNewOrder({ customerName: '', phone: '', items: [{ name: '', price: '', qty: 1, notes: '', mode: 'stock' }], expectedDate: '', notes: '' });
     setEditingOrderId(null);
   };
 
@@ -669,7 +669,7 @@ const supplierDueList = Object.values(expenses.filter(e => Number(e.dueAmount ||
   };
 
   const addOrderItem = () => {
-    setNewOrder(prev => ({ ...prev, items: [...prev.items, { name: '', price: '', qty: 1, notes: '' }] }));
+    setNewOrder(prev => ({ ...prev, items: [...prev.items, { name: '', price: '', qty: 1, notes: '', mode: 'stock' }] }));
   };
 
   const removeOrderItem = (index) => {
@@ -683,7 +683,7 @@ const supplierDueList = Object.values(expenses.filter(e => Number(e.dueAmount ||
   const handleAddOrder = (e) => {
     e.preventDefault();
     const validItems = newOrder.items
-      .map(item => ({ ...item, name: String(item.name || '').trim(), price: Number(item.price || 0), qty: Math.max(1, Number(item.qty || 1)) }))
+      .map(item => ({ ...item, mode: item.mode || 'stock', name: String(item.name || '').trim(), price: Number(item.price || 0), qty: Math.max(1, Number(item.qty || 1)) }))
       .filter(item => item.name);
     if (!newOrder.customerName.trim()) { alert('Please enter customer name.'); return; }
     if (!validItems.length) { alert('Please add at least one order item.'); return; }
@@ -701,7 +701,7 @@ const supplierDueList = Object.values(expenses.filter(e => Number(e.dueAmount ||
   };
 
   const editOrder = (order) => {
-    setNewOrder({ customerName: order.customerName || '', phone: order.phone || '', items: (order.items || []).map(i => ({ name: i.name || '', price: i.price || '', qty: i.qty || 1, notes: i.notes || '' })), expectedDate: order.expectedDate || '', notes: order.notes || '' });
+    setNewOrder({ customerName: order.customerName || '', phone: order.phone || '', items: (order.items || []).map(i => ({ name: i.name || '', price: i.price || '', qty: i.qty || 1, notes: i.notes || '', mode: i.mode || 'stock' })), expectedDate: order.expectedDate || '', notes: order.notes || '' });
     setEditingOrderId(order.id);
     setActiveTab('orders');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1686,15 +1686,16 @@ _Thank you for choosing ${shopInfo.name}!_`;
                 </div>
                 {newOrder.items.map((item, index) => (
                   <div key={index} className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center">
-                    <div className="md:col-span-6">
-                      <InventoryAutocomplete
-                        value={item.name}
-                        placeholder="Search stock item or type item name..."
-                        inventory={inventory}
-                        onChange={value => updateOrderItem(index, { name: value })}
-                        onSelect={selected => handleOrderItemSelect(index, selected)}
-                        className={`w-full p-3 ${t.inputBg} border rounded-xl text-sm focus:outline-none focus:border-blue-600`}
-                      />
+                    <div className="md:col-span-2 flex gap-2">
+                      <button type="button" onClick={() => updateOrderItem(index, { mode: 'stock' })} className={`flex-1 px-2.5 py-2.5 rounded-xl text-xs font-black border transition ${item.mode !== 'manual' ? 'bg-blue-600 text-white border-blue-600' : `${t.inputBg} ${t.border} ${t.textMuted}`}`}>Stock Item</button>
+                      <button type="button" onClick={() => updateOrderItem(index, { mode: 'manual' })} className={`flex-1 px-2.5 py-2.5 rounded-xl text-xs font-black border transition ${item.mode === 'manual' ? 'bg-amber-500 text-white border-amber-500' : `${t.inputBg} ${t.border} ${t.textMuted}`}`}>Manual Item</button>
+                    </div>
+                    <div className="md:col-span-4">
+                      {item.mode === 'manual' ? (
+                        <input type="text" placeholder="Manual item / service name..." value={item.name} onChange={e => updateOrderItem(index, { name: e.target.value })} className={`w-full p-3 ${t.inputBg} border rounded-xl text-sm focus:outline-none focus:border-blue-600`} />
+                      ) : (
+                        <InventoryAutocomplete value={item.name} placeholder="Search stock item..." inventory={inventory} onChange={value => updateOrderItem(index, { name: value })} onSelect={selected => handleOrderItemSelect(index, selected)} className={`w-full p-3 ${t.inputBg} border rounded-xl text-sm focus:outline-none focus:border-blue-600`} />
+                      )}
                     </div>
                     <input type="number" min="0" step="0.01" placeholder="Price" value={item.price} onChange={e => updateOrderItem(index, { price: e.target.value })} className={`md:col-span-2 p-3 ${t.inputBg} border rounded-xl text-sm focus:outline-none`} />
                     <input type="number" min="1" step="1" placeholder="Qty" value={item.qty} onChange={e => updateOrderItem(index, { qty: e.target.value })} className={`md:col-span-1 p-3 ${t.inputBg} border rounded-xl text-sm focus:outline-none`} />
