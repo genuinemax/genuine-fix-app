@@ -23,27 +23,35 @@ jobs:
           p = Path('src/App.jsx')
           s = p.read_text()
 
-          # Add Walk-in shortcut next to the POS customer autocomplete.
+          marker = "activeTab === 'pos'"
+          start = s.find(marker)
+          if start < 0:
+              raise SystemExit('POS section not found')
+          end = s.find("activeTab ===", start + len(marker))
+          if end < 0:
+              end = len(s)
+          pos = s[start:end]
+
           customer_pattern = re.compile(r'''(?P<indent>\s*)<CustomerAutocomplete\s+value=\{posBill\.customerName\}[\s\S]*?className=\{`w-full p-3 \$\{t\.inputBg\} border rounded-2xl text-sm focus:outline-none`\}\s*/>''')
-          m = customer_pattern.search(s)
+          m = customer_pattern.search(pos)
           if not m:
               raise SystemExit('POS customer autocomplete not found')
-          block = m.group(0)
-          if 'Walk-in' not in block:
+          if 'Use Walk-in Customer' not in pos:
+              block = m.group(0)
               indent = m.group('indent')
-              wrapped = f'''{indent}<div className="flex gap-2">\n{indent}  <div className="flex-1">\n{block}\n{indent}  </div>\n{indent}  <button type="button" onClick={{() => setPosBill(prev => ({{ ...prev, customerName: 'Walk-in Customer', phone: '' }}))}} className="shrink-0 px-4 rounded-2xl bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-600/30 text-xs font-black transition">Walk-in</button>\n{indent}</div>'''
-              s = s[:m.start()] + wrapped + s[m.end():]
+              wrapped = f'''{indent}<div className="flex gap-2">\n{indent}  <div className="flex-1">\n{block}\n{indent}  </div>\n{indent}  <button type="button" onClick={{() => setPosBill(prev => ({{ ...prev, customerName: 'Walk-in Customer', phone: '' }}))}} className="shrink-0 px-4 rounded-2xl bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-600/30 text-xs font-black transition" title="Use Walk-in Customer">Walk-in</button>\n{indent}</div>'''
+              pos = pos[:m.start()] + wrapped + pos[m.end():]
 
-          # Add a dedicated Walk-in Bill action beside the POS submit button.
-          if 'Walk-in Bill' not in s:
+          if 'Walk-in Bill' not in pos:
               submit_pattern = re.compile(r'''(?P<indent>\s*)<button\s+type="submit"\s+className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl p-3\.5 transition shadow-lg shadow-blue-600/35">\s*Complete POS Bill & Deduct Stock\s*</button>''')
-              sm = submit_pattern.search(s)
+              sm = submit_pattern.search(pos)
               if not sm:
                   raise SystemExit('POS submit button not found')
               ind = sm.group('indent')
               replacement = f'''{ind}<div className="flex gap-3">\n{ind}  <button type="button" onClick={{() => setPosBill({{ customerName: 'Walk-in Customer', phone: '', items: [{{ name: '', price: '', qty: 1 }}], paidAmount: '', warrantyMonths: '' }})}} className="px-5 bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-600/30 font-bold rounded-2xl p-3.5 transition">Walk-in Bill</button>\n{ind}  <button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-blue-600/35">Complete POS Bill & Deduct Stock</button>\n{ind}</div>'''
-              s = s[:sm.start()] + replacement + s[sm.end():]
+              pos = pos[:sm.start()] + replacement + pos[sm.end():]
 
+          s = s[:start] + pos + s[end:]
           p.write_text(s)
           PY
 
