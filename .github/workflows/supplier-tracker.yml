@@ -40,6 +40,8 @@ jobs:
         run: python scripts/fix_mobile_header.py
       - name: Apply inventory entry notes
         run: python scripts/add_inventory_entry_notes.py
+      - name: Fix Parts Stock multiline bullet formatting
+        run: python scripts/fix_parts_stock_multiline_text.py
       - name: Add stock history View details
         run: python scripts/add_stock_history_view.py
       - name: Add stock history Edit Delete View actions
@@ -51,7 +53,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/App.jsx
-          if git diff --cached --quiet; then echo "No application changes needed"; else git commit -m "feat: add inventory item view action"; git push; fi
+          if git diff --cached --quiet; then echo "No application changes needed"; else git commit -m "fix: preserve pasted multiline bullet formatting"; git push; fi
       - name: Install dependencies
         run: npm ci
       - name: Production build
