@@ -2545,7 +2545,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
                     ))}
                     <div className={`sm:col-span-2 ${t.cardSecondary} border ${t.border} rounded-2xl p-4`}>
                       <div className={`text-xs uppercase tracking-wide font-black ${t.textMuted}`}>Notes / Remarks</div>
-                      <div className={`text-sm ${t.textMain} mt-1 whitespace-pre-wrap break-words`}>{selectedInventoryItem.notes || 'No notes added.'}</div>
+                      <div className={`text-sm ${t.textMain} mt-1 whitespace-pre-wrap break-words leading-6`}>{selectedInventoryItem.notes || 'No notes added.'}</div>
                     </div>
                   </div>
                 </div>
