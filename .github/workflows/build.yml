@@ -28,88 +28,69 @@ jobs:
           p = Path('src/App.jsx')
           s = p.read_text()
 
-          # Remove the earlier Walk-in UI injection. Walk-in should remain a customer value,
-          # not replace the item/customer-name field. Billing non-stock goods is a separate feature.
+          # Remove the old Walk-in buttons if they were injected into the bill-items area.
           s = re.sub(r'\s*<div id="walk-in-bill-actions"[\s\S]*?</div>\s*', '\n', s, count=1)
 
-          # Add a per-line non-stock/manual mode to the POS item list.
+          # Add a manual/non-stock mode to the FIRST item selector after the Bill Items heading.
           if 'item.nonStock' not in s:
-              old = """<select
-                        value={item.name}
-                        onChange={e => {
-                          const val = e.target.value;
-                          const invItem = inventory.find(i => i.name === val);
-                          const nextItems = [...posBill.items];
-                          nextItems[idx].name = val;
-                          if (invItem) nextItems[idx].price = invItem.price;
-                          setPosBill({ ...posBill, items: nextItems });
-                        }}
-                        className={`flex-1 p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}
-                        required
-                      >
-                        <option value="">Select stock item or accessory...</option>
-                        {inventory.map(inv => (
-                          <option key={inv.id} value={inv.name}>{inv.name} (Stock: {inv.stock} — NPR {inv.price})</option>
-                        ))}
-                      </select>"""
+              heading_pos = s.find('Bill Items & Parts Selection')
+              if heading_pos < 0:
+                  raise SystemExit('Bill Items & Parts Selection heading not found')
 
-              new = """{item.nonStock ? (
-                        <input
-                          type=\"text\"
-                          value={item.name}
-                          onChange={e => {
-                            const nextItems = [...posBill.items];
-                            nextItems[idx].name = e.target.value;
-                            setPosBill({ ...posBill, items: nextItems });
-                          }}
-                          placeholder=\"Non-stock item / service name\"
-                          className={`flex-1 p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}
-                          required
-                        />
-                      ) : (
-                        <select
-                          value={item.name}
-                          onChange={e => {
-                            const val = e.target.value;
-                            const invItem = inventory.find(i => i.name === val);
-                            const nextItems = [...posBill.items];
-                            nextItems[idx].name = val;
-                            if (invItem) nextItems[idx].price = invItem.price;
-                            setPosBill({ ...posBill, items: nextItems });
-                          }}
-                          className={`flex-1 p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}
-                          required
-                        >
-                          <option value=\"\">Select stock item or accessory...</option>
-                          {inventory.map(inv => (
-                            <option key={inv.id} value={inv.name}>{inv.name} (Stock: {inv.stock} — NPR {inv.price})</option>
-                          ))}
-                        </select>
-                      )}
-                      <button
-                        type=\"button\"
-                        onClick={() => {
-                          const nextItems = [...posBill.items];
-                          nextItems[idx].nonStock = !nextItems[idx].nonStock;
-                          if (nextItems[idx].nonStock) nextItems[idx].name = '';
-                          setPosBill({ ...posBill, items: nextItems });
-                        }}
-                        className={`px-3 py-2 rounded-xl text-xs font-black border transition ${item.nonStock ? 'bg-amber-600/20 text-amber-400 border-amber-500/30' : 'bg-slate-700/30 text-slate-400 border-slate-600'}`}
-                      >
-                        {item.nonStock ? 'Stock Item' : 'Non-stock'}
-                      </button>"""
+              select_start = s.find('<select', heading_pos)
+              if select_start < 0:
+                  raise SystemExit('POS item selector not found')
 
-              if old not in s:
-                  raise SystemExit('POS item select block not found')
-              s = s.replace(old, new, 1)
+              select_end = s.find('</select>', select_start)
+              if select_end < 0:
+                  raise SystemExit('POS item selector closing tag not found')
+              select_end += len('</select>')
 
-          # Permit non-stock lines: only existing inventory items are stock-checked/deducted.
-          # Existing stock items keep the same insufficient-stock validation.
-          s, changed = re.subn(r'if \(!invItem \|\| invItem\.stock < item\.qty\)', 'if (invItem && invItem.stock < item.qty)', s, count=1)
+              old_select = s[select_start:select_end]
+              new_select = '''{item.nonStock ? (
+              <input
+                type="text"
+                value={item.name}
+                onChange={e => {
+                  const nextItems = [...posBill.items];
+                  nextItems[idx].name = e.target.value;
+                  setPosBill({ ...posBill, items: nextItems });
+                }}
+                placeholder="Non-stock item / service name"
+                className={`flex-1 p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}
+                required
+              />
+            ) : (
+              ''' + old_select + '''
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                const nextItems = [...posBill.items];
+                nextItems[idx].nonStock = !nextItems[idx].nonStock;
+                if (nextItems[idx].nonStock) {
+                  nextItems[idx].name = '';
+                  nextItems[idx].price = '';
+                }
+                setPosBill({ ...posBill, items: nextItems });
+              }}
+              className={`px-3 py-2 rounded-xl text-xs font-black border transition ${item.nonStock ? 'bg-blue-600/20 text-blue-400 border-blue-500/30' : 'bg-amber-600/20 text-amber-400 border-amber-500/30'}`}
+            >
+              {item.nonStock ? 'Stock Item' : 'Non-stock'}
+            </button>'''
+              s = s[:select_start] + new_select + s[select_end:]
+
+          # Non-stock lines have no inventory record, so don't reject them as missing stock.
+          s, changed = re.subn(
+              r'if\s*\(!invItem\s*\|\|\s*invItem\.stock\s*<\s*item\.qty\)',
+              'if (invItem && invItem.stock < item.qty)',
+              s,
+              count=1
+          )
           if changed == 0:
               raise SystemExit('POS stock validation pattern not found')
 
-          # New POS lines explicitly carry the non-stock flag for predictable state.
+          # Make new rows explicit, while preserving old rows that don't have the flag.
           s = s.replace("items: [{ name: '', price: '', qty: 1 }]", "items: [{ name: '', price: '', qty: 1, nonStock: false }]", 1)
           s = s.replace("items: [...posBill.items, { name: '', price: '', qty: 1 }]", "items: [...posBill.items, { name: '', price: '', qty: 1, nonStock: false }]", 1)
 
