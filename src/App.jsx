@@ -1739,6 +1739,10 @@ _Thank you for choosing ${shopInfo.name}!_`;
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <h3 className={`text-sm font-bold uppercase tracking-wider ${t.textMuted}`}>Bill Items & Parts Selection</h3>
+<div id="walk-in-bill-actions" className="flex flex-wrap items-center gap-2 mt-2 mb-3">
+                    <button type="button" onClick={() => setPosBill(prev => ({ ...prev, customerName: 'Walk-in Customer', phone: '' }))} className="px-4 py-2 bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-600/30 rounded-xl text-xs font-black transition">Walk-in Customer</button>
+                    <button type="button" onClick={() => setPosBill(prev => ({ ...prev, customerName: 'Walk-in Customer', phone: '', paidAmount: '' }))} className="px-4 py-2 bg-blue-600/20 text-blue-400 border border-blue-500/30 hover:bg-blue-600/30 rounded-xl text-xs font-black transition">Walk-in Bill</button>
+                  </div>
                   <button type="button" onClick={() => setPosBill({...posBill, items: [...posBill.items, { name: '', price: '', qty: 1 }]})} className="px-3 py-1.5 bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 rounded-xl text-xs font-bold">+ Add Item</button>
                 </div>
                 {posBill.items.map((item, idx) => (
