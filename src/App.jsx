@@ -436,7 +436,7 @@ export default function App() {
   const [editingDeviceId, setEditingDeviceId] = useState(null);
 
   const [selectedCategory, setSelectedCategory] = useState(categories[0] || 'Mobile Parts');
-  const [newPart, setNewPart] = useState({ name: '', stock: '', costPrice: '', markupPercent: '', price: '', minStock: '5', supplierName: '', supplierPhone: '', purchaseDate: getLocalDateKey() });
+  const [newPart, setNewPart] = useState({ name: '', stock: '', costPrice: '', markupPercent: '', price: '', minStock: '5', supplierName: '', supplierPhone: '', purchaseDate: getLocalDateKey(), notes: '' });
   const [editingPartId, setEditingPartId] = useState(null);
   const [newStockPurchase, setNewStockPurchase] = useState({ partId: '', partName: '', category: categories[0] || 'Mobile Parts', supplierName: '', supplierPhone: '', qty: '', unitCost: '', date: getLocalDateKey(), invoiceNo: '', notes: '', paymentMethod: 'Cash' });
   
@@ -1035,16 +1035,16 @@ const supplierDueList = Object.values(expenses.filter(e => Number(e.dueAmount ||
     const qty = Number(newPart.stock || 0), cost = Number(newPart.costPrice || 0), markupPercent = Number(newPart.markupPercent || 0);
     const sellingPrice = Math.round((cost * (1 + markupPercent / 100)) * 100) / 100;
     if (editingPartId) {
-      setInventory(inventory.map(item => item.id === editingPartId ? { ...item, category: selectedCategory, name: newPart.name || item.name, stock: qty, costPrice: cost, markupPercent, price: sellingPrice, minStock: Number(newPart.minStock || 5), supplierName: newPart.supplierName || '', supplierPhone: newPart.supplierPhone || '', lastPurchaseDate: newPart.purchaseDate || todayKey } : item));
+      setInventory(inventory.map(item => item.id === editingPartId ? { ...item, category: selectedCategory, name: newPart.name || item.name, stock: qty, costPrice: cost, markupPercent, price: sellingPrice, minStock: Number(newPart.minStock || 5), supplierName: newPart.supplierName || '', supplierPhone: newPart.supplierPhone || '', notes: newPart.notes || item.notes || '', lastPurchaseDate: newPart.purchaseDate || todayKey } : item));
       setEditingPartId(null);
-      setNewPart({ name: '', stock: '', costPrice: '', markupPercent: '', price: '', minStock: '5', supplierName: '', supplierPhone: '', purchaseDate: todayKey });
+      setNewPart({ name: '', stock: '', costPrice: '', markupPercent: '', price: '', minStock: '5', supplierName: '', supplierPhone: '', purchaseDate: todayKey, notes: '' });
       alert('Stock item updated successfully!'); return;
     }
     const id = Date.now();
     const itemName = newPart.name || 'Unnamed Part';
-    setInventory([...inventory, { id, category: selectedCategory, name: itemName, stock: qty, costPrice: cost, markupPercent, price: sellingPrice, minStock: Number(newPart.minStock || 5), supplierName: newPart.supplierName || '', supplierPhone: newPart.supplierPhone || '', lastPurchaseDate: newPart.purchaseDate || todayKey }]);
-    if (qty > 0 && cost > 0) setStockPurchases([{ id: `SP-${Date.now()}`, partId: id, partName: itemName, supplierName: newPart.supplierName || 'N/A', supplierPhone: newPart.supplierPhone || '', qty, unitCost: cost, total: qty * cost, date: newPart.purchaseDate || todayKey, invoiceNo: '', notes: 'Initial stock entry' }, ...stockPurchases]);
-    setNewPart({ name: '', stock: '', costPrice: '', markupPercent: '', price: '', minStock: '5', supplierName: '', supplierPhone: '', purchaseDate: todayKey });
+    setInventory([...inventory, { id, category: selectedCategory, name: itemName, stock: qty, costPrice: cost, markupPercent, price: sellingPrice, minStock: Number(newPart.minStock || 5), supplierName: newPart.supplierName || '', supplierPhone: newPart.supplierPhone || '', notes: newPart.notes || '', lastPurchaseDate: newPart.purchaseDate || todayKey }]);
+    if (qty > 0 && cost > 0) setStockPurchases([{ id: `SP-${Date.now()}`, partId: id, partName: itemName, supplierName: newPart.supplierName || 'N/A', supplierPhone: newPart.supplierPhone || '', qty, unitCost: cost, total: qty * cost, date: newPart.purchaseDate || todayKey, invoiceNo: '', notes: newPart.notes || 'Initial stock entry' }, ...stockPurchases]);
+    setNewPart({ name: '', stock: '', costPrice: '', markupPercent: '', price: '', minStock: '5', supplierName: '', supplierPhone: '', purchaseDate: todayKey, notes: '' });
   };
 
   const handleAddStockPurchase = (e) => {
@@ -2380,6 +2380,13 @@ _Thank you for choosing ${shopInfo.name}!_`;
                 <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-black">Auto</span>
               </div>
               <input type="number" placeholder="Min Stock Warning" value={newPart.minStock} onChange={e => setNewPart({...newPart, minStock: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+              <textarea
+                rows="3"
+                placeholder="Notes / Remarks (optional) — e.g. quality, supplier detail, location, warranty..."
+                value={newPart.notes}
+                onChange={e => setNewPart({...newPart, notes: e.target.value})}
+                className={`md:col-span-3 p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none resize-y`}
+              />
 
               <button type="submit" className="md:col-span-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-blue-600/35">
                 {editingPartId ? 'Update Part Details' : 'Add New Part to Stock'}
