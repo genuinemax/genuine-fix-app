@@ -145,7 +145,7 @@ function SupplierAutocomplete({ value, onChange, onSelect, suppliers, placeholde
 }
 
 
-function PaymentMethodPicker({ value, onChange, label = 'Payment Method' }) {
+function PaymentMethodPicker({ value, onChange, label = 'Payment Method', t }) {
   const methods = [
     { value: 'Cash', label: 'Cash', icon: '💵' },
     { value: 'eSewa', label: 'eSewa', icon: '📱' },
@@ -156,14 +156,14 @@ function PaymentMethodPicker({ value, onChange, label = 'Payment Method' }) {
   ];
   return (
     <div className="md:col-span-3 space-y-2">
-      <div className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">{label}</div>
+      <div className={`text-xs font-black uppercase tracking-[0.16em] ${t?.textMuted || 'text-slate-400'}`}>{label}</div>
       <div className="flex flex-wrap gap-2">
         {methods.map(method => (
           <button
             key={method.value}
             type="button"
             onClick={() => onChange(method.value)}
-            className={`px-3 py-2 rounded-xl border text-xs font-black transition ${value === method.value ? 'bg-blue-600 text-white border-blue-500 shadow-md shadow-blue-600/20' : 'bg-transparent border-slate-700 text-slate-400 hover:text-white hover:border-slate-500'}`}
+            className={`px-3 py-2 rounded-xl border text-xs font-black transition ${value === method.value ? 'bg-blue-600 text-white border-blue-500 shadow-md shadow-blue-600/20' : `${t?.cardSecondary || 'bg-transparent'} ${t?.border || 'border-slate-700'} ${t?.textMuted || 'text-slate-400'} hover:text-blue-400 hover:border-blue-500/50`}`}
           >
             <span className="mr-1.5">{method.icon}</span>{method.label}
           </button>
@@ -2046,7 +2046,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
               )}
 
               {newExpense.paymentStatus !== 'Unpaid' && (
-                <PaymentMethodPicker value={newExpense.paymentMethod} onChange={method => setNewExpense({...newExpense, paymentMethod: method})} />
+                <PaymentMethodPicker t={t} value={newExpense.paymentMethod} onChange={method => setNewExpense({...newExpense, paymentMethod: method})} />
               )}
 
               <SupplierAutocomplete
@@ -2288,7 +2288,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
             <div className="space-y-3">
               <input type="number" placeholder="Payment Amount (NPR)" value={payForm.amount} onChange={e => setPayForm({...payForm, amount: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} autoFocus />
               <input type="date" value={payForm.date} onChange={e => setPayForm({...payForm, date: e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-              <PaymentMethodPicker value={payForm.paymentMethod} onChange={method => setPayForm({...payForm, paymentMethod: method})} />
+              <PaymentMethodPicker t={t} value={payForm.paymentMethod} onChange={method => setPayForm({...payForm, paymentMethod: method})} />
             </div>
             <button onClick={() => addExpensePayment(payingExpense.id, payForm.amount, payForm.date, payForm.paymentMethod)} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-emerald-600/30">
               Confirm Payment
