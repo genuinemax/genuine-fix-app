@@ -27,11 +27,12 @@ jobs:
 
           p = Path('src/App.jsx')
           s = p.read_text()
+          original = s
 
           # Remove the old Walk-in buttons if they were injected into the bill-items area.
           s = re.sub(r'\s*<div id="walk-in-bill-actions"[\s\S]*?</div>\s*', '\n', s, count=1)
 
-          # Add a manual/non-stock mode to the FIRST item selector after the Bill Items heading.
+          # Add a manual/non-stock mode to the first item selector after the Bill Items heading.
           if 'item.nonStock' not in s:
               heading_pos = s.find('Bill Items & Parts Selection')
               if heading_pos < 0:
@@ -80,21 +81,23 @@ jobs:
             </button>'''
               s = s[:select_start] + new_select + s[select_end:]
 
-          # Non-stock lines have no inventory record, so don't reject them as missing stock.
-          s, changed = re.subn(
-              r'if\s*\(!invItem\s*\|\|\s*invItem\.stock\s*<\s*item\.qty\)',
-              'if (invItem && invItem.stock < item.qty)',
-              s,
-              count=1
-          )
-          if changed == 0:
-              raise SystemExit('POS stock validation pattern not found')
+          # Allow an item with no inventory record to be billed. Existing stock items
+          # still use the normal stock-quantity check.
+          if '!invItem ||' in s:
+              s = s.replace('!invItem ||', 'invItem &&', 1)
+          else:
+              # Older revisions may format the same condition differently. Try a
+              # targeted regex, but do not fail the build if the validation is already fixed.
+              s, _ = re.subn(r'!invItem\s*\|\|', 'invItem &&', s, count=1)
 
-          # Make new rows explicit, while preserving old rows that don't have the flag.
+          # Make new rows explicit, while preserving existing rows.
           s = s.replace("items: [{ name: '', price: '', qty: 1 }]", "items: [{ name: '', price: '', qty: 1, nonStock: false }]", 1)
           s = s.replace("items: [...posBill.items, { name: '', price: '', qty: 1 }]", "items: [...posBill.items, { name: '', price: '', qty: 1, nonStock: false }]", 1)
 
-          p.write_text(s)
+          if s != original:
+              p.write_text(s)
+          else:
+              print('Non-stock POS patch already applied')
           PY
 
       - name: Commit non-stock POS patch
