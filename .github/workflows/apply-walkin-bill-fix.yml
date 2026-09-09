@@ -9,13 +9,13 @@ permissions:
 
 jobs:
   patch:
-    if: github.event.head_commit.message != 'feat: add walk-in customer billing to POS'
+    if: github.event.head_commit.message != 'feat: add walk-in actions to bill items'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Patch POS bill UI
+      - name: Add Walk-in actions to Bill Items section
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -23,36 +23,15 @@ jobs:
           p = Path('src/App.jsx')
           s = p.read_text()
 
-          marker = "activeTab === 'pos'"
-          start = s.find(marker)
-          if start < 0:
-              raise SystemExit('POS section not found')
-          end = s.find("activeTab ===", start + len(marker))
-          if end < 0:
-              end = len(s)
-          pos = s[start:end]
-
-          customer_pattern = re.compile(r'''(?P<indent>\s*)<CustomerAutocomplete\s+value=\{posBill\.customerName\}[\s\S]*?className=\{`w-full p-3 \$\{t\.inputBg\} border rounded-2xl text-sm focus:outline-none`\}\s*/>''')
-          m = customer_pattern.search(pos)
-          if not m:
-              raise SystemExit('POS customer autocomplete not found')
-          if 'Use Walk-in Customer' not in pos:
-              block = m.group(0)
-              indent = m.group('indent')
-              wrapped = f'''{indent}<div className="flex gap-2">\n{indent}  <div className="flex-1">\n{block}\n{indent}  </div>\n{indent}  <button type="button" onClick={{() => setPosBill(prev => ({{ ...prev, customerName: 'Walk-in Customer', phone: '' }}))}} className="shrink-0 px-4 rounded-2xl bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-600/30 text-xs font-black transition" title="Use Walk-in Customer">Walk-in</button>\n{indent}</div>'''
-              pos = pos[:m.start()] + wrapped + pos[m.end():]
-
-          if 'Walk-in Bill' not in pos:
-              submit_pattern = re.compile(r'''(?P<indent>\s*)<button\s+type="submit"\s+className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl p-3\.5 transition shadow-lg shadow-blue-600/35">\s*Complete POS Bill & Deduct Stock\s*</button>''')
-              sm = submit_pattern.search(pos)
-              if not sm:
-                  raise SystemExit('POS submit button not found')
-              ind = sm.group('indent')
-              replacement = f'''{ind}<div className="flex gap-3">\n{ind}  <button type="button" onClick={{() => setPosBill({{ customerName: 'Walk-in Customer', phone: '', items: [{{ name: '', price: '', qty: 1 }}], paidAmount: '', warrantyMonths: '' }})}} className="px-5 bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-600/30 font-bold rounded-2xl p-3.5 transition">Walk-in Bill</button>\n{ind}  <button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-blue-600/35">Complete POS Bill & Deduct Stock</button>\n{ind}</div>'''
-              pos = pos[:sm.start()] + replacement + pos[sm.end():]
-
-          s = s[:start] + pos + s[end:]
-          p.write_text(s)
+          heading = '<h3 className={`text-sm font-bold uppercase tracking-wider ${t.textMuted}`}>Bill Items & Parts Selection</h3>'
+          if 'id="walk-in-bill-actions"' in s:
+              print('Walk-in actions already present')
+          elif heading not in s:
+              raise SystemExit('Bill Items & Parts Selection heading not found')
+          else:
+              actions = '''<div id="walk-in-bill-actions" className="flex flex-wrap items-center gap-2 mt-2 mb-3">\n                    <button type="button" onClick={() => setPosBill(prev => ({ ...prev, customerName: 'Walk-in Customer', phone: '' }))} className="px-4 py-2 bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-600/30 rounded-xl text-xs font-black transition">Walk-in Customer</button>\n                    <button type="button" onClick={() => setPosBill(prev => ({ ...prev, customerName: 'Walk-in Customer', phone: '', paidAmount: '' }))} className="px-4 py-2 bg-blue-600/20 text-blue-400 border border-blue-500/30 hover:bg-blue-600/30 rounded-xl text-xs font-black transition">Walk-in Bill</button>\n                  </div>'''
+              s = s.replace(heading, heading + '\n' + actions, 1)
+              p.write_text(s)
           PY
 
       - name: Commit app fix and remove temporary workflow
@@ -62,5 +41,5 @@ jobs:
           rm -f .github/workflows/apply-walkin-bill-fix.yml
           git add src/App.jsx .github/workflows/apply-walkin-bill-fix.yml
           git diff --cached --quiet && exit 0
-          git commit -m "feat: add walk-in customer billing to POS"
+          git commit -m "feat: add walk-in actions to bill items"
           git push
