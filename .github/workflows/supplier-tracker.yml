@@ -24,8 +24,6 @@ jobs:
         run: python scripts/update_supplier_tracker.py
       - name: Apply percentage based parts selling price
         run: python scripts/add_parts_markup.py
-      - name: Remove payment method GUI only
-        run: python scripts/remove_payment_method_gui.py
       - name: Commit application update
         run: |
           git config user.name "github-actions[bot]"
