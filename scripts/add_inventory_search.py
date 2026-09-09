@@ -143,7 +143,9 @@ pos_replacement = r''') : (
                   )'''
 text, n = pos_select.subn(pos_replacement, text, count=1)
 if n != 1:
-    raise SystemExit(f'POS select replacement count={n}')
+    # The POS search may already be applied by another workflow running on the same commit.
+    if not ('function InventoryAutocomplete(' in text and 'placeholder="Search stock item or accessory..."' in text):
+        raise SystemExit(f'POS select replacement count={n}')
 
 # 5) Add current-stock search and use filteredInventory in the inventory table.
 inv_section_start = text.find('        {/* PARTS STOCK / INVENTORY TAB */}')
