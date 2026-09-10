@@ -15,8 +15,9 @@
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+    <!-- Jobsheet edit bridge must run before React so pending edits are applied before useState reads localStorage. -->
     <script type="module" src="/src/pro-business-tools.js"></script>
+    <script type="module" src="/src/main.jsx"></script>
     <script type="module" src="/src/pro-history-tools.js"></script>
     <script type="module" src="/src/final-business-upgrades.js"></script>
     <script type="module" src="/src/invoice-payment-display.js"></script>
