@@ -7,9 +7,6 @@ import './stockSearch.js'
 // React's stale in-memory snapshot during the automatic reload.
 import './pro-business-tools.js'
 import './job-sheet-issues.js'
-// Enhance the EXISTING Job Sheet History Action cell with View/Edit/Print/Delete.
-// This runs after the React table is rendered and replaces the old Delete-only action area.
-import './pro-history-tools.js'
 import App from './App.jsx'
 
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
