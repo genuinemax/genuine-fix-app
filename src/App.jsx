@@ -29,6 +29,7 @@ import {
 
 
 
+
 const normalizePartsStockNotes = (value) => {
   const text = String(value || '').replace(/\r\n?/g, '\n');
   const lines = text.split('\n');
@@ -2166,9 +2167,20 @@ _Thank you for choosing ${shopInfo.name}!_`;
                         <td className={`p-4 ${t.textMuted}`}>{job.dateTime || '—'}</td>
                         <td className={`p-4 ${t.textMuted}`}>{job.status || 'Pending'}</td>
                         <td className="p-4 text-right">
-                          <button type="button" onClick={() => deleteJobSheet(job.id)} className="px-3 py-2 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 rounded-xl font-bold inline-flex items-center gap-1">
-                            <Trash2 size={15}/> Delete
-                          </button>
+                          <div className="flex flex-wrap justify-end items-center gap-1.5">
+                            <button type="button" onClick={() => setSelectedInvoice(job)} className="px-3 py-1.5 bg-blue-600/15 text-blue-400 hover:bg-blue-600/25 rounded-xl font-bold inline-flex items-center gap-1.5">
+                              <Eye size={14}/> View
+                            </button>
+                            <button type="button" onClick={() => window.GenuineFixEditRecord?.('repairs', job.id)} className="px-3 py-1.5 bg-amber-500/15 text-amber-400 hover:bg-amber-500/25 rounded-xl font-bold inline-flex items-center gap-1.5">
+                              <Pencil size={14}/> Edit
+                            </button>
+                            <button type="button" onClick={() => printInvoice(job)} className="px-3 py-1.5 bg-violet-500/15 text-violet-400 hover:bg-violet-500/25 rounded-xl font-bold inline-flex items-center gap-1.5">
+                              <Printer size={14}/> Print
+                            </button>
+                            <button type="button" onClick={() => deleteJobSheet(job.id)} className="px-3 py-1.5 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 rounded-xl font-bold inline-flex items-center gap-1.5">
+                              <Trash2 size={14}/> Delete
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
