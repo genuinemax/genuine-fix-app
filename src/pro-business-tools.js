@@ -58,8 +58,15 @@
       if(r.partyName!==undefined)r.supplierName=r.partyName; if(r.partyPhone!==undefined)r.supplierPhone=r.partyPhone;
     }
     arr[index]=r; write(K[current.type],arr);
-    window.dispatchEvent(new StorageEvent('storage',{key:K[current.type],newValue:JSON.stringify(arr)}));
-    close(); window.location.reload();
+
+    // Keep React state and localStorage in sync in the SAME browser tab.
+    // A native StorageEvent does not update the document that changed localStorage,
+    // so use a custom event that App.jsx explicitly listens for.
+    window.dispatchEvent(new CustomEvent('gf-data-updated', {
+      detail: { key: K[current.type], value: arr }
+    }));
+
+    close();
   }
   modal.querySelector('[data-close]').onclick=close; modal.querySelector('[data-cancel]').onclick=close; modal.querySelector('[data-save]').onclick=saveCurrent; modal.addEventListener('click',e=>{if(e.target===modal)close();});
 
