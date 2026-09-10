@@ -18,7 +18,8 @@
 
   function openEditor(type,id){
     const arr=read(K[type]); const index=arr.findIndex(r=>String(r.id||'')===String(id)); const r=arr[index];
-    if(index<0||!r)return; current={type,id:String(r.id||id)};
+    if(index<0||!r)return;
+    current={type,id:String(r.id||id)};
     if(type==='repairs'){
       modal.querySelector('[data-title]').textContent=`Edit Invoice / Jobsheet ${r.id||''}`;
       form.innerHTML=[field('Customer name','customerName',r.customerName),field('Phone','phone',r.phone),field('Device / model','model',r.model),field('Issue / details','issue',r.issue),field('Total amount','totalCost',r.totalCost,'number'),field('Paid amount','paidAmount',r.paidAmount,'number'),select('Status','status',r.status||'In Progress',['Received','In Progress','Ready','Delivered','Cancelled']),field('Warranty (months)','warrantyMonths',r.warrantyMonths),field('Bill type','billType',r.billType||'Repair'),field('Date / time','dateTime',r.dateTime),field('Citizenship no.','citizenshipNo',r.citizenshipNo),field('Device type','deviceType',r.deviceType),field('Remarks / issue','issueText',r.issue||'','text',true)].join('');
@@ -35,6 +36,11 @@
     }
     modal.style.display='block';
   }
+
+  // Expose the same stable-id editor to the History module. This avoids relying on
+  // a matching table row, which is not present in the card-based Job Sheet History.
+  window.GenuineFixEditRecord = openEditor;
+
   function close(){modal.style.display='none';current=null;form.innerHTML='';}
   function saveCurrent(){
     if(!current)return;
