@@ -37,6 +37,7 @@ import {
 
 
 
+
 const normalizePartsStockNotes = (value) => {
   const text = String(value || '').replace(/\r\n?/g, '\n');
   const lines = text.split('\n');
@@ -2218,12 +2219,24 @@ _Thank you for choosing ${shopInfo.name}!_`;
                           <button type="button" onClick={() => updateJobSheetIssue(index, { type: 'preset', name: '' })} className="px-3 rounded-xl bg-slate-700/60 text-slate-300 text-xs font-bold">List</button>
                         </div>
                       ) : (
-                        <select value={item.name} onChange={e => updateJobSheetIssue(index, e.target.value === '__manual__' ? { type: 'manual', name: '' } : { type: 'preset', name: e.target.value })} className={`p-3 ${t.inputBg} border rounded-xl text-sm focus:outline-none`}>
-                          <option value="">Select Issue...</option>
-                          {GF_JOB_ISSUE_PRESETS.map(issue => <option key={issue} value={issue}>{issue}</option>)}
-                          <option value="__manual__">Manual Issue</option>
-                        </select>
-                      )}
+                    <InventoryAutocomplete
+                      value={item.name}
+                      inventory={inventory}
+                      placeholder="Search stock item or accessory..."
+                      onChange={value => {
+                        const nextItems = [...posBill.items];
+                        nextItems[idx].name = value;
+                        setPosBill({ ...posBill, items: nextItems });
+                      }}
+                      onSelect={invItem => {
+                        const nextItems = [...posBill.items];
+                        nextItems[idx].name = invItem.name;
+                        nextItems[idx].price = invItem.price;
+                        setPosBill({ ...posBill, items: nextItems });
+                      }}
+                      className={`w-full p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}
+                    />
+                  )}
                       <input type="number" min="0" step="1" placeholder="Amount (NPR)" value={item.amount} onChange={e => updateJobSheetIssue(index, { amount: e.target.value })} className={`p-3 ${t.inputBg} border rounded-xl text-sm focus:outline-none`} />
                       <button type="button" onClick={() => removeJobSheetIssue(index)} className="p-3 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 rounded-xl" title="Remove issue"><X size={16}/></button>
                     </div>
@@ -2239,13 +2252,11 @@ _Thank you for choosing ${shopInfo.name}!_`;
                   </div>
                   <div>
                     <label className={`text-xs font-black ${t.textMuted}`}>Discount</label>
-                    <div className="flex gap-2 mt-1">
-                      <select value={newRepair.discountType} onChange={e => setNewRepair({...newRepair, discountType: e.target.value})} className={`w-24 p-3 ${t.inputBg} border rounded-xl text-sm focus:outline-none`}>
-                        <option value="amount">NPR</option>
-                        <option value="percent">%</option>
-                      </select>
-                      <input type="number" min="0" step="1" placeholder="Discount" value={newRepair.discountValue} onChange={e => setNewRepair({...newRepair, discountValue: e.target.value})} className={`flex-1 p-3 ${t.inputBg} border rounded-xl text-sm focus:outline-none`} />
+                    <div className="grid grid-cols-2 gap-2 mt-1 mb-2">
+                      <button type="button" onClick={() => setNewRepair(prev => ({ ...prev, discountType: 'amount' }))} className={`p-2.5 rounded-xl border text-sm font-black transition ${newRepair.discountType === 'amount' ? 'bg-blue-600 text-white border-blue-500' : `${t.inputBg} ${t.border} ${t.textMuted}`}`}>NPR</button>
+                      <button type="button" onClick={() => setNewRepair(prev => ({ ...prev, discountType: 'percent', discountValue: Math.min(100, Number(prev.discountValue || 0)) }))} className={`p-2.5 rounded-xl border text-sm font-black transition ${newRepair.discountType === 'percent' ? 'bg-blue-600 text-white border-blue-500' : `${t.inputBg} ${t.border} ${t.textMuted}`}`}>%</button>
                     </div>
+                    <input type="number" min="0" max={newRepair.discountType === 'percent' ? 100 : undefined} step="0.01" placeholder={newRepair.discountType === 'percent' ? 'Discount % (0–100)' : 'Discount amount (NPR)'} value={newRepair.discountValue} onChange={e => setNewRepair({...newRepair, discountValue: newRepair.discountType === 'percent' ? Math.min(100, Math.max(0, Number(e.target.value || 0))) : e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-xl text-sm focus:outline-none`} />
                   </div>
                   <div>
                     <label className="text-xs font-black text-emerald-400">Grand Total</label>
@@ -2308,7 +2319,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
                             <button type="button" onClick={() => setSelectedInvoice(job)} className="px-3 py-1.5 bg-blue-600/15 text-blue-400 hover:bg-blue-600/25 rounded-xl font-bold inline-flex items-center gap-1.5">
                               <Eye size={14}/> View
                             </button>
-                            <button type="button" onClick={() => window.GenuineFixEditRecord?.('repairs', job.id)} className="px-3 py-1.5 bg-amber-500/15 text-amber-400 hover:bg-amber-500/25 rounded-xl font-bold inline-flex items-center gap-1.5">
+                            <button type="button" onClick={() => window.GenuineFixEditRecord?.('repairs', job.id)} className="px-3 py-1.5 bg-amber-500/15 text-amber-400 hover:bg-amber-600/25 rounded-xl font-bold inline-flex items-center gap-1.5">
                               <Pencil size={14}/> Edit
                             </button>
                             <button type="button" onClick={() => printInvoice(job)} className="px-3 py-1.5 bg-violet-500/15 text-violet-400 hover:bg-violet-500/25 rounded-xl font-bold inline-flex items-center gap-1.5">
