@@ -8,8 +8,6 @@
       localStorage.setItem('gf_repairs', pending);
       localStorage.removeItem('gf_pending_repairs_edit');
     }
-    // A previous version could queue two navigations from duplicate script listeners.
-    // This marker is intentionally cleared only on a fresh page load.
     sessionStorage.removeItem('gf_jobsheet_reload_lock');
   } catch {}
 
@@ -24,7 +22,7 @@
   document.body.appendChild(modal);
   const form=modal.querySelector('[data-form]'); let current=null;
   const field=(label,key,value,type='text',full=false)=>`<label class="${full?'full':''}">${label}<input data-k="${key}" type="${type}" value="${esc(value)}"></label>`;
-  const select=(label,key,value,opts)=>`<label>${label}<select data-k="${key}">${opts.map(o=>`<option ${String(o)===String(value)?'selected':''}>${esc(o)}</option>`).join('')}</select></label>`;
+  const select=(label,key,value,opts)=>`<label><span>${label}</span><select data-k="${key}">${opts.map(o=>`<option ${String(o)===String(value)?'selected':''}>${esc(o)}</option>`).join('')}</select></label>`;
   function openEditor(type,id){
     const arr=read(K[type]); const index=arr.findIndex(r=>String(r.id||'')===String(id)); const r=arr[index]; if(index<0||!r)return;
     current={type,id:String(r.id||id)};
@@ -52,7 +50,6 @@
     arr[index]=r; write(K[current.type],arr);
     if(current.type==='repairs') localStorage.setItem('gf_pending_repairs_edit',JSON.stringify(arr));
     close();
-    // Never allow two listeners from a stale/cached bundle to navigate twice.
     try { if(sessionStorage.getItem('gf_jobsheet_reload_lock')==='1') return; sessionStorage.setItem('gf_jobsheet_reload_lock','1'); } catch {}
     window.location.reload();
   }
@@ -63,15 +60,20 @@
     return headers.some(h=>h.includes('job id'));
   }
 
-  // Remove UI left behind by older DOM-based history tools. The current React
-  // Job Sheet History owns its actions and should never receive extra cells/spans.
+  // Job Sheet History is React-owned. Keep only its canonical Delete action
+  // and strip any legacy/injected duplicate Delete controls.
   function cleanJobSheetHistoryRows(){
     document.querySelectorAll('table').forEach(table=>{
       if(!isJobSheetHistoryTable(table)) return;
       table.querySelectorAll('tbody tr').forEach(row=>{
         row.querySelectorAll('.gf-history-inline-actions').forEach(el=>el.remove());
-        row.querySelectorAll('td').forEach(cell=>{
-          if(cell.querySelector('.gf-inline-edit-btn')) cell.remove();
+        row.querySelectorAll('.gf-inline-edit-btn').forEach(btn=>btn.closest('td')?.remove());
+
+        const deleteButtons=[...row.querySelectorAll('button')].filter(btn=>/\bdelete\b/i.test((btn.innerText||btn.textContent||'').trim()) && btn.dataset.gfNativeJobsheetDelete!=='1');
+        deleteButtons.forEach(btn=>{
+          const cell=btn.closest('td');
+          btn.remove();
+          if(cell && !cell.textContent.trim() && !cell.querySelector('button,svg,input,select,a')) cell.remove();
         });
       });
     });
