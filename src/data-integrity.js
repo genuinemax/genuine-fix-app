@@ -61,7 +61,6 @@
       let actions = cell.querySelector('.gf-data-actions');
       if (!actions) { actions = document.createElement('div'); actions.className = 'gf-data-actions'; cell.appendChild(actions); }
 
-      // Move an existing inline Edit button into the action group when present.
       const edit = row.querySelector('.gf-inline-edit-btn');
       if (edit && !actions.contains(edit)) actions.appendChild(edit);
 
@@ -85,34 +84,50 @@
     });
   }
 
-  // Stop fast double-click / double-submit from creating two records.
+  // Protect native forms from accidental double-submit without touching the click phase.
+  // Disabling a submit button during click capture can prevent the browser from dispatching submit.
   document.addEventListener('submit', (e) => {
     const form = e.target;
     if (!(form instanceof HTMLFormElement)) return;
     if (form.dataset.gfSubmitLock === '1') {
-      e.preventDefault(); e.stopImmediatePropagation();
+      e.preventDefault();
+      e.stopImmediatePropagation();
       return;
     }
     form.dataset.gfSubmitLock = '1';
     const buttons = [...form.querySelectorAll('button[type="submit"],button:not([type])')];
-    buttons.forEach(b => { b.dataset.gfOriginalDisabled = b.disabled ? '1' : '0'; b.disabled = true; });
+    buttons.forEach(b => {
+      b.dataset.gfOriginalDisabled = b.disabled ? '1' : '0';
+      b.disabled = true;
+    });
     setTimeout(() => {
       form.dataset.gfSubmitLock = '0';
-      buttons.forEach(b => { if (b.dataset.gfOriginalDisabled !== '1') b.disabled = false; });
+      buttons.forEach(b => {
+        if (b.dataset.gfOriginalDisabled !== '1') b.disabled = false;
+      });
     }, 1800);
   }, true);
 
-  // Same protection for custom/direct-sale buttons that are type="button".
+  // Lock only standalone custom action buttons; never intercept native form submitters.
   document.addEventListener('click', (e) => {
     const b = e.target.closest?.('button');
     if (!b) return;
+    if (b.type === 'submit' || b.closest('form')) return;
     const label = (b.textContent || '').trim().toLowerCase();
     if (!/complete sale|complete pos bill|save bill|save purchase|save expense|generate bill/.test(label)) return;
-    if (b.dataset.gfClickLock === '1') { e.preventDefault(); e.stopImmediatePropagation(); return; }
+    if (b.dataset.gfClickLock === '1') {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      return;
+    }
     b.dataset.gfClickLock = '1';
     b.dataset.gfOriginalText = b.textContent;
     b.disabled = true;
-    setTimeout(() => { b.dataset.gfClickLock = '0'; b.disabled = false; b.textContent = b.dataset.gfOriginalText || b.textContent; }, 1800);
+    setTimeout(() => {
+      b.dataset.gfClickLock = '0';
+      b.disabled = false;
+      b.textContent = b.dataset.gfOriginalText || b.textContent;
+    }, 1800);
   }, true);
 
   const observer = new MutationObserver(addDeleteButtons);
