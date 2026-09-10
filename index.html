@@ -15,9 +15,8 @@
   </head>
   <body>
     <div id="root"></div>
-    <!-- pro-business-tools.js is imported by main.jsx before App.jsx. Do not load it twice. -->
+    <!-- All app modules are loaded from main.jsx. Keep pro-history-tools out of here to prevent double initialization. -->
     <script type="module" src="/src/main.jsx"></script>
-    <script type="module" src="/src/pro-history-tools.js"></script>
     <script type="module" src="/src/final-business-upgrades.js"></script>
     <script type="module" src="/src/invoice-payment-display.js"></script>
     <script type="module" src="/src/data-integrity.js"></script>
