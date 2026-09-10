@@ -1,6 +1,18 @@
 /* Genuine Fix — inline editing tools */
 (function () {
   const K = { repairs:'gf_repairs', expenses:'gf_expenses', inventory:'gf_inventory', devices:'gf_devices_stock' };
+
+  // Apply a Jobsheet edit BEFORE React initializes its useState from localStorage.
+  // This fixes the race where React's in-memory repairs array could overwrite an
+  // edit during the automatic page refresh.
+  try {
+    const pending = localStorage.getItem('gf_pending_repairs_edit');
+    if (pending) {
+      localStorage.setItem('gf_repairs', pending);
+      localStorage.removeItem('gf_pending_repairs_edit');
+    }
+  } catch {}
+
   const read = (k) => { try { return JSON.parse(localStorage.getItem(k) || '[]'); } catch { return []; } };
   const write = (k,v) => localStorage.setItem(k, JSON.stringify(v));
   const esc = s => String(s ?? '').replace(/[&<>\"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]));
@@ -37,8 +49,6 @@
     modal.style.display='block';
   }
 
-  // Expose the same stable-id editor to the History module. This avoids relying on
-  // a matching table row, which is not present in the card-based Job Sheet History.
   window.GenuineFixEditRecord = openEditor;
 
   function close(){modal.style.display='none';current=null;form.innerHTML='';}
@@ -59,14 +69,14 @@
     }
     arr[index]=r; write(K[current.type],arr);
 
-    // Keep React state and localStorage in sync in the SAME browser tab.
-    // A native StorageEvent does not update the document that changed localStorage,
-    // so use a custom event that App.jsx explicitly listens for.
-    window.dispatchEvent(new CustomEvent('gf-data-updated', {
-      detail: { key: K[current.type], value: arr }
-    }));
+    if(current.type==='repairs'){
+      // React initializes repairs from localStorage on the next load. Keep the
+      // edited snapshot in a dedicated hand-off key so it wins any startup race.
+      localStorage.setItem('gf_pending_repairs_edit', JSON.stringify(arr));
+    }
 
     close();
+    window.location.reload();
   }
   modal.querySelector('[data-close]').onclick=close; modal.querySelector('[data-cancel]').onclick=close; modal.querySelector('[data-save]').onclick=saveCurrent; modal.addEventListener('click',e=>{if(e.target===modal)close();});
 
