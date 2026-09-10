@@ -57,8 +57,6 @@
   }
 
   function edit(info) {
-    // Job Sheet History is card-based, so it cannot reliably find the table-row
-    // Edit button. Call the shared stable-ID editor directly instead.
     if (info.type === 'repairs' && typeof window.GenuineFixEditRecord === 'function') {
       window.GenuineFixEditRecord('repairs', info.record.id);
       return;
@@ -70,15 +68,35 @@
     alert('Open the record in its main list to edit it.');
   }
 
-  function remove(info) {
+  function remove(info, button) {
+    if (button?.dataset.gfDeleteBusy === '1') return;
+    if (button) button.dataset.gfDeleteBusy = '1';
     const r=info.record;
     const label=r.id||r.customerName||r.partyName||r.model||'this record';
-    if(!window.confirm(`Delete ${label}?\n\nThis will permanently remove the history record from this device/browser. Cloud sync will also receive the change.`)) return;
+    if(!window.confirm(`Delete ${label}?\n\nThis will permanently remove the history record from this device/browser. Cloud sync will also receive the change.`)) {
+      if (button) button.dataset.gfDeleteBusy = '0';
+      return;
+    }
     const latest=read(STORE[info.type]);
     const idx=latest.findIndex(x=>String(x.id||'')===String(r.id||''));
-    if(idx<0){alert('Record is already removed or changed.');return;}
-    latest.splice(idx,1);write(STORE[info.type],latest);
-    window.location.reload();
+    if(idx<0){alert('Record is already removed or changed.');if(button)button.dataset.gfDeleteBusy='0';return;}
+    latest.splice(idx,1);
+    write(STORE[info.type],latest);
+
+    // React initializes its repair state before the history button is clicked.
+    // Pass the exact post-delete snapshot through the same startup hand-off used
+    // by the Jobsheet editor so React cannot write the deleted row back on reload.
+    if (info.type === 'repairs') {
+      localStorage.setItem('gf_pending_repairs_edit', JSON.stringify(latest));
+    }
+
+    // Remove the card immediately; no extra reload is needed for the history UI.
+    const card = button?.closest('div.rounded-2xl');
+    if (card) {
+      card.style.transition='opacity .15s ease, transform .15s ease';
+      card.style.opacity='0'; card.style.transform='scale(.98)';
+      setTimeout(()=>card.remove(),160);
+    }
   }
 
   function printRecord(info) {
@@ -103,8 +121,8 @@
       if(!match)return;
       const info=locate(match[0]); if(!info)return;
       const actions=document.createElement('div');actions.className='gf-history-actions';
-      const make=(label,cls,fn)=>{const b=document.createElement('button');b.type='button';b.className=`gf-history-action ${cls||''}`;b.textContent=label;b.onclick=(e)=>{e.preventDefault();e.stopPropagation();fn()};actions.appendChild(b)};
-      make('View','',()=>showView(info)); make('Edit','',()=>edit(info)); make('Print','gf-history-print',()=>printRecord(info)); make('Delete','gf-history-danger',()=>remove(info));
+      const make=(label,cls,fn)=>{const b=document.createElement('button');b.type='button';b.className=`gf-history-action ${cls||''}`;b.textContent=label;b.onclick=(e)=>{e.preventDefault();e.stopPropagation();fn(b)};actions.appendChild(b)};
+      make('View','',()=>showView(info)); make('Edit','',()=>edit(info)); make('Print','gf-history-print',()=>printRecord(info)); make('Delete','gf-history-danger',(_,)=>remove(info, _));
       card.appendChild(actions);card.dataset.gfHistoryPro='1';
     });
   }
