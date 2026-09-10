@@ -70,8 +70,6 @@ const applyRemoteData = (remoteData) => {
   return true;
 };
 
-// App.jsx already saves business data to localStorage. Mirror those existing
-// writes to Firestore so no business-logic rewrite is needed.
 window.localStorage.setItem = (key, value) => {
   originalSetItem(key, value);
   if (SYNC_KEYS.includes(key) && syncReady && !applyingRemote) void pushLocalData();
@@ -95,7 +93,6 @@ onAuthStateChanged(auth, (user) => {
       const changed = applyRemoteData(snapshot.data());
       if (changed) {
         syncReady = false;
-        window.location.reload();
         return;
       }
     }
