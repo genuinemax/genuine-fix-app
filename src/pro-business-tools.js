@@ -57,7 +57,37 @@
     window.location.reload();
   }
   modal.querySelector('[data-close]').onclick=close;modal.querySelector('[data-cancel]').onclick=close;modal.querySelector('[data-save]').onclick=saveCurrent;modal.addEventListener('click',e=>{if(e.target===modal)close();});
+
+  function isJobSheetHistoryTable(table){
+    const headers=[...table.querySelectorAll('thead th')].map(th=>(th.innerText||th.textContent||'').replace(/\s+/g,' ').trim().toLowerCase());
+    return headers.some(h=>h.includes('job id'));
+  }
+
+  // Remove UI left behind by older DOM-based history tools. The current React
+  // Job Sheet History owns its actions and should never receive extra cells/spans.
+  function cleanJobSheetHistoryRows(){
+    document.querySelectorAll('table').forEach(table=>{
+      if(!isJobSheetHistoryTable(table)) return;
+      table.querySelectorAll('tbody tr').forEach(row=>{
+        row.querySelectorAll('.gf-history-inline-actions').forEach(el=>el.remove());
+        row.querySelectorAll('td').forEach(cell=>{
+          if(cell.querySelector('.gf-inline-edit-btn')) cell.remove();
+        });
+      });
+    });
+  }
+
+  function addButtons(){
+    document.querySelectorAll('table').forEach(table=>{
+      if(isJobSheetHistoryTable(table)) return;
+      table.querySelectorAll('tbody tr').forEach(row=>{
+        if(row.dataset.gfEditAdded==='1')return;const info=rowInfo(row);if(!info)return;const cell=document.createElement('td');cell.style.cssText='white-space:nowrap;padding:6px';const b=document.createElement('button');b.type='button';b.className='gf-inline-edit-btn';b.textContent='Edit';b.onclick=()=>openEditor(info.type,info.id);cell.appendChild(b);row.appendChild(cell);row.dataset.gfEditAdded='1';
+      });
+    });
+    cleanJobSheetHistoryRows();
+  }
+
   function rowInfo(row){const text=(row.innerText||row.textContent||'').replace(/\s+/g,' ').trim();for(const type of Object.keys(K)){const arr=read(K[type]);const hit=arr.find(r=>{const id=String(r.id||'');return id&&text.includes(id);});if(hit)return {type,id:String(hit.id)};}return null;}
-  function addButtons(){document.querySelectorAll('table tbody tr').forEach(row=>{if(row.dataset.gfEditAdded==='1')return;const info=rowInfo(row);if(!info)return;const cell=document.createElement('td');cell.style.cssText='white-space:nowrap;padding:6px';const b=document.createElement('button');b.type='button';b.className='gf-inline-edit-btn';b.textContent='Edit';b.onclick=()=>openEditor(info.type,info.id);cell.appendChild(b);row.appendChild(cell);row.dataset.gfEditAdded='1';});}
+
   const observer=new MutationObserver(addButtons);observer.observe(document.body,{childList:true,subtree:true});window.addEventListener('load',addButtons);setTimeout(addButtons,500);setTimeout(addButtons,1500);setInterval(addButtons,2500);
 })();
