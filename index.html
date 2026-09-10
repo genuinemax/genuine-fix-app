@@ -15,8 +15,7 @@
   </head>
   <body>
     <div id="root"></div>
-    <!-- Jobsheet edit bridge must run before React so pending edits are applied before useState reads localStorage. -->
-    <script type="module" src="/src/pro-business-tools.js"></script>
+    <!-- pro-business-tools.js is imported by main.jsx before App.jsx. Do not load it twice. -->
     <script type="module" src="/src/main.jsx"></script>
     <script type="module" src="/src/pro-history-tools.js"></script>
     <script type="module" src="/src/final-business-upgrades.js"></script>
