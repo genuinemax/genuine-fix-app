@@ -57,7 +57,12 @@
   }
 
   function edit(info) {
-    // Use the existing Pro inline editor when available.
+    // Job Sheet History is card-based, so it cannot reliably find the table-row
+    // Edit button. Call the shared stable-ID editor directly instead.
+    if (info.type === 'repairs' && typeof window.GenuineFixEditRecord === 'function') {
+      window.GenuineFixEditRecord('repairs', info.record.id);
+      return;
+    }
     const rows=[...document.querySelectorAll('table tbody tr')];
     const row=rows.find(x=>(x.innerText||'').includes(String(info.record.id||'')));
     const btn=row?.querySelector('.gf-inline-edit-btn');
