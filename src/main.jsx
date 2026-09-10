@@ -7,6 +7,8 @@ import './stockSearch.js'
 // React's stale in-memory snapshot during the automatic reload.
 import './pro-business-tools.js'
 import './job-sheet-issues.js'
+// Load Job Sheet History actions exactly once. index.html must not import this file.
+import './pro-history-tools.js'
 import App from './App.jsx'
 
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
