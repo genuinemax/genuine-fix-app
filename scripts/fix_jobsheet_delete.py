@@ -31,7 +31,7 @@ if start >= 0:
                             <button type="button" onClick={() => setSelectedInvoice(job)} className="px-3 py-1.5 bg-blue-600/15 text-blue-400 hover:bg-blue-600/25 rounded-xl font-bold inline-flex items-center gap-1.5">
                               <Eye size={14}/> View
                             </button>
-                            <button type="button" onClick={() => window.GenuineFixEditRecord?.('repairs', job.id)} className="px-3 py-1.5 bg-amber-500/15 text-amber-400 hover:bg-amber-500/25 rounded-xl font-bold inline-flex items-center gap-1.5">
+                            <button type="button" onClick={() => window.GenuineFixEditRecord?.('repairs', job.id)} className="px-3 py-1.5 bg-amber-500/15 text-amber-400 hover:bg-amber-600/25 rounded-xl font-bold inline-flex items-center gap-1.5">
                               <Pencil size={14}/> Edit
                             </button>
                             <button type="button" onClick={() => printInvoice(job)} className="px-3 py-1.5 bg-violet-500/15 text-violet-400 hover:bg-violet-500/25 rounded-xl font-bold inline-flex items-center gap-1.5">
@@ -155,7 +155,7 @@ new_handler = '''  const jobSheetIssues = Array.isArray(newRepair.issues) && new
     const subtotal = validIssues.reduce((sum, item) => sum + item.amount, 0);
     const discountValue = Math.max(0, Number(newRepair.discountValue || 0));
     const discountAmount = newRepair.discountType === 'percent'
-      ? Math.min(subtotal, (subtotal * discountValue) / 100)
+      ? Math.min(subtotal, (subtotal * Math.min(100, discountValue)) / 100)
       : Math.min(subtotal, discountValue);
     const grandTotal = Math.max(0, subtotal - discountAmount);
     const paid = Math.min(grandTotal, Math.max(0, Number(newRepair.paidAmount || 0)));
@@ -219,7 +219,7 @@ new_form_fields = '''              <input type="text" placeholder="Device Model 
                           <button type="button" onClick={() => updateJobSheetIssue(index, { type: 'preset', name: '' })} className="px-3 rounded-xl bg-slate-700/60 text-slate-300 text-xs font-bold">List</button>
                         </div>
                       ) : (
-                        <select value={item.name} onChange={e => updateJobSheetIssue(index, e.target.value === '__manual__' ? { type: 'manual', name: '' } : { type: 'preset', name: e.target.value })} className={`p-3 ${t.inputBg} border rounded-xl text-sm focus:outline-none`}>
+                        <select value={item.name} onChange={e => setNewRepair(prev => ({ ...prev, issues: (prev.issues || []).map((it, i) => i === index ? (e.target.value === '__manual__' ? { ...it, type: 'manual', name: '' } : { ...it, type: 'preset', name: e.target.value }) : it) }))} className={`p-3 ${t.inputBg} border rounded-xl text-sm focus:outline-none`}>
                           <option value="">Select Issue...</option>
                           {GF_JOB_ISSUE_PRESETS.map(issue => <option key={issue} value={issue}>{issue}</option>)}
                           <option value="__manual__">Manual Issue</option>
@@ -230,15 +230,12 @@ new_form_fields = '''              <input type="text" placeholder="Device Model 
                     </div>
                   ))}
                 </div>
-              </div>
+              </div>'''
+if old_form_fields in text:
+    text = text.replace(old_form_fields, new_form_fields, 1)
 
-              <div className={`md:col-span-3 ${t.cardSecondary} border ${t.border} rounded-2xl p-4`}>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
-                  <div>
-                    <label className={`text-xs font-black ${t.textMuted}`}>Subtotal</label>
-                    <div className={`mt-1 p-3 rounded-xl border ${t.border} ${t.inputBg} font-black`}>NPR {jobSheetSubtotal.toFixed(0)}</div>
-                  </div>
-                  <div>
+# Make discount entry impossible to miss: two explicit mode buttons and a dedicated % input.
+old_discount = '''                  <div>
                     <label className={`text-xs font-black ${t.textMuted}`}>Discount</label>
                     <div className="flex gap-2 mt-1">
                       <select value={newRepair.discountType} onChange={e => setNewRepair({...newRepair, discountType: e.target.value})} className={`w-24 p-3 ${t.inputBg} border rounded-xl text-sm focus:outline-none`}>
@@ -247,31 +244,24 @@ new_form_fields = '''              <input type="text" placeholder="Device Model 
                       </select>
                       <input type="number" min="0" step="1" placeholder="Discount" value={newRepair.discountValue} onChange={e => setNewRepair({...newRepair, discountValue: e.target.value})} className={`flex-1 p-3 ${t.inputBg} border rounded-xl text-sm focus:outline-none`} />
                     </div>
-                  </div>
-                  <div>
-                    <label className="text-xs font-black text-emerald-400">Grand Total</label>
-                    <div className="mt-1 p-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 text-emerald-300 font-black">NPR {jobSheetGrandTotal.toFixed(0)}</div>
-                  </div>
-                  <div>
-                    <label className="text-xs font-black text-rose-400">Due</label>
-                    <div className="mt-1 p-3 rounded-xl border border-rose-500/20 bg-rose-500/5 text-rose-300 font-black">NPR {jobSheetDue.toFixed(0)}</div>
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
-                  <input type="number" min="0" step="1" placeholder="Paid Amount (NPR)" value={newRepair.paidAmount} onChange={e => setNewRepair({...newRepair, paidAmount: e.target.value})} className={`p-3 ${t.inputBg} border rounded-xl text-sm focus:outline-none`} />
-                  <input type="text" placeholder="Warranty (e.g. 30 Days, 1 Year)" value={newRepair.warrantyMonths} onChange={e => setNewRepair({...newRepair, warrantyMonths: e.target.value})} className={`p-3 ${t.inputBg} border rounded-xl text-sm focus:outline-none`} />
-                </div>
-              </div>'''
-if old_form_fields in text:
-    text = text.replace(old_form_fields, new_form_fields, 1)
+                  </div>'''
+new_discount = '''                  <div>
+                    <label className={`text-xs font-black ${t.textMuted}`}>Discount</label>
+                    <div className="grid grid-cols-2 gap-2 mt-1 mb-2">
+                      <button type="button" onClick={() => setNewRepair(prev => ({ ...prev, discountType: 'amount' }))} className={`p-2.5 rounded-xl border text-sm font-black transition ${newRepair.discountType === 'amount' ? 'bg-blue-600 text-white border-blue-500' : `${t.inputBg} ${t.border} ${t.textMuted}`}`}>NPR</button>
+                      <button type="button" onClick={() => setNewRepair(prev => ({ ...prev, discountType: 'percent', discountValue: Math.min(100, Number(prev.discountValue || 0)) }))} className={`p-2.5 rounded-xl border text-sm font-black transition ${newRepair.discountType === 'percent' ? 'bg-blue-600 text-white border-blue-500' : `${t.inputBg} ${t.border} ${t.textMuted}`}`}>%</button>
+                    </div>
+                    <input type="number" min="0" max={newRepair.discountType === 'percent' ? 100 : undefined} step="0.01" placeholder={newRepair.discountType === 'percent' ? 'Discount % (0–100)' : 'Discount amount (NPR)'} value={newRepair.discountValue} onChange={e => setNewRepair({...newRepair, discountValue: newRepair.discountType === 'percent' ? Math.min(100, Math.max(0, Number(e.target.value || 0))) : e.target.value})} className={`w-full p-3 ${t.inputBg} border rounded-xl text-sm focus:outline-none`} />
+                  </div>'''
+if old_discount in text:
+    text = text.replace(old_discount, new_discount, 1)
 
-# Drop the old experimental DOM issue enhancer's build-time side effect. The React
-# implementation above now owns Issue List, pricing, discount and save behavior.
+# Prevent the multi-issue helper from forcing a full page reload after React has
+# already saved the new Job Sheet. The reload was causing the splash/white-screen loop.
 ISSUES = Path('src/job-sheet-issues.js')
-if ISSUES.exists():
-    issues_text = ISSUES.read_text(encoding='utf-8')
-    issues_text = issues_text.replace("        window.location.reload();\n", "", 1)
-    ISSUES.write_text(issues_text, encoding='utf-8')
+issues_text = ISSUES.read_text(encoding='utf-8')
+issues_text = issues_text.replace("        window.location.reload();\n", "", 1)
+ISSUES.write_text(issues_text, encoding='utf-8')
 
 APP.write_text(text, encoding='utf-8')
-print('Canonical React Job Sheet actions + native multiple issues/discount applied.')
+print('Canonical React Job Sheet actions, issue list, and discount controls applied.')
