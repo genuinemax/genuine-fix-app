@@ -107,32 +107,65 @@ function installJobSheetEnhancer() {
   addButton.addEventListener('click', () => { state.issues.push({ name: '', amount: '' }); render(); calculate(); const rows = issueHost.querySelectorAll('[data-issue-name]'); rows[rows.length - 1]?.focus(); });
   discountValue.addEventListener('input', calculate); discountType.addEventListener('change', calculate);
 
-  form.addEventListener('submit', () => {
+  form.addEventListener('submit', (event) => {
+    // React's handler resets the form immediately after creating the job. Capture
+    // the values and the pre-submit repair IDs so the enhancement can enrich the
+    // exact newly-created record instead of guessing by date or array position.
+    const snapshot = {
+      paidAmount: money([...form.querySelectorAll('input')].find(i => i.placeholder === 'Paid Amount (NPR)')?.value),
+      customerPhoto: '',
+      citizenshipPhoto: '',
+      issues: state.issues.map(i => ({ name: String(i.name || '').trim(), amount: money(i.amount), qty: 1 })).filter(i => i.name),
+      discountType: discountType.value,
+      discountValue: money(discountValue.value),
+    };
+    const beforeIds = new Set(JSON.parse(localStorage.getItem('gf_repairs') || '[]').map(r => String(r.id)));
     calculate();
+
     setTimeout(() => {
       try {
-        const saved = JSON.parse(localStorage.getItem('gf_repairs') || '[]'); if (!Array.isArray(saved) || !saved.length) return;
-        const validIssues = state.issues.map(i => ({ name: String(i.name || '').trim(), amount: money(i.amount), qty: 1 })).filter(i => i.name);
-        const subtotal = validIssues.reduce((sum, i) => sum + i.amount, 0); const rawDiscount = money(discountValue.value);
-        const discountAmount = discountType.value === 'percent' ? Math.min(subtotal, subtotal * Math.min(100, rawDiscount) / 100) : Math.min(subtotal, rawDiscount);
+        const saved = JSON.parse(localStorage.getItem('gf_repairs') || '[]');
+        if (!Array.isArray(saved) || !saved.length) return;
+        const target = saved.find(r => r.billType === 'Repair' && !beforeIds.has(String(r.id)));
+        if (!target) return;
+
+        const validIssues = snapshot.issues;
+        const subtotal = validIssues.reduce((sum, i) => sum + i.amount, 0);
+        const discountAmount = snapshot.discountType === 'percent'
+          ? Math.min(subtotal, subtotal * Math.min(100, snapshot.discountValue) / 100)
+          : Math.min(subtotal, snapshot.discountValue);
         const grandTotal = Math.max(0, subtotal - discountAmount);
-        const paidInput = [...form.querySelectorAll('input')].find(i => i.placeholder === 'Paid Amount (NPR)'); const paid = money(paidInput?.value);
-        const target = saved.find(r => r.billType === 'Repair' && String(r.dateTime || '').startsWith(new Date().toISOString().slice(0,10))) || saved[0]; if (!target) return;
-        target.subtotal = subtotal; target.discountType = discountType.value; target.discountValue = rawDiscount; target.discountAmount = discountAmount; target.grandTotal = grandTotal; target.totalCost = grandTotal; target.paidAmount = Math.min(paid, grandTotal); target.dueAmount = Math.max(0, grandTotal - target.paidAmount); target.issues = validIssues;
+        const paid = Math.min(snapshot.paidAmount, grandTotal);
+
+        target.subtotal = subtotal;
+        target.discountType = snapshot.discountType;
+        target.discountValue = snapshot.discountValue;
+        target.discountAmount = discountAmount;
+        target.grandTotal = grandTotal;
+        target.totalCost = grandTotal;
+        target.paidAmount = paid;
+        target.dueAmount = Math.max(0, grandTotal - paid);
+        target.issues = validIssues;
+        target.issue = issueSummary(validIssues) || target.issue || 'General Repair / Unlocking';
         target.items = validIssues.map(i => ({ name: i.name, price: i.amount, qty: 1, remarks: 'Job Sheet Issue' }));
-        if (discountAmount > 0) target.items.push({ name: `Discount${discountType.value === 'percent' ? ` (${rawDiscount}%)` : ''}`, price: -discountAmount, qty: 1, remarks: 'Bill Discount' });
+        if (discountAmount > 0) target.items.push({ name: `Discount${snapshot.discountType === 'percent' ? ` (${snapshot.discountValue}%)` : ''}`, price: -discountAmount, qty: 1, remarks: 'Bill Discount' });
+
         localStorage.setItem('gf_repairs', JSON.stringify(saved));
         window.location.reload();
-      } catch (error) { console.warn('Genuine Fix issue pricing save failed:', error); }
-    }, 250);
+      } catch (error) {
+        console.warn('Genuine Fix issue pricing save failed:', error);
+      }
+    }, 350);
   }, true);
 
-  render(); calculate();
+  render();
+  calculate();
 }
 
 function boot() {
   installJobSheetEnhancer();
-  const observer = new MutationObserver(() => installJobSheetEnhancer()); observer.observe(document.body, { childList: true, subtree: true });
+  const observer = new MutationObserver(() => installJobSheetEnhancer());
+  observer.observe(document.body, { childList: true, subtree: true });
   setTimeout(() => observer.disconnect(), 15000);
 }
 
