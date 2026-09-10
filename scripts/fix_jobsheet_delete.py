@@ -44,5 +44,12 @@ if start >= 0:
                         </td>'''
             text = text[:cell_start] + replacement + text[cell_end + len('</td>'):]
 
+# Prevent the multi-issue helper from forcing a full page reload after React has
+# already saved the new Job Sheet. The reload was causing the splash/white-screen loop.
+ISSUES = Path('src/job-sheet-issues.js')
+issues_text = ISSUES.read_text(encoding='utf-8')
+issues_text = issues_text.replace("        window.location.reload();\n", "", 1)
+ISSUES.write_text(issues_text, encoding='utf-8')
+
 APP.write_text(text, encoding='utf-8')
-print('Canonical React Job Sheet History actions applied.')
+print('Canonical React Job Sheet actions applied; multi-issue helper no longer reloads after save.')
