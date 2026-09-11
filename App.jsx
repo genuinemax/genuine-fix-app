@@ -578,7 +578,7 @@ export default function App() {
     <div className={`min-h-screen ${t.appBg} font-sans transition-colors duration-200`}>
       {/* Top Navigation Bar */}
       <nav className={`border-b ${t.border} ${t.navBg} backdrop-blur-xl sticky top-0 z-30 shadow-lg`}>
-        <div className="max-w-7xl mx-auto px-6 py-4 flex flex-wrap items-center justify-between gap-4">
+        <div className="max-w-7xl mx-auto px-6 py-3 flex flex-nowrap items-center justify-between gap-4 min-h-[72px]">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl overflow-hidden border border-slate-700 shadow-md bg-slate-900 flex items-center justify-center">
               <img src="/logo.jpg" alt="Genuine Fix Logo" className="w-full h-full object-cover" />
@@ -589,7 +589,7 @@ export default function App() {
             </div>
           </div>
           
-          <div className={`flex flex-wrap items-center gap-1.5 ${t.cardSecondary} p-1.5 rounded-2xl border ${t.border}`}>
+          <div className={`flex flex-nowrap items-center gap-1.5 ${t.cardSecondary} p-1.5 rounded-2xl border ${t.border} shrink-0 overflow-x-auto max-w-full`}>
             {[
               { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
               { id: 'repairs', icon: ShieldCheck, label: 'Job Sheets' },
@@ -604,7 +604,7 @@ export default function App() {
               <button 
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 ${
                   activeTab === item.id 
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' 
                     : `${t.textMuted} hover:text-white hover:bg-blue-600/10`
