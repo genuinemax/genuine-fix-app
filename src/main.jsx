@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import './stockSearch.js'
+import './modern-alert.js'
 // Load the localStorage edit bridge BEFORE App.jsx evaluates its useState
 // initializers. This prevents an edited Jobsheet from being overwritten by
 // React's stale in-memory snapshot during the automatic reload.
