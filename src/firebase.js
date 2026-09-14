@@ -14,10 +14,12 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
+getAnalytics(app);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
+// Business data is kept in one private document per signed-in shop owner.
+// localStorage remains the fast/offline cache; every change is mirrored to Firestore.
 const SYNC_KEYS = [
   "gf_shop_info",
   "gf_categories",
@@ -25,14 +27,16 @@ const SYNC_KEYS = [
   "gf_inventory",
   "gf_devices_stock",
   "gf_expenses",
-  "gf_stock_purchases"
+  "gf_stock_purchases",
+  "gf_orders"
 ];
 
 const originalSetItem = window.localStorage.setItem.bind(window.localStorage);
 let syncReady = false;
 let applyingRemote = false;
-let unsubscribeRemote = null;
 let remoteRef = null;
+let unsubscribeRemote = null;
+let reloadScheduled = false;
 
 const getLocalData = () => {
   const data = {};
@@ -45,62 +49,87 @@ const getLocalData = () => {
 
 const pushLocalData = async () => {
   if (!remoteRef || !syncReady || applyingRemote) return;
+
   try {
-    await setDoc(remoteRef, { ...getLocalData(), updatedAt: Date.now() }, { merge: true });
+    await setDoc(
+      remoteRef,
+      { ...getLocalData(), updatedAt: Date.now() },
+      { merge: true }
+    );
   } catch (error) {
-    console.error("Genuine Fix cloud sync write failed:", error);
+    console.error("Genuine Fix Firestore save failed:", error);
   }
 };
 
 const applyRemoteData = (remoteData) => {
-  const changed = SYNC_KEYS.some((key) => {
-    const remoteValue = remoteData[key];
-    return typeof remoteValue === "string" && remoteValue !== window.localStorage.getItem(key);
-  });
-  if (!changed) return false;
+  let changed = false;
 
   applyingRemote = true;
   try {
     SYNC_KEYS.forEach((key) => {
-      if (typeof remoteData[key] === "string") originalSetItem(key, remoteData[key]);
+      const remoteValue = remoteData[key];
+      if (typeof remoteValue !== "string") return;
+
+      if (remoteValue !== window.localStorage.getItem(key)) {
+        originalSetItem(key, remoteValue);
+        changed = true;
+      }
     });
   } finally {
     applyingRemote = false;
   }
-  return true;
+
+  return changed;
 };
 
+// App.jsx already writes business state to localStorage. Intercept those writes
+// so they are automatically persisted to Firestore as well.
 window.localStorage.setItem = (key, value) => {
   originalSetItem(key, value);
-  if (SYNC_KEYS.includes(key) && syncReady && !applyingRemote) void pushLocalData();
+  if (SYNC_KEYS.includes(key) && syncReady && !applyingRemote) {
+    void pushLocalData();
+  }
 };
 
 onAuthStateChanged(auth, (user) => {
   syncReady = false;
+
   if (unsubscribeRemote) {
     unsubscribeRemote();
     unsubscribeRemote = null;
   }
 
-  if (!user) {
-    remoteRef = null;
-    return;
-  }
+  remoteRef = null;
+  reloadScheduled = false;
+
+  if (!user) return;
 
   remoteRef = doc(db, "shopData", user.uid);
-  unsubscribeRemote = onSnapshot(remoteRef, async (snapshot) => {
-    if (snapshot.exists()) {
-      const changed = applyRemoteData(snapshot.data());
-      if (changed) {
+
+  unsubscribeRemote = onSnapshot(
+    remoteRef,
+    async (snapshot) => {
+      const remoteData = snapshot.exists() ? snapshot.data() : {};
+      const changed = applyRemoteData(remoteData);
+
+      // App state is initialized from localStorage. If cloud data replaced the
+      // cache, reload once so every React state value reflects the cloud copy.
+      if (changed && !reloadScheduled) {
+        reloadScheduled = true;
         syncReady = false;
+        window.setTimeout(() => window.location.reload(), 0);
         return;
       }
-    }
 
-    syncReady = true;
-    if (!snapshot.exists()) await pushLocalData();
-  }, (error) => {
-    console.error("Genuine Fix cloud sync listener failed:", error);
-    syncReady = false;
-  });
+      // The listener is now fully initialized. Future localStorage changes can
+      // safely write to Firestore, and an empty cloud document is seeded from
+      // the existing offline/local cache.
+      syncReady = true;
+      if (!snapshot.exists()) await pushLocalData();
+    },
+    (error) => {
+      syncReady = false;
+      console.error("Genuine Fix Firestore listener failed:", error);
+    }
+  );
 });
