@@ -247,7 +247,7 @@ export default function App() {
   const [newExpense, setNewExpense] = useState({ description: '', amount: '' });
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [invoiceSearch, setInvoiceSearch] = useState('');
-  const [invoiceFilterTab, setInvoiceFilterTab] = useState('All');
+  const [invoiceFilterTab, setInvoiceFilterTab] = useState('All');\n\n  const [toast, setToast] = useState(null);\n  const [confirmDialog, setConfirmDialog] = useState(null);\n\n  const showToast = (message, type = 'success') => {\n    setToast({ message, type });\n    window.clearTimeout(window.__gfToastTimer);\n    window.__gfToastTimer = window.setTimeout(() => setToast(null), 2600);\n  };\n\n  const requestDelete = (title, message, onConfirm) => {\n    setConfirmDialog({ title, message, onConfirm });\n  };\n\n  const closeConfirm = () => setConfirmDialog(null);\n\n  const confirmDelete = () => {\n    if (confirmDialog?.onConfirm) confirmDialog.onConfirm();\n    setConfirmDialog(null);\n    showToast('Record deleted successfully.', 'success');\n  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -375,7 +375,7 @@ export default function App() {
     };
     setRepairs([repairItem, ...repairs]);
     setNewRepair({ customerName: '', phone: '', citizenshipNo: '', customerPhoto: '', citizenshipPhoto: '', deviceType: 'Mobile (Unlock)', model: '', totalCost: '', paidAmount: '', issue: '', warrantyMonths: '30 Days' });
-    alert('Job Sheet सफलतापूर्वक Save भयो!');
+    showToast('Job Sheet सफलतापूर्वक Save भयो!');
   };
 
   const handleAddDevice = (e) => {
@@ -438,7 +438,7 @@ export default function App() {
       sellPrice: '',
       warrantyMonths: '30 Days'
     });
-    alert('Device सफलतापूर्वक Save भयो!');
+    showToast('Device सफलतापूर्वक Save भयो!');
   };
 
   const handleAddPosItem = () => {
@@ -509,7 +509,7 @@ export default function App() {
 
     setRepairs([newBill, ...repairs]);
     setPosBill({ customerName: '', phone: '', items: [{ name: '', price: '', qty: 1 }], paidAmount: '', warrantyMonths: '30 Days' });
-    alert('Accessories Bill सफलतापूर्वक Save भयो!');
+    showToast('Accessories Bill सफलतापूर्वक Save भयो!');
   };
 
   const handleAddPart = (e) => {
@@ -800,7 +800,7 @@ export default function App() {
                         <p className="text-sm font-bold text-emerald-400">Sell: NPR {dev.sellPrice}</p>
                       </td>
                       <td className="p-4 text-right space-x-2">
-                        <button onClick={() => deleteDevice(dev.id)} className="p-2 bg-rose-500/10 text-rose-400 rounded-xl hover:bg-rose-500/20"><Trash2 size={14}/></button>
+                        <button onClick={() => requestDelete('Delete this device?', 'This device entry will be permanently removed from stock records.', () => deleteDevice(dev.id))} className="p-2 bg-rose-500/10 text-rose-400 rounded-xl hover:bg-rose-500/20"><Trash2 size={14}/></button>
                       </td>
                     </tr>
                   ))}
@@ -904,7 +904,7 @@ export default function App() {
                       </td>
                       <td className="p-4 text-right space-x-2">
                         <button onClick={() => setSelectedInvoice(inv)} className="px-3 py-1.5 bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 rounded-xl text-xs font-bold">Preview</button>
-                        <button onClick={() => { if(window.confirm('के तपाईं यो रेकर्ड डिलेट गर्न चाहनुहुन्छ?')) deleteRepair(inv.id); }} className="p-2 bg-rose-500/10 text-rose-400 rounded-xl hover:bg-rose-500/20 inline-flex items-center align-middle">
+                        <button onClick={() => requestDelete('Delete this record?', 'This invoice will be permanently removed from your local records.', () => deleteRepair(inv.id))} className="p-2 bg-rose-500/10 text-rose-400 rounded-xl hover:bg-rose-500/20 inline-flex items-center align-middle">
                           <Trash2 size={14}/>
                         </button>
                         {Number(inv.dueAmount) > 0 && (
@@ -958,7 +958,7 @@ export default function App() {
                       <td className="p-4 text-right space-x-2">
                         <button onClick={() => adjustStock(item.id, 1)} className="px-2.5 py-1 bg-emerald-500/10 text-emerald-400 rounded-lg text-xs font-bold">+</button>
                         <button onClick={() => adjustStock(item.id, -1)} className="px-2.5 py-1 bg-rose-500/10 text-rose-400 rounded-lg text-xs font-bold">-</button>
-                        <button onClick={() => deletePart(item.id)} className="p-1.5 bg-rose-500/10 text-rose-400 rounded-lg"><Trash2 size={14}/></button>
+                        <button onClick={() => requestDelete('Delete this part?', 'This inventory item will be permanently removed from stock.', () => deletePart(item.id))} className="p-1.5 bg-rose-500/10 text-rose-400 rounded-lg"><Trash2 size={14}/></button>
                       </td>
                     </tr>
                   ))}
@@ -995,7 +995,7 @@ export default function App() {
                       <td className={`p-4 font-bold ${t.textMain}`}>{exp.description}</td>
                       <td className="p-4 font-bold text-rose-400">NPR {exp.amount}</td>
                       <td className="p-4 text-right">
-                        <button onClick={() => deleteExpense(exp.id)} className="p-2 bg-rose-500/10 text-rose-400 rounded-xl hover:bg-rose-500/20"><Trash2 size={15}/></button>
+                        <button onClick={() => requestDelete('Delete this expense?', 'This expense record will be permanently removed.', () => deleteExpense(exp.id))} className="p-2 bg-rose-500/10 text-rose-400 rounded-xl hover:bg-rose-500/20"><Trash2 size={15}/></button>
                       </td>
                     </tr>
                   ))}
@@ -1087,7 +1087,7 @@ export default function App() {
 
       </main>
 
-      {/* INVOICE PREVIEW MODAL */}
+      {/* MODERN TOAST + CONFIRM DIALOG */}\n      {toast && (\n        <div className="fixed top-5 right-5 z-[100] animate-in slide-in-from-right-5 fade-in duration-300">\n          <div className="flex min-w-[320px] max-w-[420px] items-center gap-3 rounded-2xl border border-slate-700/80 bg-[#151922]/95 px-4 py-3.5 text-white shadow-2xl shadow-black/30 backdrop-blur-xl">\n            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400">\n              <CheckCircle2 size={20} />\n            </div>\n            <div className="min-w-0 flex-1">\n              <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">Success</p>\n              <p className="mt-0.5 text-sm font-semibold text-slate-100">{toast.message}</p>\n            </div>\n            <button onClick={() => setToast(null)} className="rounded-lg p-1.5 text-slate-500 transition hover:bg-white/5 hover:text-white">\n              <X size={16} />\n            </button>\n          </div>\n        </div>\n      )}\n\n      {confirmDialog && (\n        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/65 p-4 backdrop-blur-sm animate-in fade-in duration-200">\n          <div className="w-full max-w-md overflow-hidden rounded-3xl border border-slate-700/80 bg-[#171B24] text-slate-100 shadow-2xl shadow-black/50 animate-in zoom-in-95 duration-200">\n            <div className="p-6">\n              <div className="flex items-start gap-4">\n                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-400">\n                  <AlertTriangle size={23} />\n                </div>\n                <div className="flex-1">\n                  <h3 className="text-lg font-extrabold tracking-tight">{confirmDialog.title}</h3>\n                  <p className="mt-1.5 text-sm leading-6 text-slate-400">{confirmDialog.message}</p>\n                </div>\n                <button onClick={closeConfirm} className="rounded-xl p-2 text-slate-500 transition hover:bg-white/5 hover:text-white">\n                  <X size={18} />\n                </button>\n              </div>\n\n              <div className="mt-6 flex justify-end gap-2.5">\n                <button onClick={closeConfirm} className="rounded-xl border border-slate-700 bg-slate-800/60 px-4 py-2.5 text-xs font-bold text-slate-300 transition hover:bg-slate-700">\n                  Cancel\n                </button>\n                <button onClick={confirmDelete} className="rounded-xl bg-rose-600 px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-rose-600/20 transition hover:bg-rose-500 active:scale-[0.98]">\n                  Delete Record\n                </button>\n              </div>\n            </div>\n          </div>\n        </div>\n      )}\n\n      {/* INVOICE PREVIEW MODAL */}
       {selectedInvoice && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white text-slate-900 rounded-3xl max-w-2xl w-full p-6 space-y-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
