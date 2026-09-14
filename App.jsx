@@ -247,7 +247,26 @@ export default function App() {
   const [newExpense, setNewExpense] = useState({ description: '', amount: '' });
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [invoiceSearch, setInvoiceSearch] = useState('');
-  const [invoiceFilterTab, setInvoiceFilterTab] = useState('All');\n\n  const [toast, setToast] = useState(null);\n  const [confirmDialog, setConfirmDialog] = useState(null);\n\n  const showToast = (message, type = 'success') => {\n    setToast({ message, type });\n    window.clearTimeout(window.__gfToastTimer);\n    window.__gfToastTimer = window.setTimeout(() => setToast(null), 2600);\n  };\n\n  const requestDelete = (title, message, onConfirm) => {\n    setConfirmDialog({ title, message, onConfirm });\n  };\n\n  const closeConfirm = () => setConfirmDialog(null);\n\n  const confirmDelete = () => {\n    if (confirmDialog?.onConfirm) confirmDialog.onConfirm();\n    setConfirmDialog(null);\n    showToast('Record deleted successfully.', 'success');\n  };
+  const [invoiceFilterTab, setInvoiceFilterTab] = useState('All');\n\n  const [toast, setToast] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState(null);
+
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    window.clearTimeout(window.__gfToastTimer);
+    window.__gfToastTimer = window.setTimeout(() => setToast(null), 2600);
+  };
+
+  const requestDelete = (title, message, onConfirm) => {
+    setConfirmDialog({ title, message, onConfirm });
+  };
+
+  const closeConfirm = () => setConfirmDialog(null);
+
+  const confirmDelete = () => {
+    if (confirmDialog?.onConfirm) confirmDialog.onConfirm();
+    setConfirmDialog(null);
+    showToast('Record deleted successfully.', 'success');
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -1087,7 +1106,55 @@ export default function App() {
 
       </main>
 
-      {/* MODERN TOAST + CONFIRM DIALOG */}\n      {toast && (\n        <div className="fixed top-5 right-5 z-[100] animate-in slide-in-from-right-5 fade-in duration-300">\n          <div className="flex min-w-[320px] max-w-[420px] items-center gap-3 rounded-2xl border border-slate-700/80 bg-[#151922]/95 px-4 py-3.5 text-white shadow-2xl shadow-black/30 backdrop-blur-xl">\n            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400">\n              <CheckCircle2 size={20} />\n            </div>\n            <div className="min-w-0 flex-1">\n              <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">Success</p>\n              <p className="mt-0.5 text-sm font-semibold text-slate-100">{toast.message}</p>\n            </div>\n            <button onClick={() => setToast(null)} className="rounded-lg p-1.5 text-slate-500 transition hover:bg-white/5 hover:text-white">\n              <X size={16} />\n            </button>\n          </div>\n        </div>\n      )}\n\n      {confirmDialog && (\n        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/65 p-4 backdrop-blur-sm animate-in fade-in duration-200">\n          <div className="w-full max-w-md overflow-hidden rounded-3xl border border-slate-700/80 bg-[#171B24] text-slate-100 shadow-2xl shadow-black/50 animate-in zoom-in-95 duration-200">\n            <div className="p-6">\n              <div className="flex items-start gap-4">\n                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-400">\n                  <AlertTriangle size={23} />\n                </div>\n                <div className="flex-1">\n                  <h3 className="text-lg font-extrabold tracking-tight">{confirmDialog.title}</h3>\n                  <p className="mt-1.5 text-sm leading-6 text-slate-400">{confirmDialog.message}</p>\n                </div>\n                <button onClick={closeConfirm} className="rounded-xl p-2 text-slate-500 transition hover:bg-white/5 hover:text-white">\n                  <X size={18} />\n                </button>\n              </div>\n\n              <div className="mt-6 flex justify-end gap-2.5">\n                <button onClick={closeConfirm} className="rounded-xl border border-slate-700 bg-slate-800/60 px-4 py-2.5 text-xs font-bold text-slate-300 transition hover:bg-slate-700">\n                  Cancel\n                </button>\n                <button onClick={confirmDelete} className="rounded-xl bg-rose-600 px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-rose-600/20 transition hover:bg-rose-500 active:scale-[0.98]">\n                  Delete Record\n                </button>\n              </div>\n            </div>\n          </div>\n        </div>\n      )}\n\n      {/* INVOICE PREVIEW MODAL */}
+      {/* MODERN TOAST + CONFIRM DIALOG */}
+      {toast && (
+        <div className="fixed top-5 right-5 z-[100] animate-in slide-in-from-right-5 fade-in duration-300">
+          <div className="flex min-w-[320px] max-w-[420px] items-center gap-3 rounded-2xl border border-slate-700/80 bg-[#151922]/95 px-4 py-3.5 text-white shadow-2xl shadow-black/30 backdrop-blur-xl">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400">
+              <CheckCircle2 size={20} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">Success</p>
+              <p className="mt-0.5 text-sm font-semibold text-slate-100">{toast.message}</p>
+            </div>
+            <button onClick={() => setToast(null)} className="rounded-lg p-1.5 text-slate-500 transition hover:bg-white/5 hover:text-white">
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {confirmDialog && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/65 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-md overflow-hidden rounded-3xl border border-slate-700/80 bg-[#171B24] text-slate-100 shadow-2xl shadow-black/50 animate-in zoom-in-95 duration-200">
+            <div className="p-6">
+              <div className="flex items-start gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-400">
+                  <AlertTriangle size={23} />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-extrabold tracking-tight">{confirmDialog.title}</h3>
+                  <p className="mt-1.5 text-sm leading-6 text-slate-400">{confirmDialog.message}</p>
+                </div>
+                <button onClick={closeConfirm} className="rounded-xl p-2 text-slate-500 transition hover:bg-white/5 hover:text-white">
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="mt-6 flex justify-end gap-2.5">
+                <button onClick={closeConfirm} className="rounded-xl border border-slate-700 bg-slate-800/60 px-4 py-2.5 text-xs font-bold text-slate-300 transition hover:bg-slate-700">
+                  Cancel
+                </button>
+                <button onClick={confirmDelete} className="rounded-xl bg-rose-600 px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-rose-600/20 transition hover:bg-rose-500 active:scale-[0.98]">
+                  Delete Record
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* INVOICE PREVIEW MODAL */}
       {selectedInvoice && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white text-slate-900 rounded-3xl max-w-2xl w-full p-6 space-y-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
