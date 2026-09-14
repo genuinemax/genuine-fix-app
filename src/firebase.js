@@ -18,8 +18,8 @@ getAnalytics(app);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
-// Business data is kept in one private document per signed-in shop owner.
-// localStorage remains the fast/offline cache; every change is mirrored to Firestore.
+// Firestore is the source of truth for business data across devices/browsers.
+// localStorage is kept only as a fast offline cache for the existing app state.
 const SYNC_KEYS = [
   "gf_shop_info",
   "gf_categories",
@@ -37,6 +37,9 @@ let applyingRemote = false;
 let remoteRef = null;
 let unsubscribeRemote = null;
 let reloadScheduled = false;
+let pushTimer = null;
+let pushInFlight = false;
+let pushQueued = false;
 
 const getLocalData = () => {
   const data = {};
@@ -47,18 +50,43 @@ const getLocalData = () => {
   return data;
 };
 
-const pushLocalData = async () => {
+const writeLocalDataToFirestore = async () => {
   if (!remoteRef || !syncReady || applyingRemote) return;
 
+  if (pushInFlight) {
+    pushQueued = true;
+    return;
+  }
+
+  pushInFlight = true;
   try {
     await setDoc(
       remoteRef,
-      { ...getLocalData(), updatedAt: Date.now() },
+      {
+        ...getLocalData(),
+        updatedAt: Date.now()
+      },
       { merge: true }
     );
   } catch (error) {
     console.error("Genuine Fix Firestore save failed:", error);
+  } finally {
+    pushInFlight = false;
+    if (pushQueued) {
+      pushQueued = false;
+      scheduleCloudSave(0);
+    }
   }
+};
+
+const scheduleCloudSave = (delay = 250) => {
+  if (!remoteRef || !syncReady || applyingRemote) return;
+  if (pushTimer) window.clearTimeout(pushTimer);
+
+  pushTimer = window.setTimeout(() => {
+    pushTimer = null;
+    void writeLocalDataToFirestore();
+  }, delay);
 };
 
 const applyRemoteData = (remoteData) => {
@@ -82,17 +110,25 @@ const applyRemoteData = (remoteData) => {
   return changed;
 };
 
-// App.jsx already writes business state to localStorage. Intercept those writes
-// so they are automatically persisted to Firestore as well.
+// App.jsx continues to use localStorage, so mirror every business-data change
+// to the signed-in user's private Firestore document. Changes are debounced so
+// one form save does not create a burst of Firestore writes.
 window.localStorage.setItem = (key, value) => {
   originalSetItem(key, value);
   if (SYNC_KEYS.includes(key) && syncReady && !applyingRemote) {
-    void pushLocalData();
+    scheduleCloudSave();
   }
 };
 
 onAuthStateChanged(auth, (user) => {
   syncReady = false;
+  pushQueued = false;
+  pushInFlight = false;
+
+  if (pushTimer) {
+    window.clearTimeout(pushTimer);
+    pushTimer = null;
+  }
 
   if (unsubscribeRemote) {
     unsubscribeRemote();
@@ -104,6 +140,8 @@ onAuthStateChanged(auth, (user) => {
 
   if (!user) return;
 
+  // One private document per Firebase Auth user. The same login therefore
+  // exposes the same shop data on any device/browser.
   remoteRef = doc(db, "shopData", user.uid);
 
   unsubscribeRemote = onSnapshot(
@@ -112,8 +150,9 @@ onAuthStateChanged(auth, (user) => {
       const remoteData = snapshot.exists() ? snapshot.data() : {};
       const changed = applyRemoteData(remoteData);
 
-      // App state is initialized from localStorage. If cloud data replaced the
-      // cache, reload once so every React state value reflects the cloud copy.
+      // React state is initialized from localStorage. When Firestore has the
+      // user's existing data, refresh once so every state value uses the cloud
+      // copy instead of the previous device's cache.
       if (changed && !reloadScheduled) {
         reloadScheduled = true;
         syncReady = false;
@@ -121,11 +160,16 @@ onAuthStateChanged(auth, (user) => {
         return;
       }
 
-      // The listener is now fully initialized. Future localStorage changes can
-      // safely write to Firestore, and an empty cloud document is seeded from
-      // the existing offline/local cache.
+      // Only after the initial cloud snapshot is processed do we allow local
+      // edits to write back. This prevents stale local data from overwriting
+      // the user's Firestore data during login/startup.
       syncReady = true;
-      if (!snapshot.exists()) await pushLocalData();
+
+      // First-time setup: if this user has no cloud document yet, preserve the
+      // current local/offline data as the initial cloud copy.
+      if (!snapshot.exists()) {
+        await writeLocalDataToFirestore();
+      }
     },
     (error) => {
       syncReady = false;
