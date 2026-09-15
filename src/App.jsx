@@ -69,6 +69,7 @@ import {
 
 
 
+
 const normalizePartsStockNotes = (value) => {
   const text = String(value || '').replace(/\r\n?/g, '\n');
   const lines = text.split('\n');
@@ -498,6 +499,8 @@ export default function App() {
     deviceType: 'Mobile (Unlock)', model: '', totalCost: '', discountType: 'percentage', discountValue: '', paidAmount: '', devicePasscode: '', issue: '', warrantyMonths: ''
   });
   
+  const [jobSheetIssues, setJobSheetIssues] = useState(['']);
+
   const [posBill, setPosBill] = useState({
     customerName: '',
     phone: '',
@@ -842,6 +845,9 @@ const supplierDueList = Object.values(expenses.filter(e => Number(e.dueAmount ||
       newRepair.discountValue,
       newRepair.paidAmount
     );
+    const issueList = jobSheetIssues.map(issue => String(issue || '').trim()).filter(Boolean);
+    const combinedIssues = issueList.join('\n');
+    const savedIssue = combinedIssues || newRepair.issue || 'General Repair / Unlocking';
     const repairItem = {
       ...newRepair,
       devicePasscode: newRepair.devicePasscode || newRepair.password || '',
@@ -856,7 +862,8 @@ const supplierDueList = Object.values(expenses.filter(e => Number(e.dueAmount ||
       customerName: newRepair.customerName || 'Walk-in Customer',
       phone: newRepair.phone || 'N/A',
       model: newRepair.model || 'General Device',
-      issue: newRepair.issue || 'General Repair / Unlocking',
+      issue: savedIssue,
+      issues: issueList,
       warrantyMonths: newRepair.warrantyMonths || '',
       status: 'Pending',
       dateTime: getCurrentDateTime(),
@@ -871,6 +878,7 @@ const supplierDueList = Object.values(expenses.filter(e => Number(e.dueAmount ||
       ]
     };
     setRepairs([repairItem, ...repairs]);
+    setJobSheetIssues(['']);
     setNewRepair({ customerName: '', phone: '', citizenshipNo: '', customerPhoto: '', citizenshipPhoto: '', deviceType: 'Mobile (Unlock)', model: '', totalCost: '', discountType: 'percentage', discountValue: '', paidAmount: '', devicePasscode: '', issue: '', warrantyMonths: '' });
     alert('Job Sheet saved successfully!');
   };
@@ -2184,7 +2192,6 @@ _Thank you for choosing ${shopInfo.name}!_`;
               </div>
               <input type="number" min="0" placeholder="Paid Amount (NPR)" value={newRepair.paidAmount} onChange={e => setNewRepair({...newRepair, paidAmount: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
 <input type="text" autoComplete="off" placeholder="Device Passcode / Pattern (Optional)" value={newRepair.devicePasscode || newRepair.password || ''} onChange={e => setNewRepair({...newRepair, devicePasscode: e.target.value, password: undefined})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-              <input type="text" autoComplete="off" placeholder="Device Passcode / Pattern (Optional)" value={newRepair.devicePasscode || newRepair.password || ''} onChange={e => setNewRepair({...newRepair, devicePasscode: e.target.value, password: undefined})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
               <input type="text" placeholder="Warranty (e.g. 30 Days, 1 Year)" value={newRepair.warrantyMonths} onChange={e => setNewRepair({...newRepair, warrantyMonths: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
               <div className={`md:col-span-3 flex flex-wrap items-center justify-between gap-3 px-4 py-3 ${t.cardSecondary} border ${t.border} rounded-2xl`}>
                 <div className={`text-sm ${t.textMuted}`}>Subtotal: <span className={`font-black ${t.textMain}`}>NPR {Number(newRepair.totalCost || 0).toLocaleString()}</span></div>
@@ -2192,7 +2199,41 @@ _Thank you for choosing ${shopInfo.name}!_`;
                 <div className="text-sm text-emerald-400">Grand Total: <span className="font-black">NPR {calculateJobSheetTotals(newRepair.totalCost, newRepair.discountType, newRepair.discountValue, newRepair.paidAmount).total.toLocaleString()}</span></div>
                 <div className="text-sm text-rose-400">Due: <span className="font-black">NPR {calculateJobSheetTotals(newRepair.totalCost, newRepair.discountType, newRepair.discountValue, newRepair.paidAmount).dueAmount.toLocaleString()}</span></div>
               </div>
-              <input type="text" placeholder="Issue / Details (Optional)" value={newRepair.issue} onChange={e => setNewRepair({...newRepair, issue: e.target.value})} className={`md:col-span-2 p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+              <div className="md:col-span-2 space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <label className={`text-sm font-bold ${t.textMain}`}>Repair Issues</label>
+                  <button
+                    type="button"
+                    onClick={() => setJobSheetIssues(prev => [...prev, ''])}
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold transition"
+                  >
+                    <Plus size={15} /> Add Issue
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {jobSheetIssues.map((issue, index) => (
+                    <div key={`job-issue-${index}`} className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        placeholder={index === 0 ? 'Issue / Details' : `Issue ${index + 1}`}
+                        value={issue}
+                        onChange={e => setJobSheetIssues(prev => prev.map((item, i) => i === index ? e.target.value : item))}
+                        className={`flex-1 p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}
+                      />
+                      {jobSheetIssues.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => setJobSheetIssues(prev => prev.filter((_, i) => i !== index))}
+                          className="p-3 rounded-2xl bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 transition"
+                          title="Remove issue"
+                        >
+                          <X size={17} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
 
               <div className={`md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-4 ${t.cardSecondary} p-4 rounded-2xl border ${t.border}`}>
                 <div>
