@@ -3,10 +3,13 @@ import { auth } from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import Login from './Login';
 import React, { useState, useEffect } from 'react';
+import { calculateAccessoriesBillTotals } from './accessories-discount';
+import { deleteInvoiceById } from './invoice-actions';
 import { 
   Wrench, Package, FileText, LayoutDashboard, DollarSign, 
   Trash2, Printer, ShieldCheck, User, CreditCard, Search, Eye, ChevronRight, Download, Upload, ShoppingBag, MessageSquare, Plus, AlertTriangle, ArrowUpRight, ArrowDownRight, X, CheckCircle2, Image as ImageIcon, Pencil, Smartphone, Laptop, Settings, Sun, Moon, Monitor, Users, Bell, PlusCircle, History, Clock3, Filter, ClipboardList
 } from 'lucide-react';
+
 
 
 
@@ -489,6 +492,8 @@ export default function App() {
     phone: '',
     items: [{ name: '', price: '', qty: 1, nonStock: false }],
     paidAmount: '',
+    discountType: 'percentage',
+    discountValue: '',
     warrantyMonths: ''
   });
 
@@ -810,6 +815,14 @@ const supplierDueList = Object.values(expenses.filter(e => Number(e.dueAmount ||
     if (selectedInvoice?.id === id) setSelectedInvoice(null);
   };
 
+  const deleteInvoice = (id) => {
+    const invoice = repairs.find(r => r.id === id);
+    if (!invoice) return;
+    if (!window.confirm(`Delete Invoice ${invoice.id}? This action cannot be undone.`)) return;
+    setRepairs(prev => deleteInvoiceById(prev, id));
+    if (selectedInvoice?.id === id) setSelectedInvoice(null);
+  };
+
   const handleAddRepair = (e) => {
     e.preventDefault();
     const total = Number(newRepair.totalCost || 0);
@@ -1055,13 +1068,12 @@ const supplierDueList = Object.values(expenses.filter(e => Number(e.dueAmount ||
 
   const handleSavePosBill = (e) => {
     e.preventDefault();
-    const totalCost = posBill.items.reduce((sum, item) => sum + (Number(item.price || 0) * Number(item.qty || 1)), 0);
-    const paidAmount = Number(posBill.paidAmount || totalCost);
-    const dueAmount = totalCost - paidAmount;
+    const subtotal = posBill.items.reduce((sum, item) => sum + (Number(item.price || 0) * Number(item.qty || 1)), 0);
+    const { discount, total, paidAmount, dueAmount } = calculateAccessoriesBillTotals(subtotal, posBill.discountType, posBill.discountValue, posBill.paidAmount);
     const itemDescriptions = posBill.items.map(i => `${i.name} (x${i.qty})`).join(', ');
-
     const requested = {};
     posBill.items.forEach(item => {
+      if (item.nonStock) return;
       const key = String(item.name || '').trim().toLowerCase();
       if (key) requested[key] = (requested[key] || 0) + Number(item.qty || 1);
     });
@@ -1070,39 +1082,23 @@ const supplierDueList = Object.values(expenses.filter(e => Number(e.dueAmount ||
       if (!inv) { alert(`Stock item not found: ${key}`); return; }
       if (Number(inv.stock || 0) < qty) { alert(`Insufficient stock for ${inv.name}. Available: ${inv.stock}, requested: ${qty}`); return; }
     }
-    const updatedInventory = inventory.map(inv => {
+    setInventory(inventory.map(inv => {
       const key = String(inv.name || '').trim().toLowerCase();
       return requested[key] ? { ...inv, stock: Number(inv.stock || 0) - requested[key] } : inv;
-    });
-    setInventory(updatedInventory);
-
+    }));
     const newBill = {
       id: `ACC-${Math.floor(1000 + Math.random() * 9000)}`,
-      customerName: posBill.customerName || 'Walk-in Customer',
-      phone: posBill.phone || 'N/A',
-      citizenshipNo: '',
-      customerPhoto: '',
-      citizenshipPhoto: '',
-      deviceType: 'Accessories / Sales',
-      model: itemDescriptions || 'Accessories Purchase',
-      totalCost,
-      paidAmount,
-      dueAmount,
-      issue: 'Direct Store Sale / Custom Bill',
-      warrantyMonths: posBill.warrantyMonths || '',
-      status: 'Delivered',
-      dateTime: getCurrentDateTime(),
-      billType: 'Accessories',
-      items: posBill.items.map(i => ({
-        name: i.name || 'Accessory Item',
-        price: Number(i.price || 0),
-        qty: Number(i.qty || 1),
-        remarks: 'Store Sale'
-      }))
+      customerName: posBill.customerName || 'Walk-in Customer', phone: posBill.phone || 'N/A',
+      citizenshipNo: '', customerPhoto: '', citizenshipPhoto: '',
+      deviceType: 'Accessories / Sales', model: itemDescriptions || 'Accessories Purchase',
+      totalCost: total, subtotal, discountAmount: discount,
+      discountType: posBill.discountType || 'percentage', discountValue: Number(posBill.discountValue || 0),
+      paidAmount, dueAmount, issue: 'Direct Store Sale / Custom Bill',
+      warrantyMonths: posBill.warrantyMonths || '', status: 'Delivered', dateTime: getCurrentDateTime(), billType: 'Accessories',
+      items: posBill.items.map(i => ({ name: i.name || 'Accessory Item', price: Number(i.price || 0), qty: Number(i.qty || 1), remarks: 'Store Sale' }))
     };
-
     setRepairs([newBill, ...repairs]);
-    setPosBill({ customerName: '', phone: '', items: [{ name: '', price: '', qty: 1, nonStock: false }], paidAmount: '', warrantyMonths: '' });
+    setPosBill({ customerName: '', phone: '', items: [{ name: '', price: '', qty: 1, nonStock: false }], paidAmount: '', discountType: 'percentage', discountValue: '', warrantyMonths: '' });
     alert('Accessories Bill saved successfully!');
   };
 
@@ -1449,33 +1445,44 @@ const supplierDueList = Object.values(expenses.filter(e => Number(e.dueAmount ||
     ctx.fillStyle = '#F8FAFC';
     ctx.strokeStyle = '#E2E8F0';
     ctx.beginPath();
-    ctx.roundRect(430, totalsY, 320, 130, 8);
+    const invoiceSubtotal = Number(inv.subtotal ?? inv.totalCost ?? 0);
+    const invoiceDiscount = Number(inv.discountAmount || 0);
+    const hasDiscount = invoiceDiscount > 0;
+    ctx.roundRect(430, totalsY, 320, hasDiscount ? 155 : 130, 8);
     ctx.fill();
     ctx.stroke();
-
     ctx.fillStyle = '#64748B';
     ctx.font = '13px sans-serif';
-    ctx.fillText('Subtotal:', 460, totalsY + 30);
-    ctx.fillText(`NPR ${inv.totalCost}`, 630, totalsY + 30);
-
-    ctx.fillText('Amount Paid:', 460, totalsY + 65);
+    ctx.fillText(hasDiscount ? 'Subtotal:' : 'Grand Total:', 460, totalsY + 30);
+    ctx.fillText(`NPR ${hasDiscount ? invoiceSubtotal : Number(inv.totalCost || 0)}`, 630, totalsY + 30);
+    let paymentY = totalsY + 65;
+    if (hasDiscount) {
+      ctx.fillStyle = '#D97706';
+      ctx.font = '13px sans-serif';
+      ctx.fillText(`Discount${inv.discountType === 'percentage' ? ` (${inv.discountValue || 0}%)` : ''}:`, 460, totalsY + 55);
+      ctx.fillText(`- NPR ${invoiceDiscount}`, 630, totalsY + 55);
+      ctx.fillStyle = '#64748B';
+      ctx.fillText('Grand Total:', 460, totalsY + 80);
+      ctx.fillText(`NPR ${Number(inv.totalCost || 0)}`, 630, totalsY + 80);
+      paymentY = totalsY + 105;
+    }
+    ctx.fillStyle = '#64748B';
+    ctx.fillText('Amount Paid:', 460, paymentY);
     ctx.fillStyle = '#16A34A';
     ctx.font = 'bold 13px sans-serif';
-    ctx.fillText(`NPR ${inv.paidAmount}`, 630, totalsY + 65);
-
+    ctx.fillText(`NPR ${inv.paidAmount}`, 630, paymentY);
+    const dividerY = paymentY + 15;
     ctx.strokeStyle = '#CBD5E1';
     ctx.beginPath();
-    ctx.moveTo(450, totalsY + 80);
-    ctx.lineTo(730, totalsY + 80);
+    ctx.moveTo(450, dividerY);
+    ctx.lineTo(730, dividerY);
     ctx.stroke();
-
     ctx.fillStyle = '#0F172A';
     ctx.font = 'bold 15px sans-serif';
-    ctx.fillText('BALANCE DUE:', 460, totalsY + 110);
-    
+    ctx.fillText('BALANCE DUE:', 460, dividerY + 30);
     ctx.fillStyle = Number(inv.dueAmount) > 0 ? '#DC2626' : '#16A34A';
     ctx.font = 'bold 16px monospace';
-    ctx.fillText(`NPR ${inv.dueAmount}`, 615, totalsY + 110);
+    ctx.fillText(`NPR ${inv.dueAmount}`, 615, dividerY + 30);
 
     const footerY = totalsY + 160;
     ctx.fillStyle = '#FEF9C3';
@@ -1542,8 +1549,10 @@ const supplierDueList = Object.values(expenses.filter(e => Number(e.dueAmount ||
 📝 *Details:* ${inv.issue}
 🛡️ *Warranty:* ${inv.warrantyMonths || '—'}
 ----------------------------------------
-💰 *Total Cost:* NPR ${inv.totalCost}
-💵 *Amount Paid:* NPR ${inv.paidAmount}
+💰 *Grand Total:* NPR ${inv.totalCost}
+${Number(inv.discountAmount || 0) > 0 ? `🧾 *Subtotal:* NPR ${inv.subtotal}
+🏷️ *Discount:* - NPR ${inv.discountAmount}
+` : ''}💵 *Amount Paid:* NPR ${inv.paidAmount}
 🔴 *Balance Due:* NPR ${inv.dueAmount}
 ----------------------------------------
 _Thank you for choosing ${shopInfo.name}!_`;
@@ -2446,10 +2455,27 @@ _Thank you for choosing ${shopInfo.name}!_`;
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                <input type="number" placeholder="Paid Amount (NPR)" value={posBill.paidAmount} onChange={e => setPosBill({...posBill, paidAmount: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-                <input type="text" placeholder="Warranty (e.g. 7 Days Replacement)" value={posBill.warrantyMonths} onChange={e => setPosBill({...posBill, warrantyMonths: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                <div className={`p-4 ${t.cardSecondary} border ${t.border} rounded-2xl`}>
+                  <div className="flex items-center justify-between gap-3 mb-3">
+                    <label className={`text-sm font-black ${t.textMain}`}>Discount</label>
+                    <select value={posBill.discountType} onChange={e => setPosBill({...posBill, discountType: e.target.value})} className={`px-3 py-2 ${t.inputBg} border ${t.border} rounded-xl text-sm font-bold focus:outline-none`}>
+                      <option value="percentage">Percentage (%)</option>
+                      <option value="fixed">Fixed (NPR)</option>
+                    </select>
+                  </div>
+                  <input type="number" min="0" max={posBill.discountType === 'percentage' ? 100 : undefined} step="0.01" placeholder={posBill.discountType === 'percentage' ? 'Discount %' : 'Discount Amount (NPR)'} value={posBill.discountValue} onChange={e => setPosBill({...posBill, discountValue: e.target.value})} className={`w-full p-3 ${t.inputBg} border ${t.border} rounded-2xl text-sm focus:outline-none`} />
+                </div>
+                <div className="space-y-3">
+                  <input type="number" min="0" placeholder="Paid Amount (NPR)" value={posBill.paidAmount} onChange={e => setPosBill({...posBill, paidAmount: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                  <input type="text" placeholder="Warranty (e.g. 7 Days Replacement)" value={posBill.warrantyMonths} onChange={e => setPosBill({...posBill, warrantyMonths: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+                </div>
               </div>
-
+              <div className={`rounded-2xl border ${t.border} ${t.cardSecondary} p-4 space-y-2`}>
+                <div className={`flex justify-between text-sm ${t.textMuted}`}><span>Subtotal</span><span>NPR {posBillPreview.subtotal.toLocaleString()}</span></div>
+                {posBillPreview.discount > 0 && <div className="flex justify-between text-sm text-amber-400"><span>Discount</span><span>- NPR {posBillPreview.discount.toLocaleString()}</span></div>}
+                <div className={`flex justify-between pt-2 border-t ${t.border} text-base font-black ${t.textMain}`}><span>Grand Total</span><span className="text-emerald-400">NPR {posBillPreview.total.toLocaleString()}</span></div>
+                <div className="flex justify-between text-sm text-rose-400 font-bold"><span>Balance Due</span><span>NPR {posBillPreview.dueAmount.toLocaleString()}</span></div>
+              </div>
               <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl p-3.5 transition shadow-lg shadow-blue-600/35">Complete POS Bill & Deduct Stock</button>
             </form>
           </div>
@@ -2508,6 +2534,9 @@ _Thank you for choosing ${shopInfo.name}!_`;
                         <td className="p-4 text-right space-x-2">
                           <button onClick={() => setSelectedInvoice(inv)} className="px-3 py-1.5 bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 rounded-xl font-bold inline-flex items-center gap-1">
                             <Eye size={14}/> View
+                          </button>
+                          <button onClick={() => deleteInvoice(inv.id)} className="px-3 py-1.5 bg-rose-600/20 text-rose-400 hover:bg-rose-600/30 rounded-xl font-bold inline-flex items-center gap-1">
+                            <Trash2 size={14}/> Delete
                           </button>
                         </td>
                       </tr>
@@ -2975,9 +3004,15 @@ _Thank you for choosing ${shopInfo.name}!_`;
                 ))}
               </div>
               <hr className="border-slate-700"/>
+              {Number(selectedInvoice.discountAmount || 0) > 0 && (
+                <>
+                  <div className="flex justify-between text-slate-400"><span>Subtotal:</span><span>NPR {Number(selectedInvoice.subtotal || selectedInvoice.totalCost || 0).toLocaleString()}</span></div>
+                  <div className="flex justify-between text-amber-400"><span>Discount{selectedInvoice.discountType === 'percentage' ? ` (${selectedInvoice.discountValue || 0}%)` : ''}:</span><span>- NPR {Number(selectedInvoice.discountAmount || 0).toLocaleString()}</span></div>
+                </>
+              )}
               <div className="flex justify-between text-white font-bold text-sm">
-                <span>Total Amount:</span>
-                <span>NPR {selectedInvoice.totalCost}</span>
+                <span>Grand Total:</span>
+                <span>NPR {Number(selectedInvoice.totalCost || 0).toLocaleString()}</span>
               </div>
               <div className="flex justify-between text-emerald-400">
                 <span>Paid Amount:</span>
@@ -2998,6 +3033,9 @@ _Thank you for choosing ${shopInfo.name}!_`;
               </button>
               <button onClick={() => sendToWhatsApp(selectedInvoice)} className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl py-3 px-4 flex items-center justify-center gap-2 transition text-sm">
                 <MessageSquare size={16}/> WhatsApp
+              </button>
+              <button onClick={() => deleteInvoice(selectedInvoice.id)} className="bg-rose-600/20 hover:bg-rose-600/30 text-rose-400 border border-rose-500/30 font-bold rounded-xl py-3 px-4 flex items-center justify-center gap-2 transition text-sm">
+                <Trash2 size={16}/> Delete
               </button>
             </div>
             {Number(selectedInvoice.dueAmount || 0) > 0 && (
