@@ -66,6 +66,7 @@ import {
 
 
 
+
 const normalizePartsStockNotes = (value) => {
   const text = String(value || '').replace(/\r\n?/g, '\n');
   const lines = text.split('\n');
@@ -489,10 +490,10 @@ export default function App() {
   );
 
   // Form & UI States
-  const [newRepair, setNewRepair] = useState({ 
-    customerName: '', phone: '', citizenshipNo: '', 
-    customerPhoto: '', citizenshipPhoto: '', 
-    deviceType: 'Mobile (Unlock)', model: '', totalCost: '', paidAmount: '', issue: '', warrantyMonths: '' 
+  const [newRepair, setNewRepair] = useState({
+    customerName: '', phone: '', citizenshipNo: '',
+    customerPhoto: '', citizenshipPhoto: '',
+    deviceType: 'Mobile (Unlock)', model: '', totalCost: '', discountType: 'percentage', discountValue: '', paidAmount: '', devicePasscode: '', issue: '', warrantyMonths: ''
   });
   
   const [posBill, setPosBill] = useState({
@@ -840,7 +841,15 @@ const supplierDueList = Object.values(expenses.filter(e => Number(e.dueAmount ||
       newRepair.paidAmount
     );
     const repairItem = {
+    e.preventDefault();
+    const { subtotal, discount, total, paidAmount, dueAmount } = calculateJobSheetTotals(
+      newRepair.totalCost,
+      newRepair.discountType,
+      newRepair.discountValue,
+      newRepair.paidAmount
+    );
       ...newRepair,
+      devicePasscode: newRepair.devicePasscode || newRepair.password || '',
       subtotal,
       discountAmount: discount,
       discountType: newRepair.discountType || 'percentage',
@@ -852,9 +861,6 @@ const supplierDueList = Object.values(expenses.filter(e => Number(e.dueAmount ||
       customerName: newRepair.customerName || 'Walk-in Customer',
       phone: newRepair.phone || 'N/A',
       model: newRepair.model || 'General Device',
-      totalCost: total,
-      paidAmount: paid,
-      dueAmount: total - paid,
       issue: newRepair.issue || 'General Repair / Unlocking',
       warrantyMonths: newRepair.warrantyMonths || '',
       status: 'Pending',
@@ -2182,6 +2188,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
                 <input type="number" min="0" max={newRepair.discountType === 'percentage' ? 100 : undefined} step="0.01" placeholder={newRepair.discountType === 'percentage' ? 'Discount %' : 'Discount Amount (NPR)'} value={newRepair.discountValue} onChange={e => setNewRepair({...newRepair, discountValue: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
               </div>
               <input type="number" min="0" placeholder="Paid Amount (NPR)" value={newRepair.paidAmount} onChange={e => setNewRepair({...newRepair, paidAmount: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+<input type="text" autoComplete="off" placeholder="Device Passcode / Pattern (Optional)" value={newRepair.devicePasscode || newRepair.password || ''} onChange={e => setNewRepair({...newRepair, devicePasscode: e.target.value, password: undefined})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
               <input type="text" autoComplete="off" placeholder="Device Passcode / Pattern (Optional)" value={newRepair.devicePasscode || newRepair.password || ''} onChange={e => setNewRepair({...newRepair, devicePasscode: e.target.value, password: undefined})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
               <input type="text" placeholder="Warranty (e.g. 30 Days, 1 Year)" value={newRepair.warrantyMonths} onChange={e => setNewRepair({...newRepair, warrantyMonths: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
               <div className={`md:col-span-3 flex flex-wrap items-center justify-between gap-3 px-4 py-3 ${t.cardSecondary} border ${t.border} rounded-2xl`}>
