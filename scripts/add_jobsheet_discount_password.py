@@ -19,7 +19,17 @@ if 'const [jobSheetIssues, setJobSheetIssues]' not in text:
         1,
     )
 
-# 3) Make the saved Job Sheet use all entered issues while retaining the legacy issue field.
+# 3) Let the History editor update the live React repairs state immediately.
+# This avoids the old localStorage + reload race that could make an edited Job
+# Sheet appear unchanged until a later refresh.
+repairs_bridge = """  useEffect(() => {\n    window.GenuineFixOnRepairsUpdated = (nextRepairs) => setRepairs(nextRepairs);\n    return () => { delete window.GenuineFixOnRepairsUpdated; };\n  }, []);\n\n"""
+bridge_marker = "  const [inventory, setInventory] = useState(() => {"
+if 'window.GenuineFixOnRepairsUpdated = (nextRepairs)' not in text:
+    if bridge_marker not in text:
+        raise SystemExit('Could not find repairs state bridge insertion point.')
+    text = text.replace(bridge_marker, repairs_bridge + bridge_marker, 1)
+
+# 4) Make the saved Job Sheet use all entered issues while retaining the legacy issue field.
 handler_marker = "    const repairItem = {\n      ...newRepair,"
 if handler_marker in text and 'const issueList = jobSheetIssues' not in text:
     text = text.replace(
@@ -38,7 +48,7 @@ if handler_marker in text and 'const issueList = jobSheetIssues' not in text:
         1,
     )
 
-# 4) Replace the old single Issue input with a matching multi-issue block + Add Issue button.
+# 5) Replace the old single Issue input with a matching multi-issue block + Add Issue button.
 old_issue = '''              <input type="text" placeholder="Issue / Details (Optional)" value={newRepair.issue} onChange={e => setNewRepair({...newRepair, issue: e.target.value})} className={`md:col-span-2 p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />'''
 new_issue = '''              <div className="md:col-span-2 space-y-3">
                 <div className="flex items-center justify-between gap-3">
@@ -78,7 +88,7 @@ new_issue = '''              <div className="md:col-span-2 space-y-3">
 if old_issue in text:
     text = text.replace(old_issue, new_issue, 1)
 
-# 5) Do not leave a second passcode field if previous builds inserted it twice.
+# 6) Do not leave a second passcode field if previous builds inserted it twice.
 text = text.replace(passcode_input + '\n              ' + passcode_input, passcode_input, 1)
 
 required_markers = [
@@ -87,10 +97,11 @@ required_markers = [
     'const [jobSheetIssues, setJobSheetIssues]',
     'Add Issue',
     'const issueList = jobSheetIssues',
+    'window.GenuineFixOnRepairsUpdated',
 ]
 missing = [marker for marker in required_markers if marker not in text]
 if missing:
     raise SystemExit(f'Job Sheet patch is incomplete; missing: {", ".join(missing)}')
 
 APP.write_text(text, encoding='utf-8')
-print('Job Sheet UI fixed: duplicate passcode removed and Add Issue/multiple issues restored.')
+print('Job Sheet UI fixed: duplicate passcode removed, Add Issue restored, and History edit bridge enabled.')
