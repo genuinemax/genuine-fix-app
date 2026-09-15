@@ -68,6 +68,7 @@ import {
 
 
 
+
 const normalizePartsStockNotes = (value) => {
   const text = String(value || '').replace(/\r\n?/g, '\n');
   const lines = text.split('\n');
@@ -842,13 +843,6 @@ const supplierDueList = Object.values(expenses.filter(e => Number(e.dueAmount ||
       newRepair.paidAmount
     );
     const repairItem = {
-    e.preventDefault();
-    const { subtotal, discount, total, paidAmount, dueAmount } = calculateJobSheetTotals(
-      newRepair.totalCost,
-      newRepair.discountType,
-      newRepair.discountValue,
-      newRepair.paidAmount
-    );
       ...newRepair,
       devicePasscode: newRepair.devicePasscode || newRepair.password || '',
       subtotal,
