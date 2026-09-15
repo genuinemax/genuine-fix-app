@@ -28,7 +28,8 @@
     current={type,id:String(r.id||id)};
     if(type==='repairs'){
       modal.querySelector('[data-title]').textContent=`Edit Invoice / Jobsheet ${r.id||''}`;
-      form.innerHTML=[field('Customer name','customerName',r.customerName),field('Phone','phone',r.phone),field('Device / model','model',r.model),field('Issue / details','issue',r.issue),field('Total amount','totalCost',r.totalCost,'number'),field('Paid amount','paidAmount',r.paidAmount,'number'),select('Status','status',r.status||'In Progress',['Received','In Progress','Ready','Delivered','Cancelled']),field('Warranty (months)','warrantyMonths',r.warrantyMonths),field('Bill type','billType',r.billType||'Repair'),field('Date / time','dateTime',r.dateTime),field('Citizenship no.','citizenshipNo',r.citizenshipNo),field('Device type','deviceType',r.deviceType),field('Remarks / issue','issueText',r.issue||'','text',true)].join('');
+      const devicePasscode = r.devicePasscode ?? r.password ?? '';
+      form.innerHTML=[field('Customer name','customerName',r.customerName),field('Phone','phone',r.phone),field('Device / model','model',r.model),field('Device Passcode / Pattern','devicePasscode',devicePasscode),field('Issue / details','issue',r.issue),field('Total amount','totalCost',r.totalCost,'number'),field('Paid amount','paidAmount',r.paidAmount,'number'),select('Status','status',r.status||'In Progress',['Received','In Progress','Ready','Delivered','Cancelled']),field('Warranty (months)','warrantyMonths',r.warrantyMonths),field('Bill type','billType',r.billType||'Repair'),field('Date / time','dateTime',r.dateTime),field('Citizenship no.','citizenshipNo',r.citizenshipNo),field('Device type','deviceType',r.deviceType),field('Remarks / issue','issueText',r.issue||'','text',true)].join('');
       form.querySelector('[data-k="issueText"]').outerHTML=`<label class="full">Remarks / issue<textarea data-k="issueText">${esc(r.issue||'')}</textarea></label>`;
     } else if(type==='expenses'){
       modal.querySelector('[data-title]').textContent='Edit Expense / Purchase'; form.innerHTML=[field('Party / Supplier name','partyName',r.partyName||r.supplierName),field('Party phone','partyPhone',r.partyPhone||r.supplierPhone),field('Description','description',r.description),field('Date','date',r.date,'date'),field('Total amount','amount',r.amount,'number'),field('Paid amount','paidAmount',r.paidAmount,'number'),field('Category','category',r.category||r.paymentType||'Other'),field('Notes','notes',r.notes)].join('');
@@ -45,7 +46,12 @@
     if(!current)return;
     const arr=read(K[current.type]); const index=arr.findIndex(r=>String(r.id||'')===String(current.id)); if(index<0){alert('This Jobsheet was changed or removed.');return;}
     const r={...arr[index]}; form.querySelectorAll('[data-k]').forEach(el=>{const k=el.dataset.k;if(!k)return;if(k==='issueText')r.issue=el.value;else r[k]=el.type==='number'?(Number(el.value)||0):el.value;});
-    if(current.type==='repairs'){if(Number(r.paidAmount||0)>Number(r.totalCost||0)){alert('Paid amount cannot exceed total amount.');return;}r.dueAmount=Math.max(0,Number(r.totalCost||0)-Number(r.paidAmount||0));}
+    if(current.type==='repairs'){
+      if(Number(r.paidAmount||0)>Number(r.totalCost||0)){alert('Paid amount cannot exceed total amount.');return;}
+      r.dueAmount=Math.max(0,Number(r.totalCost||0)-Number(r.paidAmount||0));
+      r.devicePasscode = r.devicePasscode ?? r.password ?? '';
+      delete r.password;
+    }
     if(current.type==='expenses'){if(Number(r.paidAmount||0)>Number(r.amount||0)){alert('Paid amount cannot exceed total amount.');return;}r.totalAmount=Number(r.amount||0);r.dueAmount=Math.max(0,Number(r.amount||0)-Number(r.paidAmount||0));if(r.partyName!==undefined)r.supplierName=r.partyName;if(r.partyPhone!==undefined)r.supplierPhone=r.partyPhone;}
     arr[index]=r; write(K[current.type],arr);
     if(current.type==='repairs') localStorage.setItem('gf_pending_repairs_edit',JSON.stringify(arr));
