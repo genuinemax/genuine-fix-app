@@ -64,6 +64,7 @@ import {
 
 
 
+
 const normalizePartsStockNotes = (value) => {
   const text = String(value || '').replace(/\r\n?/g, '\n');
   const lines = text.split('\n');
@@ -868,7 +869,7 @@ const supplierDueList = Object.values(expenses.filter(e => Number(e.dueAmount ||
       ]
     };
     setRepairs([repairItem, ...repairs]);
-    setNewRepair({ customerName: '', phone: '', citizenshipNo: '', customerPhoto: '', citizenshipPhoto: '', deviceType: 'Mobile (Unlock)', model: '', totalCost: '', discountType: 'percentage', discountValue: '', paidAmount: '', password: '', issue: '', warrantyMonths: '' });
+    setNewRepair({ customerName: '', phone: '', citizenshipNo: '', customerPhoto: '', citizenshipPhoto: '', deviceType: 'Mobile (Unlock)', model: '', totalCost: '', discountType: 'percentage', discountValue: '', paidAmount: '', devicePasscode: '', issue: '', warrantyMonths: '' });
     alert('Job Sheet saved successfully!');
   };
 
@@ -2180,7 +2181,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
                 <input type="number" min="0" max={newRepair.discountType === 'percentage' ? 100 : undefined} step="0.01" placeholder={newRepair.discountType === 'percentage' ? 'Discount %' : 'Discount Amount (NPR)'} value={newRepair.discountValue} onChange={e => setNewRepair({...newRepair, discountValue: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
               </div>
               <input type="number" min="0" placeholder="Paid Amount (NPR)" value={newRepair.paidAmount} onChange={e => setNewRepair({...newRepair, paidAmount: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-              <input type="password" autoComplete="off" placeholder="Device Password / PIN (Optional)" value={newRepair.password} onChange={e => setNewRepair({...newRepair, password: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+              <input type="text" autoComplete="off" placeholder="Device Passcode / Pattern (Optional)" value={newRepair.devicePasscode || newRepair.password || ''} onChange={e => setNewRepair({...newRepair, devicePasscode: e.target.value, password: undefined})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
               <input type="text" placeholder="Warranty (e.g. 30 Days, 1 Year)" value={newRepair.warrantyMonths} onChange={e => setNewRepair({...newRepair, warrantyMonths: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
               <div className={`md:col-span-3 flex flex-wrap items-center justify-between gap-3 px-4 py-3 ${t.cardSecondary} border ${t.border} rounded-2xl`}>
                 <div className={`text-sm ${t.textMuted}`}>Subtotal: <span className={`font-black ${t.textMain}`}>NPR {Number(newRepair.totalCost || 0).toLocaleString()}</span></div>
@@ -3024,6 +3025,7 @@ _Thank you for choosing ${shopInfo.name}!_`;
                 <div><span className="text-slate-500">Phone:</span> {selectedInvoice.phone}</div>
                 <div><span className="text-slate-500">Model:</span> {selectedInvoice.model || selectedInvoice.deviceType}</div>
                 <div><span className="text-slate-500">Warranty:</span> {selectedInvoice.warrantyMonths || '—'}</div>
+                <div><span className="text-slate-500">Device Passcode / Pattern:</span> {selectedInvoice.devicePasscode || selectedInvoice.password || '—'}</div>
               </div>
               <hr className="border-slate-700"/>
               <div className="space-y-1">
