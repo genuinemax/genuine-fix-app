@@ -71,6 +71,7 @@ import {
 
 
 
+
 const normalizePartsStockNotes = (value) => {
   const text = String(value || '').replace(/\r\n?/g, '\n');
   const lines = text.split('\n');
@@ -409,6 +410,11 @@ export default function App() {
       }
     ];
   });
+
+  useEffect(() => {
+    window.GenuineFixOnRepairsUpdated = (nextRepairs) => setRepairs(nextRepairs);
+    return () => { delete window.GenuineFixOnRepairsUpdated; };
+  }, []);
 
   const [inventory, setInventory] = useState(() => {
     const saved = localStorage.getItem('gf_inventory');
