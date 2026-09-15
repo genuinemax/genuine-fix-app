@@ -1,9 +1,9 @@
 from pathlib import Path
+import re
 
 APP = Path('src/App.jsx')
 text = APP.read_text(encoding='utf-8')
 
-# Job Sheet totals use the same safe discount rules as the Accessories POS flow.
 if "./job-sheet-discount" not in text:
     text = text.replace(
         "import { deleteInvoiceById } from './invoice-actions';",
@@ -11,97 +11,75 @@ if "./job-sheet-discount" not in text:
         1,
     )
 
-# Keep the customer device credential separate from any application/login password.
-# Existing records are preserved: the UI reads legacy `password` values as a fallback.
-old_state = """  const [newRepair, setNewRepair] = useState({
-    customerName: '', phone: '', citizenshipNo: '',
-    customerPhoto: '', citizenshipPhoto: '',
-    deviceType: 'Mobile (Unlock)', model: '', totalCost: '', paidAmount: '', issue: '', warrantyMonths: ''
-  });"""
-new_state = """  const [newRepair, setNewRepair] = useState({
+# Normalize the Job Sheet form state regardless of whitespace/formatting added by other build patches.
+state_pattern = r"const \[newRepair, setNewRepair\] = useState\(\{.*?\n\s*\}\);"
+state_replacement = """const [newRepair, setNewRepair] = useState({
     customerName: '', phone: '', citizenshipNo: '',
     customerPhoto: '', citizenshipPhoto: '',
     deviceType: 'Mobile (Unlock)', model: '', totalCost: '', discountType: 'percentage', discountValue: '', paidAmount: '', devicePasscode: '', issue: '', warrantyMonths: ''
   });"""
-if old_state in text:
-    text = text.replace(old_state, new_state, 1)
+text, state_count = re.subn(state_pattern, state_replacement, text, count=1, flags=re.S)
+if state_count != 1:
+    raise SystemExit('Job Sheet newRepair state block not found')
 
-# If an earlier build injected the wrong `password` field, migrate that UI state name.
-text = text.replace("discountValue: '', paidAmount: '', password: '', issue:", "discountValue: '', paidAmount: '', devicePasscode: '', issue:")
-text = text.replace("paidAmount: '', password: '', issue:", "paidAmount: '', devicePasscode: '', issue:")
-
-old_handler = """  const handleAddRepair = (e) => {
-    e.preventDefault();
-    const total = Number(newRepair.totalCost || 0);
-    const paid = Number(newRepair.paidAmount || 0);
-    const repairItem = {
-      ...newRepair,"""
-new_handler = """  const handleAddRepair = (e) => {
-    e.preventDefault();
+# Normalize the save handler. This also removes the stale `paid` reference left by an earlier patch.
+handler_pattern = r"(const handleAddRepair = \(e\) => \{.*?const repairItem = \{)(.*?)(\n\s*\};\n\s*setRepairs\(\[repairItem, \.\.\.repairs\]\);)"
+handler_match = re.search(handler_pattern, text, flags=re.S)
+if not handler_match:
+    raise SystemExit('Job Sheet handleAddRepair block not found')
+handler_body = handler_match.group(2)
+handler_body = re.sub(r"\n\s*const total = Number\(newRepair\.totalCost \|\| 0\);\n\s*const paid = Number\(newRepair\.paidAmount \|\| 0\);", "", handler_body)
+if 'calculateJobSheetTotals' not in handler_body:
+    handler_body = """\n    e.preventDefault();
     const { subtotal, discount, total, paidAmount, dueAmount } = calculateJobSheetTotals(
       newRepair.totalCost,
       newRepair.discountType,
       newRepair.discountValue,
       newRepair.paidAmount
-    );
-    const repairItem = {
-      ...newRepair,
-      devicePasscode: newRepair.devicePasscode || newRepair.password || '',
-      subtotal,
-      discountAmount: discount,
-      discountType: newRepair.discountType || 'percentage',
-      discountValue: Number(newRepair.discountValue || 0),
-      totalCost: total,
-      paidAmount,
-      dueAmount,"""
-if old_handler in text:
-    text = text.replace(old_handler, new_handler, 1)
+    );""" + handler_body
+else:
+    handler_body = re.sub(r"\n\s*e\.preventDefault\(\);\n\s*const \{ subtotal, discount, total, paidAmount, dueAmount \} = calculateJobSheetTotals\(.*?\n\s*\);", """\n    e.preventDefault();
+    const { subtotal, discount, total, paidAmount, dueAmount } = calculateJobSheetTotals(
+      newRepair.totalCost,
+      newRepair.discountType,
+      newRepair.discountValue,
+      newRepair.paidAmount
+    );""", handler_body, count=1, flags=re.S)
 
-# Replace the old reset object, including any previously injected password key.
-import re
+# Ensure the repair object has the calculated totals and the customer's device credential.
+handler_body = re.sub(r"\n\s*\.\.\.newRepair,", "\n      ...newRepair,", handler_body, count=1)
+if 'devicePasscode:' not in handler_body:
+    handler_body = handler_body.replace("\n      ...newRepair,", "\n      ...newRepair,\n      devicePasscode: newRepair.devicePasscode || newRepair.password || '',", 1)
+
+# Remove duplicate/stale money fields from the old handler, keeping the calculated fields at the top.
+handler_body = re.sub(r"\n\s*totalCost: total,\n\s*paidAmount: paid,\n\s*dueAmount: total - paid,", "", handler_body, count=1)
+handler_body = re.sub(r"\n\s*id: `GF-\$\{Math\.floor\(1000 \+ Math\.random\(\) \* 9000\)\}`,", "\n      id: `GF-${Math.floor(1000 + Math.random() * 9000)}`,", handler_body, count=1)
+
+text = text[:handler_match.start(2)] + handler_body + text[handler_match.end(2):]
+
+# Normalize the form control to a visible text field that accepts PIN/password/pattern notation.
+passcode_control = r"<input type=\"(?:password|text)\"[^>]*placeholder=\"(?:Device Password / PIN|Device Passcode / Pattern) \(Optional\)\"[^>]*/>"
+passcode_replacement = '<input type="text" autoComplete="off" placeholder="Device Passcode / Pattern (Optional)" value={newRepair.devicePasscode || newRepair.password || \'\'} onChange={e => setNewRepair({...newRepair, devicePasscode: e.target.value, password: undefined})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />'
+text, passcode_count = re.subn(passcode_control, passcode_replacement, text, count=1)
+if passcode_count == 0:
+    payment_anchor = '              <input type="number" min="0" placeholder="Paid Amount (NPR)" value={newRepair.paidAmount} onChange={e => setNewRepair({...newRepair, paidAmount: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />'
+    if payment_anchor in text:
+        text = text.replace(payment_anchor, payment_anchor + "\n" + passcode_replacement, 1)
+    else:
+        raise SystemExit('Job Sheet passcode form anchor not found')
+
+# Reset the form without losing the discount/passcode fields.
 text = re.sub(
-    r"setNewRepair\(\{ customerName: '', phone: '', citizenshipNo: '', customerPhoto: '', citizenshipPhoto: '', deviceType: 'Mobile \(Unlock\)', model: '', totalCost: '', (?:discountType: 'percentage', discountValue: '', )?paidAmount: '', (?:password|devicePasscode): '', issue: '', warrantyMonths: '' \}\);",
+    r"setNewRepair\(\{[^;]*?deviceType: 'Mobile \(Unlock\)', model: '', totalCost: '',.*?issue: '', warrantyMonths: '' \}\);",
     "setNewRepair({ customerName: '', phone: '', citizenshipNo: '', customerPhoto: '', citizenshipPhoto: '', deviceType: 'Mobile (Unlock)', model: '', totalCost: '', discountType: 'percentage', discountValue: '', paidAmount: '', devicePasscode: '', issue: '', warrantyMonths: '' });",
     text,
     count=1,
+    flags=re.S,
 )
 
-# Add/replace the Job Sheet form fields while preserving the existing GUI classes.
-old_payment = """              <input type=\"text\" placeholder=\"Device Model (Optional)\" value={newRepair.model} onChange={e => setNewRepair({...newRepair, model: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-              <input type=\"number\" placeholder=\"Total Cost (NPR)\" value={newRepair.totalCost} onChange={e => setNewRepair({...newRepair, totalCost: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-              <input type=\"number\" placeholder=\"Paid Amount (NPR)\" value={newRepair.paidAmount} onChange={e => setNewRepair({...newRepair, paidAmount: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-              <input type=\"text\" placeholder=\"Warranty (e.g. 30 Days, 1 Year)\" value={newRepair.warrantyMonths} onChange={e => setNewRepair({...newRepair, warrantyMonths: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />"""
-new_payment = """              <input type=\"text\" placeholder=\"Device Model (Optional)\" value={newRepair.model} onChange={e => setNewRepair({...newRepair, model: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-              <input type=\"number\" min=\"0\" placeholder=\"Subtotal / Total Cost (NPR)\" value={newRepair.totalCost} onChange={e => setNewRepair({...newRepair, totalCost: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-              <div className={`md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3 ${t.cardSecondary} p-3 rounded-2xl border ${t.border}`}>
-                <select value={newRepair.discountType} onChange={e => setNewRepair({...newRepair, discountType: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}>
-                  <option value=\"percentage\">Discount (%)</option>
-                  <option value=\"fixed\">Discount (NPR)</option>
-                </select>
-                <input type=\"number\" min=\"0\" max={newRepair.discountType === 'percentage' ? 100 : undefined} step=\"0.01\" placeholder={newRepair.discountType === 'percentage' ? 'Discount %' : 'Discount Amount (NPR)'} value={newRepair.discountValue} onChange={e => setNewRepair({...newRepair, discountValue: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-              </div>
-              <input type=\"number\" min=\"0\" placeholder=\"Paid Amount (NPR)\" value={newRepair.paidAmount} onChange={e => setNewRepair({...newRepair, paidAmount: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-              <input type=\"text\" autoComplete=\"off\" placeholder=\"Device Passcode / Pattern (Optional)\" value={newRepair.devicePasscode || newRepair.password || ''} onChange={e => setNewRepair({...newRepair, devicePasscode: e.target.value, password: undefined})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-              <input type=\"text\" placeholder=\"Warranty (e.g. 30 Days, 1 Year)\" value={newRepair.warrantyMonths} onChange={e => setNewRepair({...newRepair, warrantyMonths: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-              <div className={`md:col-span-3 flex flex-wrap items-center justify-between gap-3 px-4 py-3 ${t.cardSecondary} border ${t.border} rounded-2xl`}>
-                <div className={`text-sm ${t.textMuted}`}>Subtotal: <span className={`font-black ${t.textMain}`}>NPR {Number(newRepair.totalCost || 0).toLocaleString()}</span></div>
-                <div className=\"text-sm text-amber-400\">Discount: <span className=\"font-black\">- NPR {calculateJobSheetTotals(newRepair.totalCost, newRepair.discountType, newRepair.discountValue, newRepair.paidAmount).discount.toLocaleString()}</span></div>
-                <div className=\"text-sm text-emerald-400\">Grand Total: <span className=\"font-black\">NPR {calculateJobSheetTotals(newRepair.totalCost, newRepair.discountType, newRepair.discountValue, newRepair.paidAmount).total.toLocaleString()}</span></div>
-                <div className=\"text-sm text-rose-400\">Due: <span className=\"font-black\">NPR {calculateJobSheetTotals(newRepair.totalCost, newRepair.discountType, newRepair.discountValue, newRepair.paidAmount).dueAmount.toLocaleString()}</span></div>
-              </div>"""
-if old_payment in text:
-    text = text.replace(old_payment, new_payment, 1)
-
-# If the form was already patched by an earlier version, correct only the passcode control.
-text = text.replace(
-    'type="password" autoComplete="off" placeholder="Device Password / PIN (Optional)" value={newRepair.password} onChange={e => setNewRepair({...newRepair, password: e.target.value})}',
-    'type="text" autoComplete="off" placeholder="Device Passcode / Pattern (Optional)" value={newRepair.devicePasscode || newRepair.password || \'\'} onChange={e => setNewRepair({...newRepair, devicePasscode: e.target.value, password: undefined})}'
-)
-
-# Show the passcode in the existing on-screen invoice/job preview only. printInvoice does not use this block.
-preview_anchor = """                <div><span className=\"text-slate-500\">Warranty:</span> {selectedInvoice.warrantyMonths || '—'}</div>"""
-preview_line = """                <div><span className=\"text-slate-500\">Warranty:</span> {selectedInvoice.warrantyMonths || '—'}</div>
-                <div><span className=\"text-slate-500\">Device Passcode / Pattern:</span> {selectedInvoice.devicePasscode || selectedInvoice.password || '—'}</div>"""
+# On-screen Job Sheet/Invoice preview may show the credential; the printInvoice canvas/print flow is untouched.
+preview_anchor = "                <div><span className=\"text-slate-500\">Warranty:</span> {selectedInvoice.warrantyMonths || '—'}</div>"
+preview_line = "                <div><span className=\"text-slate-500\">Warranty:</span> {selectedInvoice.warrantyMonths || '—'}</div>\n                <div><span className=\"text-slate-500\">Device Passcode / Pattern:</span> {selectedInvoice.devicePasscode || selectedInvoice.password || '—'}</div>"
 if preview_anchor in text and 'selectedInvoice.devicePasscode' not in text:
     text = text.replace(preview_anchor, preview_line, 1)
 
