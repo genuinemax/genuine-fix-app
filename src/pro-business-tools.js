@@ -2,15 +2,6 @@
 (function () {
   const K = { repairs:'gf_repairs', expenses:'gf_expenses', inventory:'gf_inventory', devices:'gf_devices_stock' };
 
-  try {
-    const pending = localStorage.getItem('gf_pending_repairs_edit');
-    if (pending) {
-      localStorage.setItem('gf_repairs', pending);
-      localStorage.removeItem('gf_pending_repairs_edit');
-    }
-    sessionStorage.removeItem('gf_jobsheet_reload_lock');
-  } catch {}
-
   const read = (k) => { try { return JSON.parse(localStorage.getItem(k) || '[]'); } catch { return []; } };
   const write = (k,v) => localStorage.setItem(k, JSON.stringify(v));
   const esc = s => String(s ?? '').replace(/[&<>\"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]));
@@ -29,7 +20,7 @@
     if(type==='repairs'){
       modal.querySelector('[data-title]').textContent=`Edit Invoice / Jobsheet ${r.id||''}`;
       const devicePasscode = r.devicePasscode ?? r.password ?? '';
-      form.innerHTML=[field('Customer name','customerName',r.customerName),field('Phone','phone',r.phone),field('Device / model','model',r.model),field('Device Passcode / Pattern','devicePasscode',devicePasscode),field('Issue / details','issue',r.issue),field('Total amount','totalCost',r.totalCost,'number'),field('Paid amount','paidAmount',r.paidAmount,'number'),select('Status','status',r.status||'In Progress',['Received','In Progress','Ready','Delivered','Cancelled']),field('Warranty (months)','warrantyMonths',r.warrantyMonths),field('Bill type','billType',r.billType||'Repair'),field('Date / time','dateTime',r.dateTime),field('Citizenship no.','citizenshipNo',r.citizenshipNo),field('Device type','deviceType',r.deviceType),field('Remarks / issue','issueText',r.issue||'','text',true)].join('');
+      form.innerHTML=[field('Customer name','customerName',r.customerName),field('Phone','phone',r.phone),field('Device / model','model',r.model),field('Device Passcode / Pattern','devicePasscode',devicePasscode),field('Issue / details','issue',r.issue),field('Total amount','totalCost',r.totalCost,'number'),field('Paid amount','paidAmount',r.paidAmount,'number'),select('Status','status',r.status||'In Progress',['Pending','Received','In Progress','Ready','Delivered','Cancelled']),field('Warranty (months)','warrantyMonths',r.warrantyMonths),field('Bill type','billType',r.billType||'Repair'),field('Date / time','dateTime',r.dateTime),field('Citizenship no.','citizenshipNo',r.citizenshipNo),field('Device type','deviceType',r.deviceType),field('Remarks / issue','issueText',r.issue||'','text',true)].join('');
       form.querySelector('[data-k="issueText"]').outerHTML=`<label class="full">Remarks / issue<textarea data-k="issueText">${esc(r.issue||'')}</textarea></label>`;
     } else if(type==='expenses'){
       modal.querySelector('[data-title]').textContent='Edit Expense / Purchase'; form.innerHTML=[field('Party / Supplier name','partyName',r.partyName||r.supplierName),field('Party phone','partyPhone',r.partyPhone||r.supplierPhone),field('Description','description',r.description),field('Date','date',r.date,'date'),field('Total amount','amount',r.amount,'number'),field('Paid amount','paidAmount',r.paidAmount,'number'),field('Category','category',r.category||r.paymentType||'Other'),field('Notes','notes',r.notes)].join('');
@@ -44,20 +35,19 @@
   function close(){modal.style.display='none';current=null;form.innerHTML='';}
   function saveCurrent(){
     if(!current)return;
-    const arr=read(K[current.type]); const index=arr.findIndex(r=>String(r.id||'')===String(current.id)); if(index<0){alert('This Jobsheet was changed or removed.');return;}
+    const arr=read(K[current.type]); const index=arr.findIndex(r=>String(r.id||'')===String(current.id)); if(index<0){alert('This record was changed or removed.');return;}
     const r={...arr[index]}; form.querySelectorAll('[data-k]').forEach(el=>{const k=el.dataset.k;if(!k)return;if(k==='issueText')r.issue=el.value;else r[k]=el.type==='number'?(Number(el.value)||0):el.value;});
     if(current.type==='repairs'){
       if(Number(r.paidAmount||0)>Number(r.totalCost||0)){alert('Paid amount cannot exceed total amount.');return;}
       r.dueAmount=Math.max(0,Number(r.totalCost||0)-Number(r.paidAmount||0));
       r.devicePasscode = r.devicePasscode ?? r.password ?? '';
       delete r.password;
+      if(Array.isArray(r.issues)) r.issues = String(r.issue || '').split(/\r?\n/).map(v => v.trim()).filter(Boolean);
     }
     if(current.type==='expenses'){if(Number(r.paidAmount||0)>Number(r.amount||0)){alert('Paid amount cannot exceed total amount.');return;}r.totalAmount=Number(r.amount||0);r.dueAmount=Math.max(0,Number(r.amount||0)-Number(r.paidAmount||0));if(r.partyName!==undefined)r.supplierName=r.partyName;if(r.partyPhone!==undefined)r.supplierPhone=r.partyPhone;}
     arr[index]=r; write(K[current.type],arr);
-    if(current.type==='repairs') localStorage.setItem('gf_pending_repairs_edit',JSON.stringify(arr));
+    if(current.type==='repairs' && typeof window.GenuineFixOnRepairsUpdated === 'function') window.GenuineFixOnRepairsUpdated(arr);
     close();
-    try { if(sessionStorage.getItem('gf_jobsheet_reload_lock')==='1') return; sessionStorage.setItem('gf_jobsheet_reload_lock','1'); } catch {}
-    window.location.reload();
   }
   modal.querySelector('[data-close]').onclick=close;modal.querySelector('[data-cancel]').onclick=close;modal.querySelector('[data-save]').onclick=saveCurrent;modal.addEventListener('click',e=>{if(e.target===modal)close();});
 
@@ -65,26 +55,17 @@
     const headers=[...table.querySelectorAll('thead th')].map(th=>(th.innerText||th.textContent||'').replace(/\s+/g,' ').trim().toLowerCase());
     return headers.some(h=>h.includes('job id'));
   }
-
-  // Job Sheet History is React-owned. Keep only its canonical Delete action
-  // and strip any legacy/injected duplicate Delete controls.
   function cleanJobSheetHistoryRows(){
     document.querySelectorAll('table').forEach(table=>{
       if(!isJobSheetHistoryTable(table)) return;
       table.querySelectorAll('tbody tr').forEach(row=>{
         row.querySelectorAll('.gf-history-inline-actions').forEach(el=>el.remove());
         row.querySelectorAll('.gf-inline-edit-btn').forEach(btn=>btn.closest('td')?.remove());
-
         const deleteButtons=[...row.querySelectorAll('button')].filter(btn=>/\bdelete\b/i.test((btn.innerText||btn.textContent||'').trim()) && btn.dataset.gfNativeJobsheetDelete!=='1');
-        deleteButtons.forEach(btn=>{
-          const cell=btn.closest('td');
-          btn.remove();
-          if(cell && !cell.textContent.trim() && !cell.querySelector('button,svg,input,select,a')) cell.remove();
-        });
+        deleteButtons.forEach(btn=>{const cell=btn.closest('td');btn.remove();if(cell&&!cell.textContent.trim()&&!cell.querySelector('button,svg,input,select,a'))cell.remove();});
       });
     });
   }
-
   function addButtons(){
     document.querySelectorAll('table').forEach(table=>{
       if(isJobSheetHistoryTable(table)) return;
@@ -94,8 +75,6 @@
     });
     cleanJobSheetHistoryRows();
   }
-
   function rowInfo(row){const text=(row.innerText||row.textContent||'').replace(/\s+/g,' ').trim();for(const type of Object.keys(K)){const arr=read(K[type]);const hit=arr.find(r=>{const id=String(r.id||'');return id&&text.includes(id);});if(hit)return {type,id:String(hit.id)};}return null;}
-
   const observer=new MutationObserver(addButtons);observer.observe(document.body,{childList:true,subtree:true});window.addEventListener('load',addButtons);setTimeout(addButtons,500);setTimeout(addButtons,1500);setInterval(addButtons,2500);
 })();
