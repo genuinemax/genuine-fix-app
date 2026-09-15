@@ -3,22 +3,94 @@ from pathlib import Path
 APP = Path('src/App.jsx')
 text = APP.read_text(encoding='utf-8')
 
-# Repair the exact duplicate block left by the previous Job Sheet patch attempt.
-# This is intentionally narrow: it only removes the repeated statements that
-# make the object literal invalid JSX/JavaScript. No customer data is touched.
-duplicate = '''    const repairItem = {\n    e.preventDefault();\n    const { subtotal, discount, total, paidAmount, dueAmount } = calculateJobSheetTotals(\n      newRepair.totalCost,\n      newRepair.discountType,\n      newRepair.discountValue,\n      newRepair.paidAmount\n    );\n      ...newRepair,'''
-clean = '''    const repairItem = {\n      ...newRepair,'''
-if duplicate in text:
-    text = text.replace(duplicate, clean, 1)
-    APP.write_text(text, encoding='utf-8')
+# 1) Remove the accidental duplicate Device Passcode input.
+passcode_input = '''<input type="text" autoComplete="off" placeholder="Device Passcode / Pattern (Optional)" value={newRepair.devicePasscode || newRepair.password || ''} onChange={e => setNewRepair({...newRepair, devicePasscode: e.target.value, password: undefined})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />'''
+if text.count(passcode_input) > 1:
+    text = text.replace(passcode_input + '\n              ' + passcode_input, passcode_input, 1)
+
+# 2) Restore a multi-issue Job Sheet state without changing existing saved records.
+state_marker = "  const [posBill, setPosBill] = useState({"
+if 'const [jobSheetIssues, setJobSheetIssues]' not in text:
+    if state_marker not in text:
+        raise SystemExit('Could not find Job Sheet state insertion point.')
+    text = text.replace(
+        state_marker,
+        "  const [jobSheetIssues, setJobSheetIssues] = useState(['']);\n\n" + state_marker,
+        1,
+    )
+
+# 3) Make the saved Job Sheet use all entered issues while retaining the legacy issue field.
+handler_marker = "    const repairItem = {\n      ...newRepair,"
+if handler_marker in text and 'const issueList = jobSheetIssues' not in text:
+    text = text.replace(
+        handler_marker,
+        "    const issueList = jobSheetIssues.map(issue => String(issue || '').trim()).filter(Boolean);\n    const combinedIssues = issueList.join('\\n');\n    const savedIssue = combinedIssues || newRepair.issue || 'General Repair / Unlocking';\n    const repairItem = {\n      ...newRepair,",
+        1,
+    )
+    text = text.replace(
+        "      issue: newRepair.issue || 'General Repair / Unlocking',",
+        "      issue: savedIssue,\n      issues: issueList,",
+        1,
+    )
+    text = text.replace(
+        "    setRepairs([repairItem, ...repairs]);\n    setNewRepair({",
+        "    setRepairs([repairItem, ...repairs]);\n    setJobSheetIssues(['']);\n    setNewRepair({",
+        1,
+    )
+
+# 4) Replace the old single Issue input with a matching multi-issue block + Add Issue button.
+old_issue = '''              <input type="text" placeholder="Issue / Details (Optional)" value={newRepair.issue} onChange={e => setNewRepair({...newRepair, issue: e.target.value})} className={`md:col-span-2 p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />'''
+new_issue = '''              <div className="md:col-span-2 space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <label className={`text-sm font-bold ${t.textMain}`}>Repair Issues</label>
+                  <button
+                    type="button"
+                    onClick={() => setJobSheetIssues(prev => [...prev, ''])}
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold transition"
+                  >
+                    <Plus size={15} /> Add Issue
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {jobSheetIssues.map((issue, index) => (
+                    <div key={`job-issue-${index}`} className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        placeholder={index === 0 ? 'Issue / Details' : `Issue ${index + 1}`}
+                        value={issue}
+                        onChange={e => setJobSheetIssues(prev => prev.map((item, i) => i === index ? e.target.value : item))}
+                        className={`flex-1 p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}
+                      />
+                      {jobSheetIssues.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => setJobSheetIssues(prev => prev.filter((_, i) => i !== index))}
+                          className="p-3 rounded-2xl bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 transition"
+                          title="Remove issue"
+                        >
+                          <X size={17} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>'''
+if old_issue in text:
+    text = text.replace(old_issue, new_issue, 1)
+
+# 5) Do not leave a second passcode field if previous builds inserted it twice.
+text = text.replace(passcode_input + '\n              ' + passcode_input, passcode_input, 1)
 
 required_markers = [
     'calculateJobSheetTotals',
     'Device Passcode / Pattern (Optional)',
-    'devicePasscode: newRepair.devicePasscode || newRepair.password ||',
+    'const [jobSheetIssues, setJobSheetIssues]',
+    'Add Issue',
+    'const issueList = jobSheetIssues',
 ]
 missing = [marker for marker in required_markers if marker not in text]
 if missing:
-    raise SystemExit(f"Job Sheet patch is incomplete; missing: {', '.join(missing)}")
+    raise SystemExit(f'Job Sheet patch is incomplete; missing: {", ".join(missing)}')
 
-print('Job Sheet handler verified; duplicate patch block repaired safely.')
+APP.write_text(text, encoding='utf-8')
+print('Job Sheet UI fixed: duplicate passcode removed and Add Issue/multiple issues restored.')
