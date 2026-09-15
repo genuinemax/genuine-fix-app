@@ -5,10 +5,12 @@ import Login from './Login';
 import React, { useState, useEffect } from 'react';
 import { calculateAccessoriesBillTotals } from './accessories-discount';
 import { deleteInvoiceById } from './invoice-actions';
+import { calculateJobSheetTotals } from './job-sheet-discount';
 import { 
   Wrench, Package, FileText, LayoutDashboard, DollarSign, 
   Trash2, Printer, ShieldCheck, User, CreditCard, Search, Eye, ChevronRight, Download, Upload, ShoppingBag, MessageSquare, Plus, AlertTriangle, ArrowUpRight, ArrowDownRight, X, CheckCircle2, Image as ImageIcon, Pencil, Smartphone, Laptop, Settings, Sun, Moon, Monitor, Users, Bell, PlusCircle, History, Clock3, Filter, ClipboardList
 } from 'lucide-react';
+
 
 
 
@@ -829,10 +831,21 @@ const supplierDueList = Object.values(expenses.filter(e => Number(e.dueAmount ||
 
   const handleAddRepair = (e) => {
     e.preventDefault();
-    const total = Number(newRepair.totalCost || 0);
-    const paid = Number(newRepair.paidAmount || 0);
+    const { subtotal, discount, total, paidAmount, dueAmount } = calculateJobSheetTotals(
+      newRepair.totalCost,
+      newRepair.discountType,
+      newRepair.discountValue,
+      newRepair.paidAmount
+    );
     const repairItem = {
       ...newRepair,
+      subtotal,
+      discountAmount: discount,
+      discountType: newRepair.discountType || 'percentage',
+      discountValue: Number(newRepair.discountValue || 0),
+      totalCost: total,
+      paidAmount,
+      dueAmount,
       id: `GF-${Math.floor(1000 + Math.random() * 9000)}`,
       customerName: newRepair.customerName || 'Walk-in Customer',
       phone: newRepair.phone || 'N/A',
@@ -855,7 +868,7 @@ const supplierDueList = Object.values(expenses.filter(e => Number(e.dueAmount ||
       ]
     };
     setRepairs([repairItem, ...repairs]);
-    setNewRepair({ customerName: '', phone: '', citizenshipNo: '', customerPhoto: '', citizenshipPhoto: '', deviceType: 'Mobile (Unlock)', model: '', totalCost: '', paidAmount: '', issue: '', warrantyMonths: '' });
+    setNewRepair({ customerName: '', phone: '', citizenshipNo: '', customerPhoto: '', citizenshipPhoto: '', deviceType: 'Mobile (Unlock)', model: '', totalCost: '', discountType: 'percentage', discountValue: '', paidAmount: '', password: '', issue: '', warrantyMonths: '' });
     alert('Job Sheet saved successfully!');
   };
 
@@ -2158,9 +2171,23 @@ _Thank you for choosing ${shopInfo.name}!_`;
               </select>
 
               <input type="text" placeholder="Device Model (Optional)" value={newRepair.model} onChange={e => setNewRepair({...newRepair, model: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-              <input type="number" placeholder="Total Cost (NPR)" value={newRepair.totalCost} onChange={e => setNewRepair({...newRepair, totalCost: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
-              <input type="number" placeholder="Paid Amount (NPR)" value={newRepair.paidAmount} onChange={e => setNewRepair({...newRepair, paidAmount: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+              <input type="number" min="0" placeholder="Subtotal / Total Cost (NPR)" value={newRepair.totalCost} onChange={e => setNewRepair({...newRepair, totalCost: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+              <div className={`md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3 ${t.cardSecondary} p-3 rounded-2xl border ${t.border}`}>
+                <select value={newRepair.discountType} onChange={e => setNewRepair({...newRepair, discountType: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`}>
+                  <option value="percentage">Discount (%)</option>
+                  <option value="fixed">Discount (NPR)</option>
+                </select>
+                <input type="number" min="0" max={newRepair.discountType === 'percentage' ? 100 : undefined} step="0.01" placeholder={newRepair.discountType === 'percentage' ? 'Discount %' : 'Discount Amount (NPR)'} value={newRepair.discountValue} onChange={e => setNewRepair({...newRepair, discountValue: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+              </div>
+              <input type="number" min="0" placeholder="Paid Amount (NPR)" value={newRepair.paidAmount} onChange={e => setNewRepair({...newRepair, paidAmount: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+              <input type="password" autoComplete="off" placeholder="Device Password / PIN (Optional)" value={newRepair.password} onChange={e => setNewRepair({...newRepair, password: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
               <input type="text" placeholder="Warranty (e.g. 30 Days, 1 Year)" value={newRepair.warrantyMonths} onChange={e => setNewRepair({...newRepair, warrantyMonths: e.target.value})} className={`p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
+              <div className={`md:col-span-3 flex flex-wrap items-center justify-between gap-3 px-4 py-3 ${t.cardSecondary} border ${t.border} rounded-2xl`}>
+                <div className={`text-sm ${t.textMuted}`}>Subtotal: <span className={`font-black ${t.textMain}`}>NPR {Number(newRepair.totalCost || 0).toLocaleString()}</span></div>
+                <div className="text-sm text-amber-400">Discount: <span className="font-black">- NPR {calculateJobSheetTotals(newRepair.totalCost, newRepair.discountType, newRepair.discountValue, newRepair.paidAmount).discount.toLocaleString()}</span></div>
+                <div className="text-sm text-emerald-400">Grand Total: <span className="font-black">NPR {calculateJobSheetTotals(newRepair.totalCost, newRepair.discountType, newRepair.discountValue, newRepair.paidAmount).total.toLocaleString()}</span></div>
+                <div className="text-sm text-rose-400">Due: <span className="font-black">NPR {calculateJobSheetTotals(newRepair.totalCost, newRepair.discountType, newRepair.discountValue, newRepair.paidAmount).dueAmount.toLocaleString()}</span></div>
+              </div>
               <input type="text" placeholder="Issue / Details (Optional)" value={newRepair.issue} onChange={e => setNewRepair({...newRepair, issue: e.target.value})} className={`md:col-span-2 p-3 ${t.inputBg} border rounded-2xl text-sm focus:outline-none`} />
 
               <div className={`md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-4 ${t.cardSecondary} p-4 rounded-2xl border ${t.border}`}>
