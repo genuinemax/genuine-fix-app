@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "prebuild": "python scripts/fix_jobsheet_delete.py && python scripts/ensure_pos_preview.py",
+    "prebuild": "python scripts/fix_jobsheet_delete.py && python scripts/ensure_pos_preview.py && python scripts/add_jobsheet_discount_password.py",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
